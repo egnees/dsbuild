@@ -25,6 +25,6 @@ impl RealSystem {
         let config = RunConfig {
             host: host.to_string(),
         };
-        ProcessRunner::new(config).run(proc)
+        ProcessRunner::new(config)?.run(proc)
     }
 }

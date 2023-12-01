@@ -8,7 +8,7 @@ pub mod real_system;
 
 #[cfg(test)]
 mod tests {
-    use std::{sync::{Mutex, Arc}, collections::VecDeque, thread, time::Duration, net::SocketAddr, str::FromStr};
+    use std::{sync::{Mutex, Arc}, collections::VecDeque, thread, time::Duration, net::SocketAddr, str::FromStr, ops::DerefMut};
 
     use crate::{common::{process::Process, context::Context, message::Message}, real_mode::real_system::RealSystem};
 
@@ -107,6 +107,9 @@ mod tests {
                 }
                 Ok(())
             }
+            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+                Ok(())
+            }
         }
 
         let mut proc = TwoTimersProcess {
@@ -116,9 +119,9 @@ mod tests {
         };
 
         let config = RunConfig {
-            host: "localhost:10085".to_string()
+            host: "localhost:10099".to_string()
         };
-        let mut process_runner = ProcessRunner::new(config);
+        let mut process_runner = ProcessRunner::new(config).expect("Can not create process runner");
 
         let result = process_runner.run(&mut proc);
         
@@ -149,6 +152,9 @@ mod tests {
                 }
                 Ok(())
             }
+            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+                Ok(())
+            }
         }
 
         let mut proc = OneTimerProcess {
@@ -156,10 +162,10 @@ mod tests {
         };
 
         let config = RunConfig {
-            host: "localhost:10085".to_string(),
+            host: "localhost:10095".to_string(),
         };
 
-        let mut runner = ProcessRunner::new(config);
+        let mut runner = ProcessRunner::new(config).expect("Can not create process runner");
         let result = runner.run(&mut proc);
 
         assert!(result.is_ok());
@@ -188,13 +194,16 @@ mod tests {
                     Err("Error".to_string())
                 }
             }
+            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+                Ok(())
+            }
         }
 
         let mut proc = OneTimerProcess {
             timer_cnt: 0,
         };
 
-        let mut runner = ProcessRunner::new(RunConfig { host: "localhost:10085".to_string() });
+        let mut runner = ProcessRunner::new(RunConfig { host: "localhost:10093".to_string() }).expect("Can not create process runner");
         let result = runner.run(&mut proc);
         
         assert_eq!(proc.timer_cnt, 4);
@@ -216,13 +225,16 @@ mod tests {
             fn on_timer(&mut self, _name: String, _ctx: &mut impl Context) -> Result<(), String> {
                 Err("No timers in the test".to_string())
             }
+            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+                Ok(())
+            }
         }
 
         let mut proc = StopOnStartProcess {
             started: false,
         };
 
-        let mut runner = ProcessRunner::new(RunConfig { host: "localhost:10085".to_string() });
+        let mut runner = ProcessRunner::new(RunConfig { host: "localhost:10089".to_string() }).expect("Can not create process runner");
         let result = runner.run(&mut proc);
         
         assert!(result.is_ok());
@@ -269,6 +281,9 @@ mod tests {
                 }
                 Ok(())
             }
+            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+                Ok(())
+            }
         }
 
         let mut proc = TwoTimersProcess {
@@ -278,7 +293,7 @@ mod tests {
         };
 
         let system = RealSystem::new();
-        let result = system.run_process(&mut proc, "localhost:10085");
+        let result = system.run_process(&mut proc, "localhost:10091");
 
         assert_eq!(result, Ok(()));
 
@@ -290,7 +305,7 @@ mod tests {
         proc.on_timer_2_cnt = 0;
         proc.on_start_cnt = 0;
         
-        let result_2 = system.run_process(&mut proc, "localhost:10085");
+        let result_2 = system.run_process(&mut proc, "localhost:10092");
 
         assert_eq!(result_2, Ok(()));
 
@@ -303,11 +318,11 @@ mod tests {
     fn test_network_manager() {
         let event_queue = Arc::new(Mutex::new(VecDeque::new()));
         
-        let host_1 = SocketAddr::from_str("127.0.0.1:10088")
-                .expect("Can not create SocketAddr from 127.0.0.1:10085")
+        let host_1 = SocketAddr::from_str("127.0.0.1:10110")
+                .expect("Can not create SocketAddr from 127.0.0.1:10110")
                 .to_string();
-        let host_2 = SocketAddr::from_str("127.0.0.1:10089")
-                .expect("Can not create SocketAddr from 127.0.0.1:10086")
+        let host_2 = SocketAddr::from_str("127.0.0.1:10111")
+                .expect("Can not create SocketAddr from 127.0.0.1:10111")
                 .to_string();
 
         let mut network_manager_1 = NetworkManager::new(
@@ -327,11 +342,11 @@ mod tests {
 
         let first_msg = Message::new("1".to_string(), format!("hello from {host_1})"));
 
-        network_manager_1.send_message(host_2.clone(), first_msg.clone()).unwrap();
+        network_manager_1.send_message(host_2.clone(), first_msg.clone());
 
         let second_msg = Message::new("2".to_string(), format!("hello from {host_2})"));
 
-        network_manager_2.send_message(host_1.clone(), second_msg.clone()).unwrap();
+        network_manager_2.send_message(host_1.clone(), second_msg.clone());
 
         thread::sleep(Duration::from_secs_f64(0.2));
 
@@ -349,5 +364,127 @@ mod tests {
         assert!((first_event == event_first && second_event == event_second) 
                 ||
                 (first_event == event_second && second_event == event_first));
+    }
+
+    #[test]
+    fn test_ping_pong_works() {
+        println!("Starting test");
+
+        // Process which send pings
+        struct PingProcess {
+            received_messages: Vec<Message>,
+            to_ping: String,
+            last_pong: u32,
+        }
+
+        impl PingProcess {
+            fn send_ping(&mut self, ctx: &mut impl Context) {
+                ctx.send_message(
+                    Message { tip: "PING".to_string(), data: self.last_pong.to_string() }, 
+                    self.to_ping.clone());
+                ctx.set_timer("PONG_WAIT".to_string(), 0.1);
+            }
+        }
+
+        impl Process for PingProcess {
+            fn on_start(&mut self, ctx: &mut impl Context) -> Result<(), String> {
+                self.send_ping(ctx);
+                Ok(())
+            }
+
+            fn on_timer(&mut self, name: String, ctx: &mut impl Context) -> Result<(), String> {
+                assert_eq!(name, "PONG_WAIT");
+                self.send_ping(ctx);
+                Ok(())
+            }
+
+            fn on_message(&mut self, msg: Message, from: String, ctx: &mut impl Context) -> Result<(), String> {
+                assert_eq!(msg.tip, "PONG");
+                let pong_seq_num = u32::from_str(msg.data.as_str())
+                                                        .map_err(|_err| "Protocal failed")?;
+                if pong_seq_num == self.last_pong + 1 {
+                    // Next message in sequence
+                    self.last_pong += 1;
+                    self.received_messages.push(msg);
+                    if self.last_pong < 10 {
+                        self.send_ping(ctx);
+                    } else {
+                        ctx.cancel_timer("PONG_WAIT".to_string());
+                        ctx.stop_process(false);
+                    }
+                }
+
+                Ok(())
+            }
+        }
+
+        // Process which answers pings and send pong
+        // Stops after there are no pings in 0.2 seconds
+        struct PongProcess {
+        }
+
+        impl Process for PongProcess {
+            fn on_start(&mut self, ctx: &mut impl Context) -> Result<(), String> {
+                ctx.set_timer("PINGS_ENDED".to_string(), 0.2);
+                Ok(())
+            }
+
+            fn on_timer(&mut self, name: String, ctx: &mut impl Context) -> Result<(), String> {
+                assert_eq!(name, "PINGS_ENDED");
+                ctx.stop_process(false);
+                Ok(())
+            }
+
+            fn on_message(&mut self, msg: Message, from: String, ctx: &mut impl Context) -> Result<(), String> {
+                assert_eq!(msg.tip, "PING");
+                let last_pong_seq_num = u32::from_str(msg.data.as_str())
+                                                        .map_err(|_err| "Protocal failed")?;
+                
+                ctx.send_message(Message { tip: "PONG".to_string(), data: (last_pong_seq_num + 1).to_string() }, from);
+                
+                ctx.set_timer("PINGS_ENDED".to_string(), 0.2);
+
+                Ok(())
+            }
+        }
+
+        let host_1 = "localhost:10127".to_string();
+        let host_2 = "localhost:10128".to_string();
+
+        let process_1 = Arc::new(Mutex::new(PingProcess {
+            received_messages: vec![],
+            to_ping: host_2.clone(),
+            last_pong: 0,
+        }));
+
+        let process_2 = Arc::new(Mutex::new(PongProcess {
+        }));
+
+        let process_1_copy = process_1.clone();
+        let first_proc_thread = thread::spawn(move || {
+            let mut proc_1_lock = process_1_copy.lock().unwrap();
+            let system = RealSystem::new();
+            system.run_process(proc_1_lock.deref_mut(), host_1.as_str()).expect("Can not run process_1");
+        });
+
+        let process_2_copy = process_2.clone();
+        let second_proc_thread = thread::spawn(move || {
+            let mut proc_2_lock = process_2_copy.lock().unwrap();
+            let system = RealSystem::new();
+            system.run_process(proc_2_lock.deref_mut(), host_2.as_str()).expect("Can not run process_2");
+        });
+
+        first_proc_thread.join().expect("First proc failed to run");
+        second_proc_thread.join().expect("Second proc failed to run");
+
+        assert_eq!(process_1.lock().unwrap().received_messages.len(), 10);
+
+        let mut i = 0;
+
+        for msg in process_1.lock().unwrap().received_messages.clone() {
+            i += 1;
+            assert_eq!(msg.tip, "PONG");
+            assert_eq!(msg.data, i.to_string());
+        }
     }
 }

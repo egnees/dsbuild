@@ -1,6 +1,7 @@
 use crate::common::actions::{ProcessAction, TimerBehavior, StopPolicy};
 use crate::common::process::Process;
 
+use super::network_manager::NetworkManager;
 use super::real_context::RealContext;
 use super::timer_manager::TimerManager;
 use super::events::Event;
@@ -19,6 +20,7 @@ enum ProcessState {
 pub struct ProcessRunner {
     event_queue: Arc<Mutex<VecDeque<Event>>>,
     timer_manager: TimerManager,
+    network_manager: NetworkManager,
     state: ProcessState,
 }
 
@@ -27,13 +29,17 @@ pub struct RunConfig {
 }
 
 impl ProcessRunner {
-    pub fn new(config: RunConfig) -> Self {
+    pub fn new(config: RunConfig) -> Result<Self, String> {
         let queue = Arc::new(Mutex::new(VecDeque::new())); 
-        Self {
+        
+        let runner = Self {
             event_queue: queue.clone(),
-            timer_manager: TimerManager::new(queue),
+            timer_manager: TimerManager::new(queue.clone()),
+            network_manager: NetworkManager::new(queue.clone(), 512, config.host, 0.1)?,
             state: ProcessState::Inited,
-        }
+        };
+
+        Ok(runner)
     }
 
     pub fn run<'a, P: Process>(&mut self, proc: &'a mut P) -> Result<(), String> {
@@ -70,10 +76,12 @@ impl ProcessRunner {
         match policy {
             StopPolicy::Immediately => {
                 self.timer_manager.cancel_all_timers();
+                self.network_manager.stop_listen().expect("Unexpected panic in the network manager listening thread");
                 self.event_queue.lock().unwrap().clear();
                 self.state = ProcessState::Stopped;
             },
             StopPolicy::Defer => {
+                self.network_manager.stop_listen().expect("Unexpected panic in the network manager listening thread");
                 self.state = ProcessState::Stopping;
             }
         }
@@ -111,7 +119,7 @@ impl ProcessRunner {
                 self.timer_manager.cancel_timer(name.as_str());
             }
             ProcessAction::MessageSent { msg, to } => {
-                unimplemented!()
+                self.network_manager.send_message(to, msg);
             },
             ProcessAction::ProcessStopped { policy } => {
                 self.stop(policy);
@@ -125,7 +133,7 @@ impl ProcessRunner {
         }
     }
 
-    fn handle_event<P: Process>(&self, proc: &mut P, event: Event) -> Result<Vec<ProcessAction>, String> {
+    fn handle_event<P: Process>(&mut self, proc: &mut P, event: Event) -> Result<Vec<ProcessAction>, String> {
         if self.stopped_process() {
             return Ok(Vec::new());
         }
@@ -136,13 +144,10 @@ impl ProcessRunner {
 
         match event {
             Event::MessageReceived { msg, from } => {
-                if self.stopping_process() {
-                    return Ok(Vec::new());
-                }
-
-                unimplemented!();
+                proc.on_message(msg, from, &mut ctx)?;
             },
             Event::SystemStarted {  } => {
+                self.network_manager.start_listen()?;
                 proc.on_start(&mut ctx)?;
             },
             Event::TimerFired { name } => {

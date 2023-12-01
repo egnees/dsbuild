@@ -21,6 +21,10 @@ impl Context for RealContext {
                 ProcessAction::TimerCancelled { name };
         self.actions.push(action);
     }
+    fn send_message(&mut self, msg: dslab_mp::message::Message, to: String) {
+        let action = ProcessAction::MessageSent { msg, to };
+        self.actions.push(action);
+    }
     fn stop_process(&mut self, immediately: bool) {
         let policy = if immediately {
             StopPolicy::Immediately

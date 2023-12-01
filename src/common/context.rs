@@ -1,5 +1,7 @@
 //! Definition of trait Context.
 
+use super::message::Message;
+
 /// Represents proxy, which provides process-system interaction. 
 pub trait Context {
     /// Sets a timer without overriding delay of existing one. 
@@ -11,6 +13,9 @@ pub trait Context {
     /// Cancel timer with certain name.
     /// If there is no such timer, does nothing.
     fn cancel_timer(&mut self, name: String);
+
+    /// Send message to another process
+    fn send_message(&mut self, msg: Message, to: String);
 
     /// Stop the process.
     /// If immediately flag is on, then all pending and further actions will be ignored.

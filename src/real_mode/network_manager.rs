@@ -1,4 +1,4 @@
-use std::{net::UdpSocket, time::Duration, sync::{Arc, Mutex}, thread::{self, JoinHandle}, collections::VecDeque, clone};
+use std::{net::UdpSocket, time::Duration, sync::{Arc, Mutex}, thread::{self, JoinHandle}, collections::VecDeque};
 
 use crate::common::message::Message;
 
@@ -37,18 +37,10 @@ impl NetworkManager {
         Ok(ret)
     } 
 
-    pub fn send_message(&mut self, to: String, msg: Message) -> Result<(), String> {
+    pub fn send_message(&mut self, to: String, msg: Message) {
         let data = msg.clone().tip + ";" + msg.data.as_str();
         let raw_data = data.as_bytes();
-        let size = self.socket.send_to(raw_data, to.clone())
-                                                            .map_err(|_err| 
-                                                                format!("Can not send message {:?} to address {}",
-                                                                        msg, to))?;
-        if size == raw_data.len() {
-            Ok(())
-        } else {
-            Err(format!("Message {:?} is too long (length={})", msg, raw_data.len()))
-        }
+        let _ = self.socket.send_to(raw_data, to.clone());
     }
 
     pub fn start_listen(&mut self) -> Result<(), String> {
@@ -109,9 +101,8 @@ impl NetworkManager {
             join_handler.join()
                         .map_err(|_e| "Can not join listen thread")?;
             
-            Ok(())
-        } else {
-            Err("No listen thread but it must be".to_string())
         }
+
+        Ok(())
     }
 }
