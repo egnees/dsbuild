@@ -21,7 +21,7 @@ impl RealSystem {
     //
     /// * `proc` - instantiated user process.
     /// * `host` - IPv4 or IPv6 address identifies running process in the network.
-    pub fn run_process<'a, P: Process>(proc: &'a mut P, host: &str) -> Result<(), String> {
+    pub fn run_process<'a, P: Process>(&self, proc: &'a mut P, host: &str) -> Result<(), String> {
         let config = RunConfig {
             host: host.to_string(),
         };

@@ -37,9 +37,7 @@ impl ProcessRunner {
     }
 
     pub fn run<'a, P: Process>(&mut self, proc: &'a mut P) -> Result<(), String> {
-        if self.state == ProcessState::Stopped {
-
-        }
+        assert!(self.state == ProcessState::Inited, "Trying to run ProcessRunner twice");
 
         self.state = ProcessState::Running;
 
@@ -61,6 +59,8 @@ impl ProcessRunner {
                 }
             }
         }
+
+        self.stop(StopPolicy::Immediately);
 
         Ok(())
     }
