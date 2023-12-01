@@ -1,23 +1,39 @@
 mod events;
-mod process_runner;
-mod timer_manager;
-mod real_context;
 mod network_manager;
+mod process_runner;
+mod real_context;
+mod timer_manager;
 
 pub mod real_system;
 
 #[cfg(test)]
 mod tests {
-    use std::{sync::{Mutex, Arc}, collections::VecDeque, thread, time::Duration, net::SocketAddr, str::FromStr, ops::DerefMut};
+    use std::{
+        collections::VecDeque,
+        net::SocketAddr,
+        ops::DerefMut,
+        str::FromStr,
+        sync::{Arc, Mutex},
+        thread,
+        time::Duration,
+    };
 
-    use crate::{common::{process::Process, context::Context, message::Message}, real_mode::real_system::RealSystem};
+    use crate::{
+        common::{context::Context, message::Message, process::Process},
+        real_mode::real_system::RealSystem,
+    };
 
-    use super::{timer_manager::TimerManager, events::Event, process_runner::{ProcessRunner, RunConfig}, network_manager::NetworkManager};
+    use super::{
+        events::Event,
+        network_manager::NetworkManager,
+        process_runner::{ProcessRunner, RunConfig},
+        timer_manager::TimerManager,
+    };
 
     #[test]
     fn test_timer_manager() {
         let event_queue = Arc::new(Mutex::new(VecDeque::new()));
-        
+
         let mut timer_manager = TimerManager::new(event_queue.clone());
 
         // set_timer works
@@ -26,20 +42,25 @@ mod tests {
         thread::sleep(Duration::from_secs_f64(0.2));
 
         assert_eq!(event_queue.lock().unwrap().len(), 1);
-        
+
         let first_event = event_queue
-                                .lock()
-                                .unwrap()
-                                .front()
-                                .expect("data race detected")
-                                .clone();
-        assert_eq!(first_event, Event::TimerFired { name: "timer_1".to_string() });
+            .lock()
+            .unwrap()
+            .front()
+            .expect("data race detected")
+            .clone();
+        assert_eq!(
+            first_event,
+            Event::TimerFired {
+                name: "timer_1".to_string()
+            }
+        );
 
         // cancel_timer works
         event_queue.lock().unwrap().clear();
 
         timer_manager.set_timer("timer_2", 0.3, false);
-    
+
         thread::sleep(Duration::from_secs_f64(0.1));
 
         timer_manager.cancel_timer("timer_2");
@@ -108,7 +129,12 @@ mod tests {
                 }
                 Ok(())
             }
-            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                _msg: Message,
+                _from: String,
+                _ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 Ok(())
             }
         }
@@ -120,14 +146,14 @@ mod tests {
         };
 
         let config = RunConfig {
-            host: "localhost:10099".to_string()
+            host: "localhost:10099".to_string(),
         };
         let mut process_runner = ProcessRunner::new(config).expect("Can not create process runner");
 
         let result = process_runner.run(&mut proc);
-        
+
         assert!(result.is_ok());
-        
+
         assert_eq!(proc.on_timer_1_cnt, 4);
         assert_eq!(proc.on_timer_2_cnt, 3);
         assert_eq!(proc.on_start_cnt, 1);
@@ -154,14 +180,17 @@ mod tests {
                 }
                 Ok(())
             }
-            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                _msg: Message,
+                _from: String,
+                _ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 Ok(())
             }
         }
 
-        let mut proc = OneTimerProcess {
-            timer_cnt: 0
-        };
+        let mut proc = OneTimerProcess { timer_cnt: 0 };
 
         let config = RunConfig {
             host: "localhost:10095".to_string(),
@@ -197,18 +226,24 @@ mod tests {
                     Err("Error".to_string())
                 }
             }
-            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                _msg: Message,
+                _from: String,
+                _ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 Ok(())
             }
         }
 
-        let mut proc = OneTimerProcess {
-            timer_cnt: 0,
-        };
+        let mut proc = OneTimerProcess { timer_cnt: 0 };
 
-        let mut runner = ProcessRunner::new(RunConfig { host: "localhost:10093".to_string() }).expect("Can not create process runner");
+        let mut runner = ProcessRunner::new(RunConfig {
+            host: "localhost:10093".to_string(),
+        })
+        .expect("Can not create process runner");
         let result = runner.run(&mut proc);
-        
+
         assert_eq!(proc.timer_cnt, 4);
         assert_eq!(result, Err("Error".to_string()));
     }
@@ -216,7 +251,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "Trying to run ProcessRunner twice")]
     fn test_process_runner_runs_once() {
-
         #[derive(Clone)]
         struct StopOnStartProcess {
             started: bool,
@@ -230,18 +264,24 @@ mod tests {
             fn on_timer(&mut self, _name: String, _ctx: &mut impl Context) -> Result<(), String> {
                 Err("No timers in the test".to_string())
             }
-            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                _msg: Message,
+                _from: String,
+                _ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 Ok(())
             }
         }
 
-        let mut proc = StopOnStartProcess {
-            started: false,
-        };
+        let mut proc = StopOnStartProcess { started: false };
 
-        let mut runner = ProcessRunner::new(RunConfig { host: "localhost:10089".to_string() }).expect("Can not create process runner");
+        let mut runner = ProcessRunner::new(RunConfig {
+            host: "localhost:10089".to_string(),
+        })
+        .expect("Can not create process runner");
         let result = runner.run(&mut proc);
-        
+
         assert!(result.is_ok());
 
         assert!(proc.started);
@@ -287,7 +327,12 @@ mod tests {
                 }
                 Ok(())
             }
-            fn on_message(&mut self, _msg: Message, _from: String, _ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                _msg: Message,
+                _from: String,
+                _ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 Ok(())
             }
         }
@@ -310,7 +355,7 @@ mod tests {
         proc.on_timer_1_cnt = 0;
         proc.on_timer_2_cnt = 0;
         proc.on_start_cnt = 0;
-        
+
         let result_2 = system.run_process(&mut proc, "localhost:10092");
 
         assert_eq!(result_2, Ok(()));
@@ -323,25 +368,19 @@ mod tests {
     #[test]
     fn test_network_manager() {
         let event_queue = Arc::new(Mutex::new(VecDeque::new()));
-        
-        let host_1 = SocketAddr::from_str("127.0.0.1:10110")
-                .expect("Can not create SocketAddr from 127.0.0.1:10110")
-                .to_string();
-        let host_2 = SocketAddr::from_str("127.0.0.1:10111")
-                .expect("Can not create SocketAddr from 127.0.0.1:10111")
-                .to_string();
 
-        let mut network_manager_1 = NetworkManager::new(
-            event_queue.clone(),
-            100, 
-            host_1.clone(), 
-            0.1).unwrap();
-        
-        let mut network_manager_2 = NetworkManager::new(
-            event_queue.clone(),
-            100,
-            host_2.clone(),
-            0.1).unwrap();
+        let host_1 = SocketAddr::from_str("127.0.0.1:10110")
+            .expect("Can not create SocketAddr from 127.0.0.1:10110")
+            .to_string();
+        let host_2 = SocketAddr::from_str("127.0.0.1:10111")
+            .expect("Can not create SocketAddr from 127.0.0.1:10111")
+            .to_string();
+
+        let mut network_manager_1 =
+            NetworkManager::new(event_queue.clone(), 100, host_1.clone(), 0.1).unwrap();
+
+        let mut network_manager_2 =
+            NetworkManager::new(event_queue.clone(), 100, host_2.clone(), 0.1).unwrap();
 
         network_manager_1.start_listen().unwrap();
         network_manager_2.start_listen().unwrap();
@@ -356,20 +395,39 @@ mod tests {
 
         thread::sleep(Duration::from_secs_f64(0.2));
 
-        network_manager_1.stop_listen().expect("Network manager 1 can not stop listening");
-        network_manager_2.stop_listen().expect("Network manager 2 can not stop listening");
+        network_manager_1
+            .stop_listen()
+            .expect("Network manager 1 can not stop listening");
+        network_manager_2
+            .stop_listen()
+            .expect("Network manager 2 can not stop listening");
 
         assert_eq!(event_queue.lock().unwrap().len(), 2);
 
-        let first_event = event_queue.lock().unwrap().pop_front().expect("Data race detected in the test");
-        let second_event = event_queue.lock().unwrap().pop_front().expect("Data race detected in the test");
+        let first_event = event_queue
+            .lock()
+            .unwrap()
+            .pop_front()
+            .expect("Data race detected in the test");
+        let second_event = event_queue
+            .lock()
+            .unwrap()
+            .pop_front()
+            .expect("Data race detected in the test");
 
-        let event_first = Event::MessageReceived { msg: first_msg.clone(), from: host_1.clone() };
-        let event_second = Event::MessageReceived { msg: second_msg.clone(), from: host_2.clone() };
+        let event_first = Event::MessageReceived {
+            msg: first_msg.clone(),
+            from: host_1.clone(),
+        };
+        let event_second = Event::MessageReceived {
+            msg: second_msg.clone(),
+            from: host_2.clone(),
+        };
 
-        assert!((first_event == event_first && second_event == event_second) 
-                ||
-                (first_event == event_second && second_event == event_first));
+        assert!(
+            (first_event == event_first && second_event == event_second)
+                || (first_event == event_second && second_event == event_first)
+        );
     }
 
     #[test]
@@ -387,8 +445,12 @@ mod tests {
         impl PingProcess {
             fn send_ping(&mut self, ctx: &mut impl Context) {
                 ctx.send_message(
-                    Message { tip: "PING".to_string(), data: self.last_pong.to_string() }, 
-                    self.to_ping.clone());
+                    Message {
+                        tip: "PING".to_string(),
+                        data: self.last_pong.to_string(),
+                    },
+                    self.to_ping.clone(),
+                );
                 ctx.set_timer("PONG_WAIT".to_string(), 0.1);
             }
         }
@@ -405,10 +467,15 @@ mod tests {
                 Ok(())
             }
 
-            fn on_message(&mut self, msg: Message, _from: String, ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                msg: Message,
+                _from: String,
+                ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 assert_eq!(msg.tip, "PONG");
-                let pong_seq_num = u32::from_str(msg.data.as_str())
-                                                        .map_err(|_err| "Protocal failed")?;
+                let pong_seq_num =
+                    u32::from_str(msg.data.as_str()).map_err(|_err| "Protocal failed")?;
                 if pong_seq_num == self.last_pong + 1 {
                     // Next message in sequence
                     self.last_pong += 1;
@@ -428,8 +495,7 @@ mod tests {
         // Process which answers pings and send pong
         // Stops after there are no pings in 0.2 seconds
         #[derive(Clone)]
-        struct PongProcess {
-        }
+        struct PongProcess {}
 
         impl Process for PongProcess {
             fn on_start(&mut self, ctx: &mut impl Context) -> Result<(), String> {
@@ -443,13 +509,24 @@ mod tests {
                 Ok(())
             }
 
-            fn on_message(&mut self, msg: Message, from: String, ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                msg: Message,
+                from: String,
+                ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 assert_eq!(msg.tip, "PING");
-                let last_pong_seq_num = u32::from_str(msg.data.as_str())
-                                                        .map_err(|_err| "Protocal failed")?;
-                
-                ctx.send_message(Message { tip: "PONG".to_string(), data: (last_pong_seq_num + 1).to_string() }, from);
-                
+                let last_pong_seq_num =
+                    u32::from_str(msg.data.as_str()).map_err(|_err| "Protocal failed")?;
+
+                ctx.send_message(
+                    Message {
+                        tip: "PONG".to_string(),
+                        data: (last_pong_seq_num + 1).to_string(),
+                    },
+                    from,
+                );
+
                 ctx.set_timer("PINGS_ENDED".to_string(), 0.2);
 
                 Ok(())
@@ -465,25 +542,30 @@ mod tests {
             last_pong: 0,
         }));
 
-        let process_2 = Arc::new(Mutex::new(PongProcess {
-        }));
+        let process_2 = Arc::new(Mutex::new(PongProcess {}));
 
         let process_1_copy = process_1.clone();
         let first_proc_thread = thread::spawn(move || {
             let mut proc_1_lock = process_1_copy.lock().unwrap();
             let system = RealSystem::new();
-            system.run_process(proc_1_lock.deref_mut(), host_1.as_str()).expect("Can not run process_1");
+            system
+                .run_process(proc_1_lock.deref_mut(), host_1.as_str())
+                .expect("Can not run process_1");
         });
 
         let process_2_copy = process_2.clone();
         let second_proc_thread = thread::spawn(move || {
             let mut proc_2_lock = process_2_copy.lock().unwrap();
             let system = RealSystem::new();
-            system.run_process(proc_2_lock.deref_mut(), host_2.as_str()).expect("Can not run process_2");
+            system
+                .run_process(proc_2_lock.deref_mut(), host_2.as_str())
+                .expect("Can not run process_2");
         });
 
         first_proc_thread.join().expect("First proc failed to run");
-        second_proc_thread.join().expect("Second proc failed to run");
+        second_proc_thread
+            .join()
+            .expect("Second proc failed to run");
 
         assert_eq!(process_1.lock().unwrap().received_messages.len(), 10);
 

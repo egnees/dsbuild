@@ -3,6 +3,5 @@
 /// TODO
 /// Implement inner Message type to remove dependency on dslab's interface.
 
-/// Represents a message. 
-pub use dslab_mp::message::Message as Message;
-
+/// Represents a message.
+pub use dslab_mp::message::Message;

@@ -17,7 +17,7 @@ impl RealSystem {
 
     /// Run user process, which type must implement trait [Process](Process).
     /// Returns ownership of the passed user process `proc` and result of process run.
-    /// After method returns, state of the system is invalidated. 
+    /// After method returns, state of the system is invalidated.
     //
     /// * `proc` - instantiated user process.
     /// * `host` - IPv4 or IPv6 address identifies running process in the network.

@@ -2,7 +2,7 @@
 
 use crate::common::message::Message;
 
-/// Specifies the behaviour of timer set 
+/// Specifies the behaviour of timer set
 /// in the presence of existing active timer with this name.
 #[derive(Clone, Debug)]
 pub enum TimerBehavior {
@@ -26,10 +26,7 @@ pub enum StopPolicy {
 #[derive(Clone, Debug)]
 pub enum ProcessAction {
     /// Specifies message sent action.
-    MessageSent {
-        msg: Message,
-        to: String,
-    },
+    MessageSent { msg: Message, to: String },
     /// Specifies timer establishment action.
     TimerSet {
         name: String,
@@ -37,11 +34,7 @@ pub enum ProcessAction {
         behavior: TimerBehavior,
     },
     /// Specifies timer canceling action.
-    TimerCancelled {
-        name: String,
-    },
+    TimerCancelled { name: String },
     /// Specifies user request to stop the process.
-    ProcessStopped {
-        policy: StopPolicy,
-    },
+    ProcessStopped { policy: StopPolicy },
 }

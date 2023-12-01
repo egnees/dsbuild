@@ -1,6 +1,12 @@
-use crate::common::{process::{Process, ProcessState}, actions::{ProcessAction, TimerBehavior, StopPolicy}};
+use crate::common::{
+    actions::{ProcessAction, StopPolicy, TimerBehavior},
+    process::{Process, ProcessState},
+};
 
-use dslab_mp::{process::Process as SimulationProcess, message::Message as SimulationMessage, context::Context as SimulationContext};
+use dslab_mp::{
+    context::Context as SimulationContext, message::Message as SimulationMessage,
+    process::Process as SimulationProcess,
+};
 
 use super::virtual_context::VirtualContext;
 
@@ -18,13 +24,15 @@ impl<P: Process> ProcessWrapper<P> {
         }
     }
 
-    // Implement and use it in future to get reference on the process  
+    // Implement and use it in future to get reference on the process
     // pub fn get_process_ref(&self) -> &P {
     //     self.user_process.as_ref()
     // }
 
     fn virtual_context() -> VirtualContext {
-        VirtualContext { actions: Vec::new() }
+        VirtualContext {
+            actions: Vec::new(),
+        }
     }
 
     fn handle_process_actions(&mut self, actions: Vec<ProcessAction>, ctx: &mut SimulationContext) {
@@ -35,24 +43,27 @@ impl<P: Process> ProcessWrapper<P> {
             match action {
                 ProcessAction::MessageSent { msg, to } => {
                     ctx.send(msg, to);
-                },
-                ProcessAction::ProcessStopped { policy } => {
-                    match policy {
-                        StopPolicy::Defer => {
-                            assert!(self.process_state == ProcessState::Running || self.process_state == ProcessState::Stopping);
-                            self.process_state = ProcessState::Stopping;
-                        },
-                        StopPolicy::Immediately => {
-                            assert!(self.process_state != ProcessState::Inited);
-                            self.process_state = ProcessState::Stopped;
-                        }
+                }
+                ProcessAction::ProcessStopped { policy } => match policy {
+                    StopPolicy::Defer => {
+                        assert!(
+                            self.process_state == ProcessState::Running
+                                || self.process_state == ProcessState::Stopping
+                        );
+                        self.process_state = ProcessState::Stopping;
+                    }
+                    StopPolicy::Immediately => {
+                        assert!(self.process_state != ProcessState::Inited);
+                        self.process_state = ProcessState::Stopped;
                     }
                 },
-                ProcessAction::TimerSet { name, delay, behavior } => {
-                    match behavior {
-                        TimerBehavior::SetOnce => ctx.set_timer_once(name.as_str(), delay),
-                        TimerBehavior::OverrideExisting => ctx.set_timer(name.as_str(), delay),
-                    }
+                ProcessAction::TimerSet {
+                    name,
+                    delay,
+                    behavior,
+                } => match behavior {
+                    TimerBehavior::SetOnce => ctx.set_timer_once(name.as_str(), delay),
+                    TimerBehavior::OverrideExisting => ctx.set_timer(name.as_str(), delay),
                 },
                 ProcessAction::TimerCancelled { name } => ctx.cancel_timer(name.as_str()),
             }
@@ -61,33 +72,46 @@ impl<P: Process> ProcessWrapper<P> {
 }
 
 impl<P: Process> SimulationProcess for ProcessWrapper<P> {
-    fn on_message(&mut self, msg: SimulationMessage, from: String, ctx: &mut SimulationContext) -> Result<(), String> {
-        if self.process_state == ProcessState::Stopped || self.process_state == ProcessState::Stopping {
+    fn on_message(
+        &mut self,
+        msg: SimulationMessage,
+        from: String,
+        ctx: &mut SimulationContext,
+    ) -> Result<(), String> {
+        if self.process_state == ProcessState::Stopped
+            || self.process_state == ProcessState::Stopping
+        {
             return Ok(());
         }
 
         let mut virt_ctx = Self::virtual_context();
 
-        let result = self.user_process.on_message(msg.into(), from, &mut virt_ctx);
-        
+        let result = self
+            .user_process
+            .on_message(msg.into(), from, &mut virt_ctx);
+
         self.handle_process_actions(virt_ctx.actions, ctx);
-        
+
         result
     }
 
-    fn on_local_message(&mut self, msg: SimulationMessage, ctx: &mut SimulationContext) -> Result<(), String> {
+    fn on_local_message(
+        &mut self,
+        msg: SimulationMessage,
+        ctx: &mut SimulationContext,
+    ) -> Result<(), String> {
         assert_eq!(msg.tip, "START");
 
         assert_eq!(self.process_state, ProcessState::Inited);
-        
+
         self.process_state = ProcessState::Running;
 
         let mut virt_ctx = Self::virtual_context();
-        
+
         let result = self.user_process.on_start(&mut virt_ctx);
-        
+
         self.handle_process_actions(virt_ctx.actions, ctx);
-        
+
         result
     }
 
@@ -97,12 +121,11 @@ impl<P: Process> SimulationProcess for ProcessWrapper<P> {
         }
 
         let mut virt_ctx = Self::virtual_context();
-        
+
         let result = self.user_process.on_timer(timer, &mut virt_ctx);
-        
+
         self.handle_process_actions(virt_ctx.actions, ctx);
-        
+
         result
     }
 }
-

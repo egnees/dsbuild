@@ -1,10 +1,13 @@
-use std::{cell::{Ref, RefMut}};
+use std::cell::{Ref, RefMut};
 use sugars::boxed;
 
-use dslab_mp::{system::System as Simulation, node::Node, network::Network, message::Message as SimulationMessage};
+use dslab_mp::{
+    message::Message as SimulationMessage, network::Network, node::Node,
+    system::System as Simulation,
+};
 
-use crate::common::process::Process;
 use super::process_wrapper::ProcessWrapper;
+use crate::common::process::Process;
 
 pub struct VirtualSystem {
     simulation: Simulation,
@@ -17,18 +20,14 @@ impl VirtualSystem {
         }
     }
 
-
     // Network ---------------------------------------------------
-
 
     /// Returns a mutable reference to network.
     pub fn network(&self) -> RefMut<Network> {
         self.simulation.network()
     }
 
-    
     // Node ------------------------------------------------------
-
 
     /// Adds a node to the simulation.
     ///
@@ -77,7 +76,6 @@ impl VirtualSystem {
         self.simulation.node_is_crashed(node)
     }
 
-    
     // Process ------------------------------------------------------
 
     pub fn add_process<P: Process>(&mut self, name: &str, proc: &'static mut P, node: &str) {
@@ -85,7 +83,6 @@ impl VirtualSystem {
         let proc_wrapper = boxed!(ProcessWrapper::new(proc_box));
         self.simulation.add_process(name, proc_wrapper, node);
     }
-
 
     /// Start process
     /// Call on_start method of process
@@ -99,7 +96,7 @@ impl VirtualSystem {
     pub fn process_names(&self) -> Vec<String> {
         self.simulation.process_names()
     }
-    
+
     /// Returns the number of messages sent by the process.
     pub fn sent_message_count(&self, proc: &str) -> u64 {
         self.simulation.sent_message_count(proc)
@@ -110,13 +107,10 @@ impl VirtualSystem {
         self.simulation.received_message_count(proc)
     }
 
-    
     // Simulation -----------------------------------------------------
 
     /// Steps through the simulation until there are no pending events left.
     pub fn step_until_no_events(&mut self) {
         self.simulation.step_until_no_events()
     }
-
-
 }

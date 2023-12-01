@@ -1,12 +1,14 @@
-mod virtual_context;
 mod process_wrapper;
+mod virtual_context;
 
 pub mod virtual_system;
 
 #[cfg(test)]
 mod tests {
-    use crate::{common::{process::Process, context::Context, message::Message}, virtual_mode::virtual_system::VirtualSystem};
-
+    use crate::{
+        common::{context::Context, message::Message, process::Process},
+        virtual_mode::virtual_system::VirtualSystem,
+    };
 
     #[test]
     fn test_ping_pong_works_in_simulation() {
@@ -20,8 +22,12 @@ mod tests {
         impl PingProcess {
             fn send_ping(&mut self, ctx: &mut impl Context) {
                 ctx.send_message(
-                    Message { tip: "PING".to_string(), data: self.last_pong.to_string() }, 
-                    self.to_ping.clone());
+                    Message {
+                        tip: "PING".to_string(),
+                        data: self.last_pong.to_string(),
+                    },
+                    self.to_ping.clone(),
+                );
                 ctx.set_timer("PONG_WAIT".to_string(), 0.1);
             }
         }
@@ -39,10 +45,15 @@ mod tests {
                 Ok(())
             }
 
-            fn on_message(&mut self, msg: Message, _from: String, ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                msg: Message,
+                _from: String,
+                ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 assert_eq!(msg.tip, "PONG");
-                let pong_seq_num = u32::from_str_radix(msg.data.as_str(), 10)
-                                                        .map_err(|_err| "Protocal failed")?;
+                let pong_seq_num =
+                    u32::from_str_radix(msg.data.as_str(), 10).map_err(|_err| "Protocal failed")?;
                 if pong_seq_num == self.last_pong + 1 {
                     // Next message in sequence
                     self.last_pong += 1;
@@ -62,8 +73,7 @@ mod tests {
         // Process which answers pings and send pong
         // Stops after there are no pings in 0.2 seconds
         #[derive(Clone)]
-        struct PongProcess {
-        }
+        struct PongProcess {}
 
         impl Process for PongProcess {
             fn on_start(&mut self, ctx: &mut impl Context) -> Result<(), String> {
@@ -78,14 +88,25 @@ mod tests {
                 Ok(())
             }
 
-            fn on_message(&mut self, msg: Message, from: String, ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(
+                &mut self,
+                msg: Message,
+                from: String,
+                ctx: &mut impl Context,
+            ) -> Result<(), String> {
                 assert_eq!(msg.tip, "PING");
 
-                let last_pong_seq_num = u32::from_str_radix(msg.data.as_str(), 10)
-                                                        .map_err(|_err| "Protocal failed")?;
-                
-                ctx.send_message(Message { tip: "PONG".to_string(), data: (last_pong_seq_num + 1).to_string() }, from);
-                
+                let last_pong_seq_num =
+                    u32::from_str_radix(msg.data.as_str(), 10).map_err(|_err| "Protocal failed")?;
+
+                ctx.send_message(
+                    Message {
+                        tip: "PONG".to_string(),
+                        data: (last_pong_seq_num + 1).to_string(),
+                    },
+                    from,
+                );
+
                 ctx.set_timer("PINGS_ENDED".to_string(), 0.2);
 
                 Ok(())
@@ -100,8 +121,7 @@ mod tests {
 
         let ping_proc: &'static mut PingProcess = Box::leak(ping_proc_boxed);
 
-        let pong_proc_boxed = Box::new(PongProcess {
-        });
+        let pong_proc_boxed = Box::new(PongProcess {});
 
         let pong_proc: &'static mut PongProcess = Box::leak(pong_proc_boxed);
 

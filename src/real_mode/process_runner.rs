@@ -1,10 +1,10 @@
-use crate::common::actions::{ProcessAction, TimerBehavior, StopPolicy};
+use crate::common::actions::{ProcessAction, StopPolicy, TimerBehavior};
 use crate::common::process::{Process, ProcessState};
 
+use super::events::Event;
 use super::network_manager::NetworkManager;
 use super::real_context::RealContext;
 use super::timer_manager::TimerManager;
-use super::events::Event;
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -22,8 +22,8 @@ pub struct RunConfig {
 
 impl ProcessRunner {
     pub fn new(config: RunConfig) -> Result<Self, String> {
-        let queue = Arc::new(Mutex::new(VecDeque::new())); 
-        
+        let queue = Arc::new(Mutex::new(VecDeque::new()));
+
         let runner = Self {
             event_queue: queue.clone(),
             timer_manager: TimerManager::new(queue.clone()),
@@ -35,11 +35,17 @@ impl ProcessRunner {
     }
 
     pub fn run<'a, P: Process>(&mut self, proc: &'a mut P) -> Result<(), String> {
-        assert!(self.state == ProcessState::Inited, "Trying to run ProcessRunner twice");
+        assert!(
+            self.state == ProcessState::Inited,
+            "Trying to run ProcessRunner twice"
+        );
 
         self.state = ProcessState::Running;
 
-        self.event_queue.lock().unwrap().push_back(Event::SystemStarted {  });
+        self.event_queue
+            .lock()
+            .unwrap()
+            .push_back(Event::SystemStarted {});
 
         while !self.can_stop_process() {
             while !self.can_stop_process() {
@@ -68,12 +74,16 @@ impl ProcessRunner {
         match policy {
             StopPolicy::Immediately => {
                 self.timer_manager.cancel_all_timers();
-                self.network_manager.stop_listen().expect("Unexpected panic in the network manager listening thread");
+                self.network_manager
+                    .stop_listen()
+                    .expect("Unexpected panic in the network manager listening thread");
                 self.event_queue.lock().unwrap().clear();
                 self.state = ProcessState::Stopped;
-            },
+            }
             StopPolicy::Defer => {
-                self.network_manager.stop_listen().expect("Unexpected panic in the network manager listening thread");
+                self.network_manager
+                    .stop_listen()
+                    .expect("Unexpected panic in the network manager listening thread");
                 self.state = ProcessState::Stopping;
             }
         }
@@ -88,10 +98,11 @@ impl ProcessRunner {
     }
 
     fn can_stop_process(&self) -> bool {
-        if self.stopped_process() 
-            || (self.stopping_process() 
-                    && !self.timer_manager.have_timers() 
-                    && self.event_queue.lock().unwrap().is_empty()) {
+        if self.stopped_process()
+            || (self.stopping_process()
+                && !self.timer_manager.have_timers()
+                && self.event_queue.lock().unwrap().is_empty())
+        {
             true
         } else {
             false
@@ -100,19 +111,24 @@ impl ProcessRunner {
 
     fn handle_process_action(&mut self, action: ProcessAction) {
         match action {
-            ProcessAction::TimerSet { name, delay, behavior } => {
+            ProcessAction::TimerSet {
+                name,
+                delay,
+                behavior,
+            } => {
                 let overwrite = match behavior {
                     TimerBehavior::SetOnce => false,
                     TimerBehavior::OverrideExisting => true,
                 };
-                self.timer_manager.set_timer(name.as_str(), delay, overwrite);
-            },
+                self.timer_manager
+                    .set_timer(name.as_str(), delay, overwrite);
+            }
             ProcessAction::TimerCancelled { name } => {
                 self.timer_manager.cancel_timer(name.as_str());
             }
             ProcessAction::MessageSent { msg, to } => {
                 self.network_manager.send_message(to, msg);
-            },
+            }
             ProcessAction::ProcessStopped { policy } => {
                 self.stop(policy);
             }
@@ -125,23 +141,27 @@ impl ProcessRunner {
         }
     }
 
-    fn handle_event<P: Process>(&mut self, proc: &mut P, event: Event) -> Result<Vec<ProcessAction>, String> {
+    fn handle_event<P: Process>(
+        &mut self,
+        proc: &mut P,
+        event: Event,
+    ) -> Result<Vec<ProcessAction>, String> {
         if self.stopped_process() {
             return Ok(Vec::new());
         }
-        
+
         let mut ctx = RealContext {
-            actions: Vec::new()
+            actions: Vec::new(),
         };
 
         match event {
             Event::MessageReceived { msg, from } => {
                 proc.on_message(msg, from, &mut ctx)?;
-            },
-            Event::SystemStarted {  } => {
+            }
+            Event::SystemStarted {} => {
                 self.network_manager.start_listen()?;
                 proc.on_start(&mut ctx)?;
-            },
+            }
             Event::TimerFired { name } => {
                 proc.on_timer(name, &mut ctx)?;
             }
@@ -150,4 +170,3 @@ impl ProcessRunner {
         Ok(ctx.actions)
     }
 }
-

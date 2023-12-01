@@ -6,14 +6,9 @@ use crate::common::message::Message;
 #[derive(Clone, PartialEq, Debug)]
 pub enum Event {
     /// Specifies event of timer firing.
-    TimerFired {
-        name: String,
-    },
+    TimerFired { name: String },
     /// Specifies event of receiving message.
-    MessageReceived {
-        msg: Message,
-        from: String,
-    },
+    MessageReceived { msg: Message, from: String },
     /// Specifies event of starting system.
-    SystemStarted {}
+    SystemStarted {},
 }

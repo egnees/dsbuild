@@ -2,9 +2,9 @@
 
 use super::message::Message;
 
-/// Represents proxy, which provides process-system interaction. 
+/// Represents proxy, which provides process-system interaction.
 pub trait Context {
-    /// Sets a timer without overriding delay of existing one. 
+    /// Sets a timer without overriding delay of existing one.
     fn set_timer_once(&mut self, name: String, delay: f64);
 
     /// Sets a timer with overriding delay of existing one.
@@ -23,4 +23,3 @@ pub trait Context {
     /// In particular, new incomming network packages will be ignored.
     fn stop_process(&mut self, immediately: bool);
 }
-
