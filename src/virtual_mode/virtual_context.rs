@@ -1,12 +1,10 @@
-use crate::common::context::Context;
-use crate::common::message::Message;
-use crate::common::actions::{ProcessAction, TimerBehavior, StopPolicy};
+use crate::common::{actions::{ProcessAction, TimerBehavior, StopPolicy}, context::Context, message::Message};
 
-pub struct RealContext {
+pub struct VirtualContext {
     pub actions: Vec<ProcessAction>
 }
 
-impl Context for RealContext {
+impl Context for VirtualContext {
     fn set_timer(&mut self, name: String, delay: f64) {
         let action = 
                 ProcessAction::TimerSet { name, delay, behavior: TimerBehavior::OverrideExisting };

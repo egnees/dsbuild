@@ -5,8 +5,8 @@ use crate::real_mode::process_runner::{ProcessRunner, RunConfig};
 
 /// Specifies real mode system.
 pub struct RealSystem {
-    // Here can be stored some meta information, specified by user.
-    // For examples, maximum number of threads.
+    // Here can be stored some meta information specified by user.
+    // For examples, maximum number of threads or maximum size of UDP datagram.
 }
 
 impl RealSystem {

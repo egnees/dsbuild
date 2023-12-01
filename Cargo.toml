@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.31"
 dslab-mp = { git = "https://github.com/osukhoroslov/dslab", version = "0.1.0" }
+dyn-clone = "1.0.16"
+sugars = "3.0.1"
 timer = "0.2.0"

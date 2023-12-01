@@ -77,6 +77,7 @@ mod tests {
 
     #[test]
     fn test_process_runner_basic() {
+        #[derive(Clone)]
         struct TwoTimersProcess {
             on_timer_1_cnt: u32,
             on_timer_2_cnt: u32,
@@ -134,6 +135,7 @@ mod tests {
 
     #[test]
     fn test_process_runner_defer_stop() {
+        #[derive(Clone)]
         struct OneTimerProcess {
             timer_cnt: u32,
         }
@@ -175,6 +177,7 @@ mod tests {
 
     #[test]
     fn test_process_runner_err_stop() {
+        #[derive(Clone)]
         struct OneTimerProcess {
             timer_cnt: u32,
         }
@@ -213,6 +216,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "Trying to run ProcessRunner twice")]
     fn test_process_runner_runs_once() {
+
+        #[derive(Clone)]
         struct StopOnStartProcess {
             started: bool,
         }
@@ -251,6 +256,7 @@ mod tests {
 
     #[test]
     fn test_real_system_runs_process() {
+        #[derive(Clone)]
         struct TwoTimersProcess {
             on_timer_1_cnt: u32,
             on_timer_2_cnt: u32,
@@ -371,6 +377,7 @@ mod tests {
         println!("Starting test");
 
         // Process which send pings
+        #[derive(Clone)]
         struct PingProcess {
             received_messages: Vec<Message>,
             to_ping: String,
@@ -398,7 +405,7 @@ mod tests {
                 Ok(())
             }
 
-            fn on_message(&mut self, msg: Message, from: String, ctx: &mut impl Context) -> Result<(), String> {
+            fn on_message(&mut self, msg: Message, _from: String, ctx: &mut impl Context) -> Result<(), String> {
                 assert_eq!(msg.tip, "PONG");
                 let pong_seq_num = u32::from_str(msg.data.as_str())
                                                         .map_err(|_err| "Protocal failed")?;
@@ -420,6 +427,7 @@ mod tests {
 
         // Process which answers pings and send pong
         // Stops after there are no pings in 0.2 seconds
+        #[derive(Clone)]
         struct PongProcess {
         }
 

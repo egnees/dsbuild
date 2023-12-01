@@ -1,5 +1,5 @@
 use crate::common::actions::{ProcessAction, TimerBehavior, StopPolicy};
-use crate::common::process::Process;
+use crate::common::process::{Process, ProcessState};
 
 use super::network_manager::NetworkManager;
 use super::real_context::RealContext;
@@ -8,14 +8,6 @@ use super::events::Event;
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum ProcessState {
-    Inited,
-    Running,
-    Stopping,
-    Stopped
-}
 
 pub struct ProcessRunner {
     event_queue: Arc<Mutex<VecDeque<Event>>>,
