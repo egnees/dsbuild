@@ -335,7 +335,6 @@ mod tests {
 
         thread::sleep(Duration::from_secs_f64(0.2));
 
-        // Double free apears here, need fix
         network_manager_1.stop_listen().expect("Network manager 1 can not stop listening");
         network_manager_2.stop_listen().expect("Network manager 2 can not stop listening");
 

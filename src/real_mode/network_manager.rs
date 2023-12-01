@@ -68,9 +68,16 @@ impl NetworkManager {
                 let recv_result = socket_clone.recv_from(buf);
                 
                 if let Ok((received_size, from)) = recv_result {
-                    let s = unsafe { String::from_raw_parts(buf.as_mut_ptr(), received_size, received_size) };
-                    let split_vec: Vec<&str> = s.split(";").collect();
-                    assert!(split_vec.len() == 2, "{}", format!("Bad message data: {}", s));
+                    let recv_str_result = String::from_utf8(buf[..received_size].to_vec());
+                    
+                    if recv_str_result.is_err() {
+                        continue;
+                    }
+
+                    let recv_str = recv_str_result.unwrap();
+
+                    let split_vec: Vec<&str> = recv_str.split(";").collect();
+                    assert!(split_vec.len() == 2, "{}", format!("Bad message data: {}", recv_str));
                     
                     let tip = split_vec[0].to_string();
                     let data = split_vec[1].to_string();
