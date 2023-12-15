@@ -385,11 +385,11 @@ mod tests {
         network_manager_1.start_listen().unwrap();
         network_manager_2.start_listen().unwrap();
 
-        let first_msg = Message::new("1".to_string(), format!("hello from {host_1})"));
+        let first_msg = Message::borrow_new("1", format!("hello from {host_1})")).expect("Can not create message");
 
         network_manager_1.send_message(host_2.clone(), first_msg.clone());
 
-        let second_msg = Message::new("2".to_string(), format!("hello from {host_2})"));
+        let second_msg = Message::borrow_new("2", format!("hello from {host_2})")).expect("Can not create message");
 
         network_manager_2.send_message(host_1.clone(), second_msg.clone());
 
@@ -445,10 +445,7 @@ mod tests {
         impl PingProcess {
             fn send_ping(&mut self, ctx: &mut impl Context) {
                 ctx.send_message(
-                    Message {
-                        tip: "PING".to_string(),
-                        data: self.last_pong.to_string(),
-                    },
+                    Message::new("PING", &self.last_pong.to_string()).expect("Can not create"),
                     self.to_ping.clone(),
                 );
                 ctx.set_timer("PONG_WAIT".to_string(), 0.1);
@@ -473,9 +470,9 @@ mod tests {
                 _from: String,
                 ctx: &mut impl Context,
             ) -> Result<(), String> {
-                assert_eq!(msg.tip, "PONG");
+                assert_eq!(msg.get_tip(), "PONG");
                 let pong_seq_num =
-                    u32::from_str(msg.data.as_str()).map_err(|_err| "Protocal failed")?;
+                    u32::from_str(msg.fetch_data::<String>().expect("Can not fetch data").as_str()).map_err(|_err| "Protocal failed")?;
                 if pong_seq_num == self.last_pong + 1 {
                     // Next message in sequence
                     self.last_pong += 1;
@@ -515,15 +512,14 @@ mod tests {
                 from: String,
                 ctx: &mut impl Context,
             ) -> Result<(), String> {
-                assert_eq!(msg.tip, "PING");
+                assert_eq!(msg.get_tip(), "PING");
                 let last_pong_seq_num =
-                    u32::from_str(msg.data.as_str()).map_err(|_err| "Protocal failed")?;
+                    u32::from_str(msg.fetch_data::<String>().expect("Can not fetch data").as_str()).map_err(|_err| "Protocal failed")?;
 
                 ctx.send_message(
-                    Message {
-                        tip: "PONG".to_string(),
-                        data: (last_pong_seq_num + 1).to_string(),
-                    },
+                    Message::borrow_new("PONG",
+                        (last_pong_seq_num + 1).to_string(),
+                    ).expect("Can not create message"),
                     from,
                 );
 
@@ -573,8 +569,8 @@ mod tests {
 
         for msg in process_1.lock().unwrap().received_messages.clone() {
             i += 1;
-            assert_eq!(msg.tip, "PONG");
-            assert_eq!(msg.data, i.to_string());
+            assert_eq!(msg.get_tip(), "PONG");
+            assert_eq!(msg.fetch_data::<String>().expect("Can not fetch data"), i.to_string());
         }
     }
 }

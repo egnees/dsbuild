@@ -42,7 +42,7 @@ impl<P: Process> ProcessWrapper<P> {
             }
             match action {
                 ProcessAction::MessageSent { msg, to } => {
-                    ctx.send(msg, to);
+                    ctx.send(msg.into(), to);
                 }
                 ProcessAction::ProcessStopped { policy } => match policy {
                     StopPolicy::Defer => {

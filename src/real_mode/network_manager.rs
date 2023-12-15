@@ -56,7 +56,7 @@ impl NetworkManager {
     }
 
     pub fn send_message(&mut self, to: String, msg: Message) {
-        let data = msg.clone().tip + ";" + msg.data.as_str();
+        let data = msg.get_tip().clone() + ";" + msg.fetch_data::<String>().expect("Can not fetch string data").as_str();
         let raw_data = data.as_bytes();
         let _ = self.socket.send_to(raw_data, to.clone());
     }
@@ -99,7 +99,7 @@ impl NetworkManager {
                     let tip = split_vec[0].to_string();
                     let data = split_vec[1].to_string();
 
-                    let msg = Message::new(tip, data);
+                    let msg = Message::new(&tip, &data).expect("Can not create new message");
 
                     let event = Event::MessageReceived {
                         msg,
