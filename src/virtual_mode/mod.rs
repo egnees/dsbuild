@@ -22,10 +22,7 @@ mod tests {
         impl PingProcess {
             fn send_ping(&mut self, ctx: &mut impl Context) {
                 ctx.send_message(
-                    Message {
-                        tip: "PING".to_string(),
-                        data: self.last_pong.to_string(),
-                    },
+                    Message::borrow_new("PING", self.last_pong.to_string()).expect("Can not create message"),
                     self.to_ping.clone(),
                 );
                 ctx.set_timer("PONG_WAIT".to_string(), 0.1);
@@ -51,9 +48,9 @@ mod tests {
                 _from: String,
                 ctx: &mut impl Context,
             ) -> Result<(), String> {
-                assert_eq!(msg.tip, "PONG");
+                assert_eq!(msg.get_tip(), "PONG");
                 let pong_seq_num =
-                    u32::from_str_radix(msg.data.as_str(), 10).map_err(|_err| "Protocal failed")?;
+                    u32::from_str_radix(msg.fetch_data::<String>().expect("Can not fetch data").as_str(), 10).map_err(|_err| "Protocal failed")?;
                 if pong_seq_num == self.last_pong + 1 {
                     // Next message in sequence
                     self.last_pong += 1;
@@ -94,16 +91,13 @@ mod tests {
                 from: String,
                 ctx: &mut impl Context,
             ) -> Result<(), String> {
-                assert_eq!(msg.tip, "PING");
+                assert_eq!(msg.get_tip(), "PING");
 
                 let last_pong_seq_num =
-                    u32::from_str_radix(msg.data.as_str(), 10).map_err(|_err| "Protocal failed")?;
+                    u32::from_str_radix(msg.fetch_data::<String>().expect("Can not fetch data").as_str(), 10).map_err(|_err| "Protocal failed")?;
 
                 ctx.send_message(
-                    Message {
-                        tip: "PONG".to_string(),
-                        data: (last_pong_seq_num + 1).to_string(),
-                    },
+                    Message::borrow_new("PONG", (last_pong_seq_num + 1).to_string()).expect("Can not create message"),
                     from,
                 );
 
