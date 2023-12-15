@@ -56,7 +56,12 @@ impl NetworkManager {
     }
 
     pub fn send_message(&mut self, to: String, msg: Message) {
-        let data = msg.get_tip().clone() + ";" + msg.fetch_data::<String>().expect("Can not fetch string data").as_str();
+        let data = msg.get_tip().clone()
+            + ";"
+            + msg
+                .fetch_data::<String>()
+                .expect("Can not fetch string data")
+                .as_str();
         let raw_data = data.as_bytes();
         let _ = self.socket.send_to(raw_data, to.clone());
     }

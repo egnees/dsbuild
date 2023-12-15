@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package message_passing;
+
+service MessagePassing {
+    rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+}
+
+message SendMessageRequest {
+    string to_address = 1;
+    string to_process = 2;
+    string from_address = 3;
+    string from_process = 4;
+    string message_tip = 5;
+    bytes message_data = 6;
+}
+
+message SendMessageResponse {
+    string status = 1;
+}

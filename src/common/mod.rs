@@ -6,7 +6,7 @@ pub mod actions;
 
 #[cfg(test)]
 mod tests {
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
 
     use super::message::Message;
 
@@ -15,14 +15,22 @@ mod tests {
         let message_data = "hello".to_string();
 
         let message = Message::new("message_type", &message_data).expect("Can not create message");
-        
+
         assert_eq!(message.get_tip(), "message_type");
 
-        let deserialized_data = message.fetch_data::<String>().expect("Can not extract data from message");
+        let deserialized_data = message
+            .fetch_data::<String>()
+            .expect("Can not extract data from message");
         assert_eq!(deserialized_data, message_data);
 
-        let message_1 = Message::borrow_new("message_type_1", format!("format_str_{}", 1)).expect("Can not create new message");
-        assert_eq!(message_1.fetch_data::<String>().expect("Can not fetch data"), "format_str_1");
+        let message_1 = Message::borrow_new("message_type_1", format!("format_str_{}", 1))
+            .expect("Can not create new message");
+        assert_eq!(
+            message_1
+                .fetch_data::<String>()
+                .expect("Can not fetch data"),
+            "format_str_1"
+        );
     }
 
     #[test]
@@ -30,10 +38,12 @@ mod tests {
         let message_data = "data".to_string();
 
         let deserialized_data: String;
-        
+
         {
             let message = Message::new("type", &message_data).expect("Can not create message");
-            deserialized_data = message.fetch_data::<String>().expect("Can not extract data");
+            deserialized_data = message
+                .fetch_data::<String>()
+                .expect("Can not extract data");
         }
 
         assert_eq!(deserialized_data, message_data);
@@ -41,14 +51,13 @@ mod tests {
 
     #[test]
     pub fn test_serialize_works() {
-
         #[derive(Serialize, Deserialize, PartialEq, Debug)]
         struct InnerDataType {
             s1: String,
             s2: String,
-            z: u8
+            z: u8,
         }
-        
+
         #[derive(Serialize, Deserialize, PartialEq, Debug)]
         struct DataType {
             x: i32,
@@ -62,15 +71,17 @@ mod tests {
             inner: InnerDataType {
                 s1: "string_1".to_string(),
                 s2: "string_2".to_string(),
-                z: 10
-            }
+                z: 10,
+            },
         };
 
         let message = Message::new("tip", &data).expect("Can not create message");
 
         assert_eq!(message.get_tip(), "tip");
 
-        let fetched_data = message.fetch_data::<DataType>().expect("Can not fetch data");
+        let fetched_data = message
+            .fetch_data::<DataType>()
+            .expect("Can not fetch data");
 
         assert_eq!(fetched_data, data);
     }
