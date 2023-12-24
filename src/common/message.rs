@@ -1,7 +1,5 @@
 //! Definition of Message which could be passed through network.
 
-/// TODO
-/// Implement inner Message type to remove dependency on dslab's interface.
 use serde::{Deserialize, Serialize};
 
 /// Represents a message.
@@ -21,6 +19,13 @@ impl Message {
         Ok(Self {
             tip: tip.to_string(),
             data: data_serialized,
+        })
+    }
+
+    pub fn new_raw(tip: &str, data: &[u8]) -> Result<Self, String> {
+        Ok(Self {
+            tip: tip.to_string(),
+            data: data.to_vec(),
         })
     }
 

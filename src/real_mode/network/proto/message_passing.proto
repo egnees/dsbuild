@@ -7,12 +7,16 @@ service MessagePassing {
 }
 
 message SendMessageRequest {
-    string to_address = 1;
-    string to_process = 2;
-    string from_address = 3;
-    string from_process = 4;
-    string message_tip = 5;
-    bytes message_data = 6;
+    string sender_host = 1;
+    uint32 sender_port = 2;
+    string sender_process = 3;
+
+    string receiver_host = 4;
+    uint32 receiver_port = 5;
+    string receiver_process = 6;
+
+    string message_tip = 7;
+    bytes message_data = 8;
 }
 
 message SendMessageResponse {
