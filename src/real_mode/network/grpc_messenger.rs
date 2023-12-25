@@ -3,7 +3,9 @@ use std::net::AddrParseError;
 use async_trait::async_trait;
 use tokio::sync::mpsc::Sender;
 
-use super::messenger::{Address, AsyncMessenger, ProcessSendRequest, ProcessSendResponse};
+use super::defs::*;
+
+use super::messenger::AsyncMessenger;
 use crate::common::message::Message;
 
 pub mod message_passing {

@@ -6,11 +6,12 @@ use crate::common::message::Message;
 
 use super::{
     grpc_messenger::GRpcMessenger,
-    messenger::{Address, AsyncMessenger, ProcessSendRequest},
+    messenger::AsyncMessenger,
+    defs::*,
 };
 
 #[test]
-fn test_grpc_manager() {
+fn test_grpc_messenger() {
     // Create runtime
     let runtime = Runtime::new().expect("Can not create tokio runtime");
 
