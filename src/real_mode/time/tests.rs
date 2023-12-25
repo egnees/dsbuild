@@ -1,10 +1,10 @@
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
-use tokio::runtime::Runtime;
-use tokio::sync::mpsc;
 use super::basic_manager::BasicTimeManager;
 use super::defs::*;
 use super::manager::TimeManager;
+use tokio::runtime::Runtime;
+use tokio::sync::mpsc;
 
 #[test]
 fn test_basic_time_manager() {
@@ -12,7 +12,11 @@ fn test_basic_time_manager() {
     let runtime = Runtime::new().expect("Can not create tokio runtime");
 
     // Create set timer request
-    let request = SetTimerRequest { process: "process".to_owned(), timer_name: "timer".to_owned(), delay: 0.1 };
+    let request = SetTimerRequest {
+        process: "process".to_owned(),
+        timer_name: "timer".to_owned(),
+        delay: 0.1,
+    };
 
     // Create sender and receiver timer fired events
     let (sender, mut receiver) = mpsc::channel(32);
@@ -29,7 +33,10 @@ fn test_basic_time_manager() {
 
     // Wait for timer fired
     runtime.block_on(async move {
-        let received = receiver.recv().await.expect("Can not received timer fired event");
+        let received = receiver
+            .recv()
+            .await
+            .expect("Can not received timer fired event");
         assert_eq!(received.process, request.process);
         assert_eq!(received.timer_name, request.timer_name);
         *received_flag_copy.lock().expect("Can not lock mutex") = true;

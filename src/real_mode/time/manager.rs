@@ -1,8 +1,7 @@
 use super::defs::*;
 
-use tokio::sync::mpsc::Sender;
 use async_trait::async_trait;
-
+use tokio::sync::mpsc::Sender;
 
 #[async_trait]
 pub trait TimeManager {

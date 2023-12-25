@@ -4,11 +4,7 @@ use tokio::{runtime::Runtime, sync::mpsc};
 
 use crate::common::message::Message;
 
-use super::{
-    grpc_messenger::GRpcMessenger,
-    messenger::AsyncMessenger,
-    defs::*,
-};
+use super::{defs::*, grpc_messenger::GRpcMessenger, messenger::AsyncMessenger};
 
 #[test]
 fn test_grpc_messenger() {
