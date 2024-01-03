@@ -24,3 +24,15 @@ tonic = "0.10.2"
 
 [build-dependencies]
 tonic-build = "0.10.2"
+
+[lib]
+name = "dsbuild"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pinger"
+path = "bin/pinger.rs"
+
+[[bin]]
+name = "ponger"
+path = "bin/ponger.rs"

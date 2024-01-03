@@ -9,12 +9,12 @@ use crate::common::{
 
 use super::{
     events::Event,
-    network::{
-        defs::Address, manual_resolver::ManualResolver, network_manager, resolver::AddressResolver,
-    },
+    network::{manual_resolver::ManualResolver, network_manager, resolver::AddressResolver},
     process_manager::ProcessManager,
     time::time_manager,
 };
+
+pub use super::network::defs::Address;
 
 pub enum AddressResolvePolicy {
     Manual { trusted: Vec<Address> },
