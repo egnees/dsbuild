@@ -32,9 +32,9 @@ impl PingProcess {
     pub const ON_MESSAGE_ACTIONS: usize = 0;
     pub const ON_LAST_MESSAGE_ACTIONS: usize = 2;
 
-    pub const PING_TIMER: &str = "PING_TIMER";
-    pub const PING_TIP: &str = "PING";
-    pub const PONG_TIP: &str = "PONG";
+    pub const PING_TIMER: &'static str = "PING_TIMER";
+    pub const PING_TIP: &'static str = "PING";
+    pub const PONG_TIP: &'static str = "PONG";
 
     fn ping(&self, ctx: &mut dyn Context) {
         let msg = Message::borrow_new(Self::PING_TIP, self.last_pong + 1)
@@ -115,7 +115,7 @@ struct PongProcess {
 }
 
 impl PongProcess {
-    const TIMER_NAME: &str = "PONG_TIMER";
+    const TIMER_NAME: &'static str = "PONG_TIMER";
 
     fn set_timer(&self, ctx: &mut dyn Context) {
         ctx.set_timer(Self::TIMER_NAME.to_owned(), self.delay);
@@ -163,7 +163,7 @@ struct IsolatedProcess {
 }
 
 impl IsolatedProcess {
-    const TIMER_NAME: &str = "TIMER";
+    const TIMER_NAME: &'static str = "TIMER";
 
     fn set_timer(&self, ctx: &mut dyn Context) {
         ctx.set_timer(Self::TIMER_NAME.to_owned(), self.one_timer_delay);
