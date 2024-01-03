@@ -1,6 +1,6 @@
 use crate::{
     common::{context::Context, message::Message, process::Process},
-    virtual_mode::virtual_system::VirtualSystem,
+    virtual_mode::simulation::Simulation,
 };
 
 #[test]
@@ -13,7 +13,7 @@ fn test_ping_pong_works_in_simulation() {
     }
 
     impl PingProcess {
-        fn send_ping(&mut self, ctx: &mut impl Context) {
+        fn send_ping(&mut self, ctx: &mut dyn Context) {
             ctx.send_message(
                 Message::borrow_new("PING", self.last_pong.to_string())
                     .expect("Can not create message"),
@@ -24,12 +24,12 @@ fn test_ping_pong_works_in_simulation() {
     }
 
     impl Process for PingProcess {
-        fn on_start(&mut self, ctx: &mut impl Context) -> Result<(), String> {
+        fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
             self.send_ping(ctx);
             Ok(())
         }
 
-        fn on_timer(&mut self, name: String, ctx: &mut impl Context) -> Result<(), String> {
+        fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String> {
             assert_eq!(name, "PONG_WAIT");
 
             self.send_ping(ctx);
@@ -40,11 +40,11 @@ fn test_ping_pong_works_in_simulation() {
             &mut self,
             msg: Message,
             _from: String,
-            ctx: &mut impl Context,
+            ctx: &mut dyn Context,
         ) -> Result<(), String> {
             assert_eq!(msg.get_tip(), "PONG");
             let pong_seq_num = u32::from_str_radix(
-                msg.fetch_data::<String>()
+                msg.get_data::<String>()
                     .expect("Can not fetch data")
                     .as_str(),
                 10,
@@ -58,7 +58,7 @@ fn test_ping_pong_works_in_simulation() {
                     self.send_ping(ctx);
                 } else {
                     ctx.cancel_timer("PONG_WAIT".to_string());
-                    ctx.stop_process(false);
+                    ctx.stop_process();
                 }
             }
 
@@ -72,15 +72,15 @@ fn test_ping_pong_works_in_simulation() {
     struct PongProcess {}
 
     impl Process for PongProcess {
-        fn on_start(&mut self, ctx: &mut impl Context) -> Result<(), String> {
+        fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
             ctx.set_timer("PINGS_ENDED".to_string(), 0.2);
             Ok(())
         }
 
-        fn on_timer(&mut self, name: String, ctx: &mut impl Context) -> Result<(), String> {
+        fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String> {
             assert_eq!(name, "PINGS_ENDED");
 
-            ctx.stop_process(false);
+            ctx.stop_process();
             Ok(())
         }
 
@@ -88,12 +88,12 @@ fn test_ping_pong_works_in_simulation() {
             &mut self,
             msg: Message,
             from: String,
-            ctx: &mut impl Context,
+            ctx: &mut dyn Context,
         ) -> Result<(), String> {
             assert_eq!(msg.get_tip(), "PING");
 
             let last_pong_seq_num = u32::from_str_radix(
-                msg.fetch_data::<String>()
+                msg.get_data::<String>()
                     .expect("Can not fetch data")
                     .as_str(),
                 10,
@@ -112,19 +112,15 @@ fn test_ping_pong_works_in_simulation() {
         }
     }
 
-    let ping_proc_boxed = Box::new(PingProcess {
+    let ping_proc = PingProcess {
         received_messages: Vec::new(),
         to_ping: "pong_proc".to_string(),
         last_pong: 0,
-    });
+    };
 
-    let ping_proc: &'static mut PingProcess = Box::leak(ping_proc_boxed);
+    let pong_proc = PongProcess {};
 
-    let pong_proc_boxed = Box::new(PongProcess {});
-
-    let pong_proc: &'static mut PongProcess = Box::leak(pong_proc_boxed);
-
-    let mut simulation = VirtualSystem::new(12345);
+    let mut simulation = Simulation::new(12345);
 
     simulation.add_node("node_1");
     simulation.add_process("ping_proc", ping_proc, "node_1");
