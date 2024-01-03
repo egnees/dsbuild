@@ -49,7 +49,7 @@ impl Message {
         &self.data
     }
 
-    pub fn fetch_data<'a, T>(&'a self) -> Result<T, String>
+    pub fn get_data<'a, T>(&'a self) -> Result<T, String>
     where
         T: Deserialize<'a>,
     {
@@ -71,11 +71,11 @@ impl From<DSlabMessage> for Message {
     }
 }
 
-impl Into<DSlabMessage> for Message {
-    fn into(self) -> DSlabMessage {
+impl From<Message> for DSlabMessage {
+    fn from(msg: Message) -> Self {
         DSlabMessage {
-            tip: self.tip.clone(),
-            data: std::str::from_utf8(self.data.as_slice())
+            tip: msg.tip.clone(),
+            data: std::str::from_utf8(msg.data.as_slice())
                 .expect("Can not cast Message data to str")
                 .to_string(),
         }

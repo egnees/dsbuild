@@ -1,6 +1,8 @@
-pub mod basic_manager;
+mod timer_setter;
+
+pub mod basic_timer_setter;
 pub mod defs;
-pub mod manager;
+pub mod time_manager;
 
 #[cfg(test)]
 mod tests;

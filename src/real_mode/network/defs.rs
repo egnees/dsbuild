@@ -1,6 +1,6 @@
 use crate::common::message::Message;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct Address {
     pub host: String,
     pub port: u16,

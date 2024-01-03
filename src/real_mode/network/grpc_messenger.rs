@@ -7,6 +7,7 @@ use super::defs::*;
 
 use super::messenger::AsyncMessenger;
 use crate::common::message::Message;
+use crate::real_mode::events::Event;
 
 pub mod message_passing {
     tonic::include_proto!("message_passing");
@@ -20,7 +21,7 @@ use tonic::{transport::Server, Request, Response, Status};
 
 #[derive(Debug)]
 pub struct MessagePassingService {
-    pub request_sender: Sender<ProcessSendRequest>,
+    pub event_sender: Sender<Event>,
 }
 
 #[tonic::async_trait]
@@ -46,19 +47,19 @@ impl MessagePassing for MessagePassingService {
         let message = Message::new_raw(&req.message_tip, &req.message_data)
             .map_err(|e| Status::new(tonic::Code::Internal, e))?;
 
-        let message_request = ProcessSendRequest {
-            sender_address,
-            receiver_address,
-            message,
+        let event = Event::MessageReceived {
+            msg: message,
+            from: sender_address.process_name,
+            to: receiver_address.process_name,
         };
 
-        self.request_sender
-            .send(message_request)
+        self.event_sender
+            .send(event)
             .await
             .map_err(|e| Status::new(tonic::Code::Unavailable, e.to_string()))?;
 
         let reply = SendMessageResponse {
-            status: "success".to_string(),
+            status: "success".to_owned(),
         };
 
         Ok(Response::new(reply))
@@ -102,24 +103,20 @@ impl AsyncMessenger for GRpcMessenger {
         Ok(process_response)
     }
 
-    async fn listen(
-        host: &str,
-        port: u16,
-        send_to: Sender<ProcessSendRequest>,
-    ) -> Result<(), String> {
+    async fn listen(host: String, port: u16, send_to: Sender<Event>) -> Result<(), String> {
         let addr = format!("{}:{}", host, port)
             .parse()
             .map_err(|err: AddrParseError| err.to_string())?;
 
         let service = MessagePassingService {
-            request_sender: send_to,
+            event_sender: send_to,
         };
 
         Server::builder()
             .add_service(MessagePassingServer::new(service))
             .serve(addr)
             .await
-            .expect("Can not serve");
+            .expect("Can not listen");
 
         Ok(())
     }
