@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-use serial_test::serial;
 use tokio::{runtime::Runtime, sync::mpsc};
 
 use crate::{
@@ -14,7 +13,6 @@ use super::{
 };
 
 #[test]
-#[serial]
 fn test_grpc_messenger() {
     // Create runtime
     let runtime = Runtime::new().expect("Can not create tokio runtime");
@@ -156,7 +154,6 @@ fn test_grpc_messenger() {
 }
 
 #[test]
-#[serial]
 fn test_manual_resolver() {
     // Create resolver.
     let mut resolver = ManualResolver::default();
@@ -225,7 +222,6 @@ fn test_manual_resolver() {
 }
 
 #[test]
-#[serial]
 fn test_network_manager() {
     // Initialize listener address.
     let listen_address = Address {

@@ -6,12 +6,10 @@ use crate::real_mode::events::Event;
 use super::basic_timer_setter::BasicTimerSetter;
 use super::timer_setter::TimerSetter;
 use super::{defs::*, time_manager};
-use serial_test::serial;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
 
 #[test]
-#[serial]
 fn test_basic_timer_setter() {
     // Create runtime
     let runtime = Runtime::new().expect("Can not create tokio runtime");
@@ -71,7 +69,6 @@ fn test_basic_timer_setter() {
 }
 
 #[test]
-#[serial]
 fn test_time_manager() {
     // Init timer manager.
     time_manager::init();

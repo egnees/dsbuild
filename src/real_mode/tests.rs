@@ -1,7 +1,5 @@
 use std::sync::{Arc, RwLock};
 
-use serial_test::serial;
-
 use super::{
     events::Event,
     process_manager::ProcessManager,
@@ -12,7 +10,6 @@ use crate::common::message::Message;
 use crate::process_lib::{isolated::IsolatedProcess, pinger::PingProcess, ponger::PongProcess};
 
 #[test]
-#[serial]
 fn test_process_manager() {
     // Create manager
     let mut manager = ProcessManager::default();
@@ -185,7 +182,6 @@ fn test_process_manager() {
 }
 
 #[test]
-#[serial]
 fn test_process_manager_process_state() {
     // Create process manager.
     let mut manager = ProcessManager::default();
@@ -240,7 +236,6 @@ fn test_process_manager_process_state() {
 }
 
 #[test]
-#[serial]
 fn test_system_basic() {
     // Set need cnt for the test.
     const NEED_CNT: u32 = 2;
@@ -265,7 +260,6 @@ fn test_system_basic() {
 }
 
 #[test]
-#[serial]
 fn test_communication_inside_system() {
     // Define processes.
     const FIRST_PING_NAME: &str = "PING1";
