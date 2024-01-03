@@ -1,9 +1,6 @@
 //! Definition of Message which could be passed through network.
 
-/// TODO
-/// Implement inner Message type to remove dependency on dslab's interface.
-
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Represents a message.
 #[derive(Serialize, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, Debug)]
@@ -13,30 +10,34 @@ pub struct Message {
 }
 
 impl Message {
-    
-    pub fn new<T>(tip: &str, data: &T) -> Result<Self, String> 
+    pub fn new<T>(tip: &str, data: &T) -> Result<Self, String>
     where
-        T: Serialize
+        T: Serialize,
     {
-        let data_serialized = serde_json::to_vec(data)
-            .map_err(|err| err.to_string())?;
+        let data_serialized = serde_json::to_vec(data).map_err(|err| err.to_string())?;
 
         Ok(Self {
             tip: tip.to_string(),
-            data: data_serialized
+            data: data_serialized,
         })
     }
 
-    pub fn borrow_new<T>(tip: &str, data: T) -> Result<Self, String> 
+    pub fn new_raw(tip: &str, data: &[u8]) -> Result<Self, String> {
+        Ok(Self {
+            tip: tip.to_string(),
+            data: data.to_vec(),
+        })
+    }
+
+    pub fn borrow_new<T>(tip: &str, data: T) -> Result<Self, String>
     where
-        T: Serialize
+        T: Serialize,
     {
-        let data_serialized = serde_json::to_vec(&data)
-            .map_err(|err| err.to_string())?;
+        let data_serialized = serde_json::to_vec(&data).map_err(|err| err.to_string())?;
 
         Ok(Self {
             tip: tip.to_string(),
-            data: data_serialized
+            data: data_serialized,
         })
     }
 
@@ -44,12 +45,16 @@ impl Message {
         &self.tip
     }
 
-    pub fn fetch_data<'a, T>(&'a self) -> Result<T, String> 
+    pub fn get_raw_data(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn get_data<'a, T>(&'a self) -> Result<T, String>
     where
-        T: Deserialize<'a>
+        T: Deserialize<'a>,
     {
-        let data_deserealized = serde_json::from_slice::<'a, T>(self.data.as_slice())
-            .map_err(|err| err.to_string())?;
+        let data_deserealized =
+            serde_json::from_slice::<'a, T>(self.data.as_slice()).map_err(|err| err.to_string())?;
 
         Ok(data_deserealized)
     }
@@ -66,11 +71,13 @@ impl From<DSlabMessage> for Message {
     }
 }
 
-impl Into<DSlabMessage> for Message {
-    fn into(self) -> DSlabMessage {
+impl From<Message> for DSlabMessage {
+    fn from(msg: Message) -> Self {
         DSlabMessage {
-            tip: self.tip.clone(),
-            data: std::str::from_utf8(self.data.as_slice()).expect("Can not cast Message data to str").to_string()
+            tip: msg.tip.clone(),
+            data: std::str::from_utf8(msg.data.as_slice())
+                .expect("Can not cast Message data to str")
+                .to_string(),
         }
     }
 }
