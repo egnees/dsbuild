@@ -24,6 +24,8 @@ jobs:
         profile: minimal
         override: true
         components: clippy
+    - name: Install protobuf
+      run: sudo apt install protobuf-compiler
     - name: Build
       run: cargo build --verbose
     - name: Run linter
