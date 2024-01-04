@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"dsbuild":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.75.0/core/cmp/trait.Ord.html\" title=\"trait core::cmp::Ord\">Ord</a> for <a class=\"struct\" href=\"dsbuild/common/message/struct.Message.html\" title=\"struct dsbuild::common::message::Message\">Message</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.75.0/core/cmp/trait.Ord.html\" title=\"trait core::cmp::Ord\">Ord</a> for <a class=\"struct\" href=\"dsbuild/real_mode/time/time_manager/struct.TimerID.html\" title=\"struct dsbuild::real_mode::time::time_manager::TimerID\">TimerID</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

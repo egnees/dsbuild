@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["message_passing_client","message_passing_server"],"struct":["SendMessageRequest","SendMessageResponse"]};

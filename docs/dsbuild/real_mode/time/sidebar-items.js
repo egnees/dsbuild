@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["basic_timer_setter","defs","time_manager","timer_setter"]};
