@@ -2,7 +2,7 @@
 
 use crate::common::message::Message;
 
-/// Specifies the behaviour of timer set
+/// Specifies the behavior of timer set
 /// in the presence of existing active timer with this name.
 #[derive(Clone, Debug)]
 pub enum TimerBehavior {
@@ -15,7 +15,7 @@ pub enum TimerBehavior {
 /// Specifies system policy on stopping user process.
 #[derive(Clone, Debug)]
 pub enum StopPolicy {
-    /// Stop immediately and ignore all pending and futher events.
+    /// Stop immediately and ignore all pending and further events.
     Immediately,
 }
 
@@ -39,7 +39,7 @@ pub enum ProcessAction {
         timer_name: String,
         /// Delay of timer in seconds.
         delay: f64,
-        /// Specifies behaviour of timer in case of
+        /// Specifies behavior of timer in case of
         /// such timer already exists.
         behavior: TimerBehavior,
     },

@@ -10,7 +10,7 @@ pub struct PingProcess {
     last_pong: u32,
     /// Specifies delay between consecutive pings.
     delay: f64,
-    /// Specifies name of partner process, 
+    /// Specifies name of partner process,
     /// which must send pongs in response to pings.
     /// For example, it can be [`PongProcess`][`super::pong::PongProcess`].
     partner: String,
@@ -40,7 +40,7 @@ impl PingProcess {
 
     /// Name of the timer, which fires if pong response do not received for a specified delay.
     pub const PING_TIMER: &'static str = "PING_TIMER";
-    
+
     /// Name of ping [message](Message) tip.
     pub const PING_TIP: &'static str = "PING";
 
@@ -48,7 +48,7 @@ impl PingProcess {
     pub const PONG_TIP: &'static str = super::pong::PongProcess::PONG_TIP;
 
     /// Performs ping action.
-    /// 
+    ///
     /// # Panics
     /// - In case of message can not be created, which means incorrect implementation of [Message] class.
     fn ping(&self, ctx: &mut dyn Context) {
@@ -75,7 +75,7 @@ impl PingProcess {
 
     /// Creates new [`PingProcess`] with delay, partner process name
     /// and need count of pongs to receive before terminate.
-    /// 
+    ///
     /// * `delay` must be greater than zero.
     /// * `need_cnt` must be greater than zero.
     pub fn new(delay: f64, partner: String, need_cnt: u32) -> Self {
@@ -112,7 +112,7 @@ impl Process for PingProcess {
 
     /// Called when message is received.
     /// If received message tip is equal to [`PONG_TIP`][Self::PONG_TIP],
-    /// then process tripes to extract pong number from the message. 
+    /// then process tripes to extract pong number from the message.
     /// If the number if equals to the expected pong number, then expected pong number is incremented.
     /// If after that last received pong number is equal to the expected number of pongs, then process is stopped.
     fn on_message(

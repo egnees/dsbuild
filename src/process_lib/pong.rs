@@ -3,14 +3,14 @@
 use crate::common::{context::Context, message::Message, process::Process};
 
 /// [`PongProcess`] waits for messages with tip equals to [`PING_TIP`][`PongProcess::PING_TIP`],
-/// and answers them with pong messages with tip equals to [`PONG_TIP`][`PongProcess::PONG_TIP`] 
+/// and answers them with pong messages with tip equals to [`PONG_TIP`][`PongProcess::PONG_TIP`]
 /// and requested pong number.
-/// 
-/// Process will be stopped if there is some window of inactivity appears. 
+///
+/// Process will be stopped if there is some window of inactivity appears.
 #[derive(Clone)]
 pub struct PongProcess {
-    /// Window of inactivity 
-    /// after that pong process will be stopped 
+    /// Window of inactivity
+    /// after that pong process will be stopped
     /// (in seconds).
     max_inactivity_window: f64,
 }
@@ -30,7 +30,9 @@ impl PongProcess {
 
     /// Creates new [`PongProcess`] with specified inactivity window (in seconds).
     pub fn new(max_inactivity_window: f64) -> Self {
-        Self { max_inactivity_window}
+        Self {
+            max_inactivity_window,
+        }
     }
 }
 

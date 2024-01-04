@@ -41,7 +41,7 @@ impl IsolatedProcess {
 }
 
 impl Process for IsolatedProcess {
-    /// Called when system is started. 
+    /// Called when system is started.
     /// Sets the first timer.
     fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
         self.set_timer(ctx);
