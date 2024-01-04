@@ -7,7 +7,7 @@ use super::{
 };
 use crate::common::message::Message;
 
-use crate::process_lib::{isolated::IsolatedProcess, pinger::PingProcess, ponger::PongProcess};
+use crate::process_lib::{isolated::IsolatedProcess, ping::PingProcess, pong::PongProcess};
 
 #[test]
 fn test_process_manager() {
@@ -121,7 +121,7 @@ fn test_process_manager() {
     assert!(proc_1_wrapper
         .read()
         .expect("Can not read the first process")
-        .is_stoped());
+        .is_stopped());
 
     // Check that the second ping process did not receive pong message
     assert_eq!(
@@ -178,7 +178,7 @@ fn test_process_manager() {
     assert!(proc_2_wrapper
         .read()
         .expect("Can not read the second process")
-        .is_stoped());
+        .is_stopped());
 }
 
 #[test]
