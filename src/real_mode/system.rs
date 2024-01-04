@@ -1,3 +1,5 @@
+//! Definition of [`RealSystem`][`System`].
+
 use std::sync::{Arc, RwLock};
 
 use tokio::sync::mpsc::{self, Sender};
@@ -19,22 +21,69 @@ use super::{
 
 pub use super::network::defs::Address;
 
+/// Specifies policy of resolving [network addresses][`Address`] by process name.
+///
+/// It allows to know [network address][`Address`] of [user-process][`Process`]
+/// to send [messages][`crate::common::message::Message`] to it.
+///
+/// Note that address resolving does not filter out not registered processes in general[^note].
+/// It means user-process can receive messages from malicious processes too,
+/// which can use or not use [framework][`crate`];
+///
+/// [^note]: add some kind of protection against malicious processes in future.
 pub enum AddressResolvePolicy {
-    Manual { trusted: Vec<Address> },
+    /// - Only processes with names corresponds[addresses][`Address`] in `resolve_list` will be resolved.
+    /// - Attempts to send [message][`crate::common::message::Message`] to the processes which name not in `resolve_list` will lead to error.
+    /// - All process names in the `resolve_list` must be unique.
+    /// - [Messages][`crate::common::message::Message`] from not registered processes will be accepted and delivered too.
+    ///
+    /// Remark: probably in future there will be possibility
+    /// to add [resolve records][`Address`] directly from [user-process][`Process`]
+    /// using [context][`crate::common::context::Context`].
+    Manual {
+        /// List of [process names][`Address::process_name`] and their [addresses][`Address`],
+        /// which will be used to send [messages][`crate::common::message::Message] to them.
+        resolve_list: Vec<Address>,
+    },
 }
 
+/// Specifies configuration of [`System`].
 pub struct SystemConfig {
+    /// Max number of threads which will be used to handle events inside of the [`System`].
     max_threads: usize,
+
+    /// Max size of buffer of pending events inside of the [`System`].
     event_buffer_size: usize,
+
+    /// Policy for resolving [network addresses][`Address`] by process name.
     resolve_policy: AddressResolvePolicy,
+
+    /// Host which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
     host: String,
+
+    /// Port which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
     port: u16,
 }
 
 impl SystemConfig {
-    const DEFAULT_EVENT_BUFFER_SIZE: usize = 1024;
-    const DEFAULT_MAX_THREADS: usize = 1;
+    /// Default size of the event buffer inside of the [`System`].
+    pub const DEFAULT_EVENT_BUFFER_SIZE: usize = 1024;
 
+    /// Default number of threads, which are used to handle events inside of the [`System`].
+    pub const DEFAULT_MAX_THREADS: usize = 1;
+
+    /// Creates new instance of [`SystemConfig`].
+    ///
+    /// * `max_threads` - Specifies max number of threads which will be used by [`System`] to handle events.
+    ///     This value must be greater than zero.
+    /// * `event_buffer_size` - Specifies size of the pending events buffer inside of the [`System`].
+    ///     If the buffer is full, all threads will be blocked at the moment of sending event to the buffer,
+    ///     while some old event won`t be processed.
+    ///
+    ///     This value must be greater than zero.
+    /// * `resolve_policy` - Specifies policy for resolving [network addresses][`Address`] by process name.
+    /// * `host` - Specifies host which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
+    /// * `port` - Specifies port which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
     pub fn new(
         max_threads: usize,
         event_buffer_size: usize,
@@ -57,6 +106,10 @@ impl SystemConfig {
         }
     }
 
+    /// Alias for [`SystemConfig::new`] method, which creates new [`SystemConfig`]
+    /// with specified number of threads, used to handle events inside of [`System`].
+    ///
+    /// Instead of `event_buffer_size` used [`SystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
     pub fn new_with_max_threads(
         max_threads: usize,
         resolve_policy: AddressResolvePolicy,
@@ -72,6 +125,10 @@ impl SystemConfig {
         )
     }
 
+    /// Alias for [`SystemConfig::new`] method, which creates new [`SystemConfig`]
+    /// with specified size of buffer, which is used to store pending events inside of [`System`].
+    ///
+    /// Instead of `max_threads` used [`SystemConfig::DEFAULT_MAX_THREADS`].
     pub fn new_with_buffer_size(
         event_buffer_size: usize,
         resolve_policy: AddressResolvePolicy,
@@ -87,6 +144,11 @@ impl SystemConfig {
         )
     }
 
+    /// Alias for [`SystemConfig::new`] method, which creates new [`SystemConfig`]
+    /// with default parameters.
+    ///
+    /// Instead of `max_threads` used [`SystemConfig::DEFAULT_MAX_THREADS`],
+    /// and instead of `event_buffer_size` used [`SystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
     pub fn default(
         resolve_policy: AddressResolvePolicy,
         host: String,
@@ -102,18 +164,40 @@ impl SystemConfig {
     }
 }
 
+/// Represents real system, which is responsible
+/// for interaction with [processes][`Process`] provided by used, time, network, and other OS features.
 pub struct System {
+    /// Represents [network address][`AddressResolver`] resolver,
+    /// which is configured according to provided by [`SystemConfig`]
+    /// [resolve policy][`SystemConfig::resolve_policy`].
     resolver: Box<dyn AddressResolver>,
+
+    /// Represents [process manager][`ProcessManager`], which is used to manage [user-processes][`Process`].
     process_manager: ProcessManager,
+
+    /// Represents [time_manager][`TimeManager`], which is used to work with time and set timers.
     time_manager: TimeManager<BasicTimerSetter>,
+
+    /// Represents [network_manager][`NetworkManager`], which is used to work with network.
     network_manager: NetworkManager<GRpcMessenger>,
+
+    /// Corresponds to [`SystemConfig::max_threads`].
     max_threads: usize,
+
+    /// Corresponds to [`SystemConfig::event_buffer_size`].
     event_buffer_size: usize,
+
+    /// Corresponds to [`SystemConfig::host`],
+    /// which is used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
     host: String,
+
+    /// Corresponds to [`SystemConfig::port`],
+    /// which is used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
     port: u16,
 }
 
 impl System {
+    /// Creates new instance of [`System`] from [`SystemConfig`].
     pub fn new(config: SystemConfig) -> Result<Self, String> {
         // Create process manager.
         let process_manager = ProcessManager::default();
@@ -126,11 +210,14 @@ impl System {
 
         // Create resolver.
         let resolver = match config.resolve_policy {
-            AddressResolvePolicy::Manual { trusted } => Box::new(
+            AddressResolvePolicy::Manual {
+                resolve_list: trusted,
+            } => Box::new(
                 ManualResolver::from_trusted_list(trusted).expect("Can not create resolver"),
             ),
         };
 
+        // Build and return created system.
         Ok(System {
             resolver,
             process_manager,
@@ -143,6 +230,14 @@ impl System {
         })
     }
 
+    /// Add new [user-process][`Process`] to the system.
+    /// Names of processes must be unique.
+    ///
+    /// # Returns
+    ///
+    /// - [`Ok(ProcessWrapper)`][`ProcessWrapper`] contains wrapper which wraps passed `process`
+    ///     and allows to [get read access][`ProcessWrapper::read`] to the `process`.
+    /// - [`Err(String)`][`Err`] if process with the same name already exists in the system.
     pub fn add_process<P: Process + 'static>(
         &mut self,
         process_name: &str,
@@ -174,6 +269,8 @@ impl System {
         Ok(process_wrapper)
     }
 
+    /// Assistant function which is used to handle [process actions][`ProcessAction`] list.
+    /// Applies [`System::handle_process_action`] to every action inside.
     fn handle_process_actions(
         &mut self,
         actions: &[ProcessAction],
@@ -184,6 +281,14 @@ impl System {
             .try_for_each(|action| self.handle_process_action(action, sender))
     }
 
+    /// Handle one [process action][`ProcessAction`].
+    ///
+    /// It performs corresponding call to the [`NetworkManager`] or [`TimeManager`] or other OS interact actor[^note],
+    /// passing clone of `sender` to them, to receive [`Event`] in response to [action][`ProcessAction`],
+    /// that will be handled by [user-process][`Process`] using [`ProcessManager`],
+    /// which will generate new [action][`ProcessAction`] and so on.
+    ///
+    /// [^note]: There are no other interact actors for now.
     fn handle_process_action(
         &mut self,
         action: &ProcessAction,
@@ -245,6 +350,37 @@ impl System {
         Ok(())
     }
 
+    /// Returns [future][`core::future::Future`] which execution will lead to loop,
+    /// in which [`System`] will wait for incoming [events][`Event`] and handle them.
+    ///
+    /// Every [event][`Event`] will be handled by [process_manager][`System::process_manager`]
+    /// and produce few [actions][`ProcessAction`] which will be handled by [`System`]
+    /// and will lead to interaction with OS and appearing of new [events][`Event`],
+    /// which also need to be handled, and so on.
+    ///
+    /// The loop will be stopped when where are no communication channels[^note] with OS,
+    /// which can produce new events.
+    ///
+    /// This can be achieved only in case when all [user-processes][`Process`] are stopped by user.
+    ///
+    /// # Returns
+    ///
+    /// [future][`core::future::Future`], which execution leads to[^note1]:
+    ///
+    /// - Will return [`Err`] only is case of runtime panics, which must be possible only if there are some
+    ///     framework implementation errors. This will lead to the whole runtime will panic.
+    /// - In case of receiving [`Err`] from [user-processes][`Process`], or from OS interaction actor,
+    ///     error must be logged on the screen, but runtime still will continue to process events.
+    ///     If user wants to stop the runtime, [user-process][`Process`] need panic.
+    ///
+    /// [^note]: Essentially communication channels with OS are organized using only one [multi-channel][`tokio::sync::mpsc::channel`],
+    /// which will have one [receiver][`tokio::sync::mpsc::Receiver`] end and few [senders][`Sender`] ends. Receiver end will be holden by [`System`] and sender ends will be holden by OS interaction actors,
+    /// like [`NetworkManager`] and [`TimeManager`]. For example, every timer, produced by [`TimeManager`], will have one [sender end][`Sender`],
+    /// and [network listener][`NetworkManager`] also will hold one [sender end][`Sender`]. After timer fired, or listener stops,
+    /// [sender][`Sender`] will be dropped. After all [senders][`Sender`] are dropped, loop will be ended.
+    ///
+    ///
+    /// [^note1]: This behavior must be checked.
     async fn work(&mut self) -> Result<(), String> {
         // Create send and receive ends of channel.
         let (event_sender, mut event_receiver) = mpsc::channel(self.event_buffer_size);
@@ -255,7 +391,7 @@ impl System {
             .await
             .map_err(|e| e.to_string())?;
 
-        // Start listen for incomming connections.
+        // Start listen for incoming connections.
         self.network_manager
             .start_listen(self.host.clone(), self.port, event_sender.clone())?;
 
@@ -284,6 +420,7 @@ impl System {
         Ok(())
     }
 
+    /// Runs the [system][`System`] using [asynchronous runtime][tokio::runtime::Runtime].
     pub fn run(&mut self) -> Result<(), String> {
         // Create runtime according to specified number of threads.
         let runtime = tokio::runtime::Builder::new_multi_thread()

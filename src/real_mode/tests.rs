@@ -241,7 +241,9 @@ fn test_system_basic() {
     const NEED_CNT: u32 = 2;
 
     // Create system.
-    let resolve_polyicy = AddressResolvePolicy::Manual { trusted: vec![] };
+    let resolve_polyicy = AddressResolvePolicy::Manual {
+        resolve_list: vec![],
+    };
     let config = SystemConfig::default(resolve_polyicy, "127.0.0.1".to_owned(), 10035)
         .expect("Can not create default config");
     let mut system = System::new(config).expect("Can not create system");
@@ -275,7 +277,9 @@ fn test_communication_inside_system() {
     const PONG_DELAY: f64 = 0.4;
 
     // Create system.
-    let resolve_polyicy = AddressResolvePolicy::Manual { trusted: vec![] };
+    let resolve_polyicy = AddressResolvePolicy::Manual {
+        resolve_list: vec![],
+    };
     let config = SystemConfig::default(resolve_polyicy, "127.0.0.1".to_owned(), 59936)
         .expect("Can not create default config");
     let mut system = System::new(config).expect("Can not create system");

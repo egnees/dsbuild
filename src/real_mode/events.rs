@@ -1,4 +1,4 @@
-//! Definion of events inside of the system in real mode.
+//! Definition of events inside of the system in real mode.
 
 use crate::common::message::Message;
 

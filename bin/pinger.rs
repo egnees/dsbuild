@@ -114,7 +114,7 @@ fn main() {
 
     // Create system.
     let resolve_policy = AddressResolvePolicy::Manual {
-        trusted: vec![ponger_address],
+        resolve_list: vec![ponger_address],
     };
     let config =
         SystemConfig::new_with_max_threads(8, resolve_policy, "127.0.0.1".to_owned(), listen_port)

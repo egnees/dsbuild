@@ -13,7 +13,7 @@ use crate::common::{context::Context, message::Message};
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ProcessState {
     /// Corresponds to initial state of the process.
-    Inited,
+    Initialized,
     /// Corresponds to state when the process is running.
     Running,
     /// Corresponds to state when the process is stopped.
@@ -32,7 +32,7 @@ pub enum ProcessState {
 /// so system not holds the process.
 /// However, only system has write access to the process.
 ///
-/// The reason for such behaviour is that process can be used by user after the system is dropped,
+/// The reason for such behavior is that process can be used by user after the system is dropped,
 /// so system can not hold the process.
 /// So, for system every process' lifetime is static.
 ///
@@ -73,9 +73,9 @@ pub struct ProcessWrapper<P: Process + 'static> {
 /// In this case system thread will be blocked until guard won't be dropped.
 ///
 /// Technically, for now both real and virtual systems works with process in the same thread as user does,
-/// but as process with static lifetime can not be owned by system, [Rust](https://www.rust-lang.org/) requires it to be guarded with [lock][`RwLock`].
+/// but as process with static lifetime can not be owned by system[^note], [Rust](https://www.rust-lang.org/) requires it to be guarded with [lock][`RwLock`].
 ///
-/// Remark: in [Rust](https://www.rust-lang.org/) every variable with static lifetime must be guarded with some lock like [`std::sync::Mutex`] or [`std::sync::RwLock`].
+/// [^note]: in [Rust](https://www.rust-lang.org/) every variable with static lifetime must be guarded with some lock like [`std::sync::Mutex`] or [`std::sync::RwLock`].
 pub struct ProcessGuard<'a, P: Process + 'static> {
     pub(self) inner: RwLockReadGuard<'a, P>,
 }
@@ -97,6 +97,7 @@ impl<P: Process + 'static> ProcessWrapper<P> {
     /// Note what having multiple readers in the same time not violates [Rust](https://www.rust-lang.org/) memory management rules.
     ///
     /// # Panics
+    ///
     /// - If panicked thread in which runtime was launched. For more information see [`std::sync::RwLock#poisoning`] documentation.
     pub fn read(&self) -> ProcessGuard<'_, P> {
         let read_guard = self

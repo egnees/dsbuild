@@ -1,3 +1,5 @@
+//! Definition of [`RealContext`].
+
 use crate::common::actions::{ProcessAction, StopPolicy, TimerBehavior};
 use crate::common::context::Context;
 use crate::common::message::Message;

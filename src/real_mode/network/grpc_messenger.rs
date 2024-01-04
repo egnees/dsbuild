@@ -1,3 +1,5 @@
+//! Definition of asynchronous messenger [`GRpcMessenger`] structure.
+
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 

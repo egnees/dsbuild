@@ -24,7 +24,7 @@ impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
         Self {
             process_name,
             user_process: process_impl,
-            process_state: ProcessState::Inited,
+            process_state: ProcessState::Initialized,
         }
     }
 
@@ -50,7 +50,7 @@ impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
                     policy,
                 } => match policy {
                     StopPolicy::Immediately => {
-                        assert!(self.process_state != ProcessState::Inited);
+                        assert!(self.process_state != ProcessState::Initialized);
                         self.process_state = ProcessState::Stopped;
                     }
                 },
@@ -105,7 +105,7 @@ impl<P: Process + Clone + 'static> SimulationProcess for VirtualProcessWrapper<P
     ) -> Result<(), String> {
         assert_eq!(msg.tip, "START");
 
-        assert_eq!(self.process_state, ProcessState::Inited);
+        assert_eq!(self.process_state, ProcessState::Initialized);
 
         self.process_state = ProcessState::Running;
 

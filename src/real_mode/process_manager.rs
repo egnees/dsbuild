@@ -1,4 +1,4 @@
-//! Definition of process manager.
+//! Definition of [`ProcessManager`], which is responsible for managing [user processes][`Process`].
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
@@ -9,15 +9,16 @@ use crate::common::process::{Process, ProcessState};
 use super::events::Event;
 use super::real_context::RealContext;
 
-/// Process manager is reponsible for user processes.
-/// It manages states of user processes and mantains number of active processes.
-/// Process manager is also responsible for handling system events and receiving
-/// response actions of user processes.
+/// Process manager is responsible for managing [user processes][`Process`].
+///
+/// It manages states of user processes and maintains number of active processes.
+/// [`ProcessManager`] is also responsible for handling system [events][`Event`] and receiving
+/// response [actions][ProcessAction] of [user processes][`Process`].
 #[derive(Default)]
 pub struct ProcessManager {
-    // Holds mapping from process name to (process state, process implemntation pointer) pair.
+    /// Holds mapping from process name to (process state, process implementation pointer) pair.
     process_info: HashMap<String, (ProcessState, Arc<RwLock<dyn Process>>)>,
-    // Number of active processes.
+    /// Number of active processes.
     active_process: u32,
 }
 
@@ -28,6 +29,9 @@ impl ProcessManager {
     }
 
     /// Returns number of active processes.
+    ///
+    /// This function is used by [`System`][`super::system::System`]
+    /// to stop interaction with OS when there are no active processes.
     pub fn active_count(&self) -> u32 {
         self.active_process
     }
@@ -63,7 +67,7 @@ impl ProcessManager {
         }
     }
 
-    ///
+    /// Function is used for handling system [events][`Event`] and receiving response [actions][ProcessAction] by [user processes][`Process`].
     pub fn handle_event(&mut self, event: Event) -> Result<Vec<ProcessAction>, String> {
         let mut new_actions = Vec::default();
 
@@ -121,6 +125,15 @@ impl ProcessManager {
         Ok(new_actions)
     }
 
+    /// Register [process][`Process`] in the [`ProcessManager`] with specified `process_name` and `process_impl`.
+    ///
+    /// Here `process_impl` is a link to the implementation of the [user process][`Process`],
+    /// provided by the user.
+    ///
+    /// # Returns
+    ///
+    /// - [`Ok`] in case of success.
+    /// - [`Err`] in case of process with the same `process_name` already exists.
     pub fn add_process(
         &mut self,
         process_name: String,
@@ -132,9 +145,10 @@ impl ProcessManager {
                 process_name.as_str()
             ))
         } else {
-            let insert_result = self
-                .process_info
-                .insert(process_name.clone(), (ProcessState::Inited, process_impl));
+            let insert_result = self.process_info.insert(
+                process_name.clone(),
+                (ProcessState::Initialized, process_impl),
+            );
             if insert_result.is_some() {
                 panic!(
                     "Can not add process: process with name {} is present, but must not",
@@ -146,6 +160,7 @@ impl ProcessManager {
         }
     }
 
+    /// Stop the process with the specified `process_name`.
     pub fn stop_process(&mut self, process_name: &str) -> Result<(), String> {
         let state = self.get_state(process_name)?;
 

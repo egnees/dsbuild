@@ -89,7 +89,7 @@ fn main() {
 
     // Create system.
     let resolve_policy = AddressResolvePolicy::Manual {
-        trusted: vec![pinger_address],
+        resolve_list: vec![pinger_address],
     };
 
     let config =
