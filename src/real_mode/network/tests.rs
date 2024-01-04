@@ -9,7 +9,7 @@ use crate::{
 
 use super::{
     defs::*, grpc_messenger::GRpcMessenger, manual_resolver::ManualResolver,
-    messenger::AsyncMessenger, network_manager,
+    messenger::AsyncMessenger, network_manager::NetworkManager,
 };
 
 #[test]
@@ -107,7 +107,7 @@ fn test_grpc_messenger() {
         // Send request to ponger
         GRpcMessenger::send(send_ping_request)
             .await
-            .expect("Can join await for send ping message");
+            .expect("Can not join await for send ping message");
 
         // Wait for answer from the recv channel
         let received_pong_response = pong_receiver
@@ -241,15 +241,20 @@ fn test_network_manager() {
     let runtime = tokio::runtime::Runtime::new().expect("Can not create runtime");
 
     // Initialzie network manager.
-    network_manager::init();
+    let network_manager = Arc::new(Mutex::new(NetworkManager::<GRpcMessenger>::default()));
 
     let (sender, mut receiver) = mpsc::channel(32);
 
     // Spawn listener.
     let listen_addr = listen_address.clone();
+    // Create listen network manager clone.
+    let listen_network_manager_clone = network_manager.clone();
     runtime.spawn(async move {
         // Start listen.
-        network_manager::start_listen(listen_addr.host, listen_addr.port, sender)
+        listen_network_manager_clone
+            .lock()
+            .expect("Can not lock network manager")
+            .start_listen(listen_addr.host, listen_addr.port, sender)
             .expect("Can not start listen");
     });
 
@@ -261,7 +266,10 @@ fn test_network_manager() {
     let message_clone = message.clone();
     runtime.spawn(async move {
         // Send message.
-        network_manager::send_message(sender_addr, listen_addr, message_clone);
+        network_manager
+            .lock()
+            .expect("Can not lock network manager")
+            .send_message(sender_addr, listen_addr, message_clone);
     });
 
     // Wait for message.

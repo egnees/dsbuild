@@ -1,7 +1,9 @@
-use std::net::AddrParseError;
+use std::net::{IpAddr, SocketAddr};
+use std::str::FromStr;
 
 use async_trait::async_trait;
 use tokio::sync::mpsc::Sender;
+use tonic::transport::server::TcpIncoming;
 
 use super::defs::*;
 
@@ -89,12 +91,12 @@ impl AsyncMessenger for GRpcMessenger {
         let mut client =
             MessagePassingClient::connect(format!("http://{}:{}", receiver_host, receiver_port))
                 .await
-                .expect("Can not connect to the receiver");
+                .map_err(|e| "Can not connect to the receiver: ".to_owned() + &e.to_string())?;
 
         let response = client
             .send_message(grpc_request)
             .await
-            .expect("Can not send message to the receiver");
+            .map_err(|e| "Can not send message to the receiver: ".to_owned() + &e.to_string())?;
 
         let process_response = ProcessSendResponse {
             status: response.into_inner().status,
@@ -104,19 +106,30 @@ impl AsyncMessenger for GRpcMessenger {
     }
 
     async fn listen(host: String, port: u16, send_to: Sender<Event>) -> Result<(), String> {
-        let addr = format!("{}:{}", host, port)
-            .parse()
-            .map_err(|err: AddrParseError| err.to_string())?;
+        // Create ip address.
+        let ip_addr =
+            IpAddr::from_str(&host).map_err(|e| "Invalid host: ".to_owned() + &e.to_string())?;
 
+        // Create socket address.
+        let sock_addr = SocketAddr::new(ip_addr, port);
+
+        // Create incoming stream.
+        let incoming_stream = TcpIncoming::new(sock_addr, true, None).map_err(|e| {
+            "Can not create Tcp incoming stream: ".to_owned() + e.to_string().as_str()
+        })?;
+
+        // Create rpc server.
         let service = MessagePassingService {
             event_sender: send_to,
         };
+        let server = MessagePassingServer::new(service);
 
+        // Start the server.
         Server::builder()
-            .add_service(MessagePassingServer::new(service))
-            .serve(addr)
+            .add_service(server)
+            .serve_with_incoming(incoming_stream)
             .await
-            .expect("Can not listen");
+            .map_err(|e| "GRpc messenger server error: ".to_owned() + e.to_string().as_str())?;
 
         Ok(())
     }

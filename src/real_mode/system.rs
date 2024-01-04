@@ -9,9 +9,12 @@ use crate::common::{
 
 use super::{
     events::Event,
-    network::{manual_resolver::ManualResolver, network_manager, resolver::AddressResolver},
+    network::{
+        grpc_messenger::GRpcMessenger, manual_resolver::ManualResolver,
+        network_manager::NetworkManager, resolver::AddressResolver,
+    },
     process_manager::ProcessManager,
-    time::time_manager,
+    time::{basic_timer_setter::BasicTimerSetter, time_manager::TimeManager},
 };
 
 pub use super::network::defs::Address;
@@ -102,6 +105,8 @@ impl SystemConfig {
 pub struct System {
     resolver: Box<dyn AddressResolver>,
     process_manager: ProcessManager,
+    time_manager: TimeManager<BasicTimerSetter>,
+    network_manager: NetworkManager<GRpcMessenger>,
     max_threads: usize,
     event_buffer_size: usize,
     host: String,
@@ -113,15 +118,24 @@ impl System {
         // Create process manager.
         let process_manager = ProcessManager::default();
 
+        // Create time manager.
+        let time_manager = TimeManager::new();
+
+        // Create network manager.
+        let network_manager = NetworkManager::default();
+
         // Create resolver.
         let resolver = match config.resolve_policy {
-            AddressResolvePolicy::Manual { trusted } => ManualResolver::from_trusted_list(trusted)?,
+            AddressResolvePolicy::Manual { trusted } => Box::new(
+                ManualResolver::from_trusted_list(trusted).expect("Can not create resolver"),
+            ),
         };
 
-        // Create system.
         Ok(System {
-            resolver: Box::new(resolver),
+            resolver,
             process_manager,
+            time_manager,
+            network_manager,
             max_threads: config.max_threads,
             event_buffer_size: config.event_buffer_size,
             host: config.host,
@@ -183,7 +197,8 @@ impl System {
                 let receiver = self.resolver.resolve(to)?;
 
                 // Send message using network manager.
-                network_manager::send_message(sender, receiver, msg.clone());
+                self.network_manager
+                    .send_message(sender, receiver, msg.clone());
             }
 
             // Process timer set action.
@@ -200,7 +215,7 @@ impl System {
                 };
 
                 // Set timer.
-                time_manager::set_timer(
+                self.time_manager.set_timer(
                     sender.clone(),
                     process_name,
                     timer_name,
@@ -215,7 +230,7 @@ impl System {
                 timer_name,
             } => {
                 // Cancel timer.
-                time_manager::cancel_timer(process_name, timer_name);
+                self.time_manager.cancel_timer(process_name, timer_name);
             }
 
             // Process request to stop the process.
@@ -231,12 +246,6 @@ impl System {
     }
 
     async fn work(&mut self) -> Result<(), String> {
-        // Initialize time manager.
-        time_manager::init();
-
-        // Intialize network manager.
-        network_manager::init();
-
         // Create send and receive ends of channel.
         let (event_sender, mut event_receiver) = mpsc::channel(self.event_buffer_size);
 
@@ -247,7 +256,8 @@ impl System {
             .map_err(|e| e.to_string())?;
 
         // Start listen for incomming connections.
-        network_manager::start_listen(self.host.clone(), self.port, event_sender.clone())?;
+        self.network_manager
+            .start_listen(self.host.clone(), self.port, event_sender.clone())?;
 
         // Move event_sender to sender option
         let mut sender_option = Some(event_sender);
@@ -263,8 +273,8 @@ impl System {
 
             // If there is no active processes, we can shutdown the system.
             if self.process_manager.active_count() == 0 {
-                time_manager::cancel_all_timers();
-                network_manager::stop_listen();
+                self.time_manager.cancel_all_timers();
+                self.network_manager.stop_listen();
 
                 // Drop common sender.
                 sender_option = None;

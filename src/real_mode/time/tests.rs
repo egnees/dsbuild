@@ -2,10 +2,11 @@ use std::sync::{Arc, Mutex};
 use std::time;
 
 use crate::real_mode::events::Event;
+use crate::real_mode::time::time_manager::TimeManager;
 
 use super::basic_timer_setter::BasicTimerSetter;
+use super::defs::*;
 use super::timer_setter::TimerSetter;
-use super::{defs::*, time_manager};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
 
@@ -71,7 +72,7 @@ fn test_basic_timer_setter() {
 #[test]
 fn test_time_manager() {
     // Init timer manager.
-    time_manager::init();
+    let mut time_manager = TimeManager::<BasicTimerSetter>::default();
 
     // Create runtime and event channel.
     let runtime = tokio::runtime::Runtime::new().expect("Can not create runtime");
@@ -82,29 +83,29 @@ fn test_time_manager() {
     runtime.spawn(async move {
         // Set timer and then cancel it by the cancel_all_timers interface.
         // As a result the following timer must not trigger.
-        time_manager::set_timer(sender.clone(), "process0", "timer0", 1.0, false);
-        time_manager::cancel_all_timers();
+        time_manager.set_timer(sender.clone(), "process0", "timer0", 1.0, false);
+        time_manager.cancel_all_timers();
 
         // Set basic timer on 0.1 seconds.
-        time_manager::set_timer(sender.clone(), "process1", "timer1", 0.1, false);
+        time_manager.set_timer(sender.clone(), "process1", "timer1", 0.1, false);
 
         // Try to reset previous timer with not set overwrite.
         // Nothing must happen.
-        time_manager::set_timer(sender.clone(), "process1", "timer1", 0.05, false);
+        time_manager.set_timer(sender.clone(), "process1", "timer1", 0.05, false);
 
         // Set the other one timer on 0.15 seconds.
-        time_manager::set_timer(sender.clone(), "process2", "timer2", 0.15, false);
+        time_manager.set_timer(sender.clone(), "process2", "timer2", 0.15, false);
 
         // Reset this timer with overwrite equals true and new delay equals 0.07.
         // This means timer must be reset.
-        time_manager::set_timer(sender.clone(), "process2", "timer2", 0.07, true);
+        time_manager.set_timer(sender.clone(), "process2", "timer2", 0.07, true);
 
         // As a result the second timer must fire in 0.07 seconds and the first one in 0.1 seconds.
 
         // Set one more timer and after that cancel it.
         // As a result timer must not trigger.
-        time_manager::set_timer(sender.clone(), "process3", "timer3", 1.0, false);
-        time_manager::cancel_timer("process3", "timer3");
+        time_manager.set_timer(sender.clone(), "process3", "timer3", 1.0, false);
+        time_manager.cancel_timer("process3", "timer3");
 
         // All conditions will be checked in the other one task, on which runtime will be blocked.
     });

@@ -1,12 +1,10 @@
-use std::{collections::HashMap, marker::PhantomData, sync::Mutex};
+use std::{collections::HashMap, marker::PhantomData};
 
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
 
 use crate::real_mode::events::Event;
 
-use super::{
-    basic_timer_setter::BasicTimerSetter, defs::SetTimerRequest, timer_setter::TimerSetter,
-};
+use super::{defs::SetTimerRequest, timer_setter::TimerSetter};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
 struct TimerID {
@@ -15,7 +13,7 @@ struct TimerID {
 }
 
 #[derive(Default)]
-struct TimeManager<T: TimerSetter> {
+pub struct TimeManager<T: TimerSetter> {
     pending_timers: HashMap<TimerID, JoinHandle<()>>,
     _phantom: PhantomData<T>,
 }
@@ -87,38 +85,4 @@ impl<T: TimerSetter> TimeManager<T> {
 
         self.pending_timers.clear();
     }
-}
-
-static MANAGER: Mutex<Option<TimeManager<BasicTimerSetter>>> = Mutex::new(None);
-
-pub fn init() {
-    let mut guard = MANAGER.lock().unwrap();
-    *guard = Some(TimeManager::new());
-}
-
-pub fn set_timer(
-    sender: Sender<Event>,
-    process_name: &str,
-    timer_name: &str,
-    delay: f64,
-    overwrite: bool,
-) {
-    let mut guard = MANAGER.lock().expect("Can not get timer manager guard");
-    let timer_manager_ref = guard.as_mut().expect("Timer manager not initiated");
-
-    timer_manager_ref.set_timer(sender, process_name, timer_name, delay, overwrite);
-}
-
-pub fn cancel_timer(process_name: &str, timer_name: &str) {
-    let mut guard = MANAGER.lock().expect("Can not get timer manager guard");
-    let timer_manager_ref = guard.as_mut().expect("Timer manager not initiated");
-
-    timer_manager_ref.cancel_timer(process_name, timer_name);
-}
-
-pub fn cancel_all_timers() {
-    let mut guard = MANAGER.lock().expect("Can not get timer manager guard");
-    let timer_manager_ref = guard.as_mut().expect("Timer manager not initiated");
-
-    timer_manager_ref.cancel_all_timers();
 }
