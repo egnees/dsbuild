@@ -1,4 +1,4 @@
-//! Definition of trait Context.
+//! Definition of trait [`Context`].
 
 use dyn_clone::DynClone;
 
@@ -16,7 +16,7 @@ pub trait Context: DynClone {
     /// If there is no such timer, does nothing.
     fn cancel_timer(&mut self, name: String);
 
-    /// Send message to another process
+    /// Send message to another process.
     fn send_message(&mut self, msg: Message, to: String);
 
     /// Stop the process.

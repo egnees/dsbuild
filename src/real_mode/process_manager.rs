@@ -63,7 +63,7 @@ impl ProcessManager {
         }
     }
 
-    /// 
+    ///
     pub fn handle_event(&mut self, event: Event) -> Result<Vec<ProcessAction>, String> {
         let mut new_actions = Vec::default();
 
