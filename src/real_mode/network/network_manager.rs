@@ -23,13 +23,14 @@ impl<M: AsyncMessenger> NetworkManager<M> {
         sender: Sender<Event>,
     ) -> Result<(), String> {
         if self.listen_handler.is_some() {
-            return Err("Already listening".to_owned());
+            return Err("Can not start listen: already listening".to_owned());
         }
 
         let handler = tokio::spawn(async move {
             M::listen(host, port, sender)
                 .await
-                .expect("Can not start listening")
+                .map_err(|e| "Can not start listen: ".to_owned() + e.to_string().as_str())
+                .unwrap();
         });
 
         self.listen_handler = Some(handler);
