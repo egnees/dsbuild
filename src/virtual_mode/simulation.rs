@@ -1,3 +1,5 @@
+//! Definition of [`Simulation`]. 
+
 use std::{
     cell::{Ref, RefMut},
     sync::{Arc, RwLock},
@@ -11,11 +13,15 @@ use dslab_mp::{
 use super::process_wrapper::VirtualProcessWrapper;
 use crate::common::process::{Process, ProcessWrapper};
 
+/// Represents virtual system, which is responsible
+/// for interaction with [processes][`Process`] provided by used, 
+/// simulation of time, network, and other OS features.
 pub struct Simulation {
     inner: VirtualSystem,
 }
 
 impl Simulation {
+    /// Creates new [simulation][`Simulation`] with provided `seed`.
     pub fn new(seed: u64) -> Self {
         Self {
             inner: VirtualSystem::new(seed),

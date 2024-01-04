@@ -1,3 +1,5 @@
+//! Defines structures and functions used in real mode of the [framework][`super`]. 
+
 mod events;
 mod network;
 mod process_manager;
