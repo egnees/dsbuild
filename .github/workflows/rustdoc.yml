@@ -18,6 +18,9 @@ jobs:
           packages: libpango1.0-dev libatk1.0-dev libgtk-3-dev
           version: 1.0
 
+      - name: Install protobuf
+        run: sudo apt install protobuf-compiler
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
