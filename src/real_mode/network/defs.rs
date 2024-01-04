@@ -2,23 +2,25 @@
 
 use crate::common::message::Message;
 
-/// Specifies process address.
+/// Specifies process address, 
+/// which is used inside of the 
+/// [`crate::real_mode::system::System`] to route messages in the network.
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct Address {
     /// Specifies host, 
     /// which is used to deliver messages 
-    /// to the [`crate::real_mode::system::System`] instance 
+    /// to the [real system][`crate::real_mode::system::System`] instance
     /// through the network.
     pub host: String,
     
     /// Specifies port, 
     /// which is used to deliver messages 
-    /// to the [`crate::real_mode::system::System`] instance 
-    /// through  the network.
+    /// to the [real system][`crate::real_mode::system::System`] instance
+    /// through the network.
     pub port: u16,
     
-    /// Specifies destination process name
-    /// inside of the [`crate::real_mode::system::System`] instance.
+    /// Specifies process name
+    /// inside of the [real system][`crate::real_mode::system::System`] instance.
     pub process_name: String,
 }
 
