@@ -1,3 +1,5 @@
+//! Definition of process manager.
+
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
@@ -7,21 +9,30 @@ use crate::common::process::{Process, ProcessState};
 use super::events::Event;
 use super::real_context::RealContext;
 
+/// Process manager is reponsible for user processes.
+/// It manages states of user processes and mantains number of active processes.
+/// Process manager is also responsible for handling system events and receiving
+/// response actions of user processes.
 #[derive(Default)]
 pub struct ProcessManager {
+    // Holds mapping from process name to (process state, process implemntation pointer) pair.
     process_info: HashMap<String, (ProcessState, Arc<RwLock<dyn Process>>)>,
+    // Number of active processes.
     active_process: u32,
 }
 
 impl ProcessManager {
+    /// Check if process state corresponds to active process.
     fn is_active(state: ProcessState) -> bool {
         state == ProcessState::Running
     }
 
+    /// Returns number of active processes.
     pub fn active_count(&self) -> u32 {
         self.active_process
     }
 
+    /// Assistant function for getting reference on process implementation by process name.
     fn get_process(
         &mut self,
         process_name: &str,
@@ -38,6 +49,7 @@ impl ProcessManager {
         }
     }
 
+    /// Assistant function for getting mutable reference on process state by process name.
     fn get_state(&mut self, process_name: &str) -> Result<&mut ProcessState, String> {
         if self.process_info.contains_key(process_name) {
             let (state, _) = self.process_info.get_mut(process_name).unwrap();
@@ -51,6 +63,7 @@ impl ProcessManager {
         }
     }
 
+    /// 
     pub fn handle_event(&mut self, event: Event) -> Result<Vec<ProcessAction>, String> {
         let mut new_actions = Vec::default();
 
