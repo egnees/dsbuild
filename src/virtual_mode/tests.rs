@@ -49,7 +49,7 @@ fn test_ping_pong_works_in_simulation() {
                     .as_str(),
                 10,
             )
-            .map_err(|_err| "Protocal failed")?;
+            .map_err(|_err| "Protocol failed")?;
             if pong_seq_num == self.last_pong + 1 {
                 // Next message in sequence
                 self.last_pong += 1;
@@ -98,7 +98,7 @@ fn test_ping_pong_works_in_simulation() {
                     .as_str(),
                 10,
             )
-            .map_err(|_err| "Protocal failed")?;
+            .map_err(|_err| "Protocol failed")?;
 
             ctx.send_message(
                 Message::borrow_new("PONG", (last_pong_seq_num + 1).to_string())
