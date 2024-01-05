@@ -69,7 +69,7 @@ pub struct ProcessWrapper<P: Process + 'static> {
 }
 
 /// Represents guard for user-defined [`process`][`crate::Process`].
-/// 
+///
 /// While user hold [`guard`][`ProcessGuard`] on the process, system can not get access to it.
 /// In this case system thread will be blocked until guard won't be dropped.
 ///

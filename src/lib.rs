@@ -1,4 +1,4 @@
-//! Framework for building distributed systems with support for 
+//! Framework for building distributed systems with support for
 //! [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html) simulation-based testing.
 
 // Add warnings for missing public documentation.
@@ -15,7 +15,7 @@ pub use real_mode::real_system::{Address, AddressResolvePolicy, RealSystem, Real
 mod virtual_mode;
 
 // Re-export public entities.
-pub use virtual_mode::virtual_system::VirtualSystem as VirtualSystem;
+pub use virtual_mode::virtual_system::VirtualSystem;
 
 mod common;
 

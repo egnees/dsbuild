@@ -16,8 +16,8 @@ use crate::common::process::{Process, ProcessWrapper};
 /// Represents virtual system, which is responsible
 /// for interacting with [`user-processes`][`Process`],
 /// simulating time, network, and other [OS](https://en.wikipedia.org/wiki/Operating_system) features.
-/// 
-/// [`VirtualSystem`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html) 
+///
+/// [`VirtualSystem`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
 /// framework for simulation of network, time, etc.
 pub struct VirtualSystem {
     inner: Simulation,
@@ -90,9 +90,9 @@ impl VirtualSystem {
     // Process ------------------------------------------------------
 
     /// Adds a process to the [`VirtualSystem`].
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// - If `process name` is already used.
     pub fn add_process<P: Process + Clone + 'static>(
         &mut self,
