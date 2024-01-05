@@ -1,4 +1,4 @@
-//! Definition of [`Simulation`]. 
+//! Definition of [`VirtualSystem`].
 
 use std::{
     cell::{Ref, RefMut},
@@ -7,24 +7,27 @@ use std::{
 
 use dslab_mp::{
     message::Message as SimulationMessage, network::Network, node::Node,
-    system::System as VirtualSystem,
+    system::System as Simulation,
 };
 
 use super::process_wrapper::VirtualProcessWrapper;
 use crate::common::process::{Process, ProcessWrapper};
 
 /// Represents virtual system, which is responsible
-/// for interaction with [processes][`Process`] provided by used, 
-/// simulation of time, network, and other OS features.
-pub struct Simulation {
-    inner: VirtualSystem,
+/// for interacting with [`user-processes`][`Process`],
+/// simulating time, network, and other [OS](https://en.wikipedia.org/wiki/Operating_system) features.
+/// 
+/// [`VirtualSystem`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html) 
+/// framework for simulation of network, time, etc.
+pub struct VirtualSystem {
+    inner: Simulation,
 }
 
-impl Simulation {
-    /// Creates new [simulation][`Simulation`] with provided `seed`.
+impl VirtualSystem {
+    /// Creates new [`VirtualSystem`] with provided `seed`.
     pub fn new(seed: u64) -> Self {
         Self {
-            inner: VirtualSystem::new(seed),
+            inner: Simulation::new(seed),
         }
     }
 
@@ -86,8 +89,11 @@ impl Simulation {
 
     // Process ------------------------------------------------------
 
-    /// Adds a process to the simulation.
-    /// Panics if the process name is already used.
+    /// Adds a process to the [`VirtualSystem`].
+    /// 
+    /// # Panics
+    /// 
+    /// - If `process name` is already used.
     pub fn add_process<P: Process + Clone + 'static>(
         &mut self,
         process_name: &str,

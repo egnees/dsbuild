@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use super::{
     events::Event,
     process_manager::ProcessManager,
-    system::{AddressResolvePolicy, System, SystemConfig},
+    real_system::{AddressResolvePolicy, RealSystem, RealSystemConfig},
 };
 use crate::common::message::Message;
 
@@ -33,7 +33,7 @@ fn test_process_manager() {
         .expect("Can not add process");
     manager
         .add_process(FIRST_PING_NAME.into(), proc_2_wrapper.clone())
-        .expect_err("Manager allows to add process with eqaul name twice");
+        .expect_err("Manager allows to add process with equal name twice");
     manager
         .add_process(SECOND_PING_NAME.into(), proc_2_wrapper.clone())
         .expect("Can not add process with unique name");
@@ -241,12 +241,12 @@ fn test_system_basic() {
     const NEED_CNT: u32 = 2;
 
     // Create system.
-    let resolve_polyicy = AddressResolvePolicy::Manual {
+    let resolve_policy = AddressResolvePolicy::Manual {
         resolve_list: vec![],
     };
-    let config = SystemConfig::default(resolve_polyicy, "127.0.0.1".to_owned(), 10035)
+    let config = RealSystemConfig::default(resolve_policy, "127.0.0.1".to_owned(), 10035)
         .expect("Can not create default config");
-    let mut system = System::new(config).expect("Can not create system");
+    let mut system = RealSystem::new(config).expect("Can not create system");
 
     // Add process to system.
     let isolated = IsolatedProcess::new(NEED_CNT, 0.1);
@@ -277,12 +277,12 @@ fn test_communication_inside_system() {
     const PONG_DELAY: f64 = 0.4;
 
     // Create system.
-    let resolve_polyicy = AddressResolvePolicy::Manual {
+    let resolve_policy = AddressResolvePolicy::Manual {
         resolve_list: vec![],
     };
-    let config = SystemConfig::default(resolve_polyicy, "127.0.0.1".to_owned(), 59936)
+    let config = RealSystemConfig::default(resolve_policy, "127.0.0.1".to_owned(), 59936)
         .expect("Can not create default config");
-    let mut system = System::new(config).expect("Can not create system");
+    let mut system = RealSystem::new(config).expect("Can not create system");
 
     // Add processes to system.
     let first_ping = system
@@ -311,7 +311,7 @@ fn test_communication_inside_system() {
         .expect("Can not add the pong process");
 
     // Run system.
-    system.run().expect("System runned with error");
+    system.run().expect("System run lead to error");
 
     // Check that all pings received pongs.
     assert_eq!(first_ping.read().get_last_pong(), FIRST_NEED);

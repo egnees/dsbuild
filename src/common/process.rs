@@ -54,8 +54,8 @@ pub trait Process: DynClone {
     ) -> Result<(), String>;
 }
 
-/// Represents wrapper around user-defined process,
-/// which returns to user when he passes process to system.
+/// Represents wrapper around user-defined [`process`][crate::Process],
+/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealSystem] or [`virtual`][crate::VirtualSystem] system.
 ///
 /// Wrapper holds reference to user-defined process, which implements [`Process`] trait,
 /// and allows user to get read access to it.
@@ -68,8 +68,9 @@ pub struct ProcessWrapper<P: Process + 'static> {
     pub(crate) process_ref: Arc<RwLock<P>>,
 }
 
-/// Represents guard for user-defined process.
-/// While user hold [`ProcessGuard`] on the process, system can not get access to it.
+/// Represents guard for user-defined [`process`][`crate::Process`].
+/// 
+/// While user hold [`guard`][`ProcessGuard`] on the process, system can not get access to it.
 /// In this case system thread will be blocked until guard won't be dropped.
 ///
 /// Technically, for now both real and virtual systems works with process in the same thread as user does,

@@ -30,7 +30,7 @@ impl ProcessManager {
 
     /// Returns number of active processes.
     ///
-    /// This function is used by [`System`][`super::system::System`]
+    /// This function is used by [`RealSystem`][`super::real_system::RealSystem`]
     /// to stop interaction with OS when there are no active processes.
     pub fn active_count(&self) -> u32 {
         self.active_process

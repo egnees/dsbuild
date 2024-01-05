@@ -1,4 +1,4 @@
-//! Defines structures and functions used in real mode of the [framework][`super`]. 
+//! Definition of structures and functions, which are used in [`real mode`][`crate::RealSystem`].
 
 mod events;
 mod network;
@@ -6,7 +6,7 @@ mod process_manager;
 mod real_context;
 mod time;
 
-pub mod system;
+pub mod real_system;
 
 #[cfg(test)]
 mod tests;

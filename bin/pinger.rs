@@ -1,8 +1,6 @@
 use std::env;
 
-use dsbuild::common::message::Message;
-use dsbuild::common::process::Process;
-use dsbuild::real_mode::system::*;
+use dsbuild::{Address, AddressResolvePolicy, Message, Process, RealSystem, RealSystemConfig};
 
 #[derive(Clone)]
 struct PingProcess {
@@ -14,7 +12,7 @@ struct PingProcess {
 }
 
 impl PingProcess {
-    fn ping(&mut self, ctx: &mut dyn dsbuild::common::context::Context) -> Result<(), String> {
+    fn ping(&mut self, ctx: &mut dyn dsbuild::Context) -> Result<(), String> {
         println!(
             "Ping process {} with pong request {}",
             self.ponger,
@@ -42,17 +40,13 @@ impl PingProcess {
 }
 
 impl Process for PingProcess {
-    fn on_start(&mut self, ctx: &mut dyn dsbuild::common::context::Context) -> Result<(), String> {
+    fn on_start(&mut self, ctx: &mut dyn dsbuild::Context) -> Result<(), String> {
         println!("Starting ping process...");
 
         self.ping(ctx)
     }
 
-    fn on_timer(
-        &mut self,
-        name: String,
-        ctx: &mut dyn dsbuild::common::context::Context,
-    ) -> Result<(), String> {
+    fn on_timer(&mut self, name: String, ctx: &mut dyn dsbuild::Context) -> Result<(), String> {
         assert_eq!(name, "PING_TIMER".to_owned());
 
         self.ping(ctx)
@@ -60,9 +54,9 @@ impl Process for PingProcess {
 
     fn on_message(
         &mut self,
-        msg: dsbuild::common::message::Message,
+        msg: dsbuild::Message,
         from: String,
-        ctx: &mut dyn dsbuild::common::context::Context,
+        ctx: &mut dyn dsbuild::Context,
     ) -> Result<(), String> {
         assert_eq!(msg.get_tip(), "PONG");
 
@@ -116,10 +110,14 @@ fn main() {
     let resolve_policy = AddressResolvePolicy::Manual {
         resolve_list: vec![ponger_address],
     };
-    let config =
-        SystemConfig::new_with_max_threads(8, resolve_policy, "127.0.0.1".to_owned(), listen_port)
-            .expect("Can not create system config");
-    let mut system = System::new(config).expect("Can not create system");
+    let config = RealSystemConfig::new_with_max_threads(
+        8,
+        resolve_policy,
+        "127.0.0.1".to_owned(),
+        listen_port,
+    )
+    .expect("Can not create system config");
+    let mut system = RealSystem::new(config).expect("Can not create system");
 
     // Create ping process.
     let ping_count = args[4].parse::<u32>().expect("Can not parse ping count");

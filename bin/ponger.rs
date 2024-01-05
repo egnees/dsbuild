@@ -1,9 +1,6 @@
 use std::env;
 
-use dsbuild::common::context::Context;
-use dsbuild::common::message::Message;
-use dsbuild::common::process::Process;
-use dsbuild::real_mode::system::*;
+use dsbuild::{Address, AddressResolvePolicy, Message, Process, RealSystem, RealSystemConfig};
 
 #[derive(Clone)]
 struct PongProcess {
@@ -16,7 +13,7 @@ struct PongProcess {
 impl PongProcess {
     const TIMER_NAME: &'static str = "PONG_TIMER";
 
-    fn set_timer(&self, ctx: &mut dyn Context) {
+    fn set_timer(&self, ctx: &mut dyn dsbuild::Context) {
         ctx.set_timer(Self::TIMER_NAME.to_owned(), self.delay);
     }
 
@@ -29,7 +26,7 @@ impl PongProcess {
 }
 
 impl Process for PongProcess {
-    fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_start(&mut self, ctx: &mut dyn dsbuild::Context) -> Result<(), String> {
         println!("Starting pong process...");
 
         self.set_timer(ctx);
@@ -37,7 +34,7 @@ impl Process for PongProcess {
         Ok(())
     }
 
-    fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_timer(&mut self, name: String, ctx: &mut dyn dsbuild::Context) -> Result<(), String> {
         assert_eq!(name, Self::TIMER_NAME);
 
         println!("Stopping pong process...");
@@ -51,7 +48,7 @@ impl Process for PongProcess {
         &mut self,
         msg: Message,
         from: String,
-        ctx: &mut dyn Context,
+        ctx: &mut dyn dsbuild::Context,
     ) -> Result<(), String> {
         let requested_pong = msg.get_data::<u32>()?;
         let answer = Message::borrow_new("PONG", requested_pong)?;
@@ -92,11 +89,15 @@ fn main() {
         resolve_list: vec![pinger_address],
     };
 
-    let config =
-        SystemConfig::new_with_max_threads(8, resolve_policy, "127.0.0.1".to_owned(), listen_port)
-            .expect("Can not create system config");
+    let config = RealSystemConfig::new_with_max_threads(
+        8,
+        resolve_policy,
+        "127.0.0.1".to_owned(),
+        listen_port,
+    )
+    .expect("Can not create system config");
 
-    let mut system = System::new(config).expect("Can not create system");
+    let mut system = RealSystem::new(config).expect("Can not create system");
 
     // Create ping process.
     let pong_process = PongProcess::new(0.5);

@@ -1,6 +1,6 @@
 use crate::{
     common::{context::Context, message::Message, process::Process},
-    virtual_mode::simulation::Simulation,
+    virtual_mode::virtual_system::VirtualSystem,
 };
 
 #[test]
@@ -120,7 +120,7 @@ fn test_ping_pong_works_in_simulation() {
 
     let pong_proc = PongProcess {};
 
-    let mut simulation = Simulation::new(12345);
+    let mut simulation = VirtualSystem::new(12345);
 
     simulation.add_node("node_1");
     simulation.add_process("ping_proc", ping_proc, "node_1");

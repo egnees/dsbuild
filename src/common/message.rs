@@ -2,10 +2,10 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Represents a message,
-/// which is used by processes to communicate with each other.
+/// Represents message,
+/// which can be used by [`processes`][`crate::Process`] to communicate with each other.
 ///
-/// In message's data can be stored any data types, which implements [`Serialize`] and [`Deserialize`] traits.
+/// In message data can be stored any data types, which implements [`Serialize`] and [`Deserialize`] traits.
 #[derive(Serialize, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, Debug)]
 pub struct Message {
     tip: String,
@@ -71,10 +71,10 @@ impl Message {
     where
         T: Deserialize<'a>,
     {
-        let data_deserealized =
+        let data_deserialized =
             serde_json::from_slice::<'a, T>(self.data.as_slice()).map_err(|err| err.to_string())?;
 
-        Ok(data_deserealized)
+        Ok(data_deserialized)
     }
 }
 

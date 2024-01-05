@@ -1,4 +1,4 @@
-//! Definition of [`RealSystem`][`System`].
+//! Definition of [`RealSystem`] and [`RealSystemConfig`].
 
 use std::sync::{Arc, RwLock};
 
@@ -21,14 +21,14 @@ use super::{
 
 pub use super::network::defs::Address;
 
-/// Specifies policy of resolving [network addresses][`Address`] by process name.
+/// Represents policy for resolving [`network address`][`crate::Address`] by [`process`][`crate::Process`] name.
 ///
-/// It allows to know [network address][`Address`] of [user-process][`Process`]
-/// to send [messages][`crate::common::message::Message`] to it.
+/// It allows to know [`network address`][`Address`] of [user-process][`Process`]
+/// to send [messages][`crate::Message`] to it.
 ///
 /// Note that address resolving does not filter out not registered processes in general[^note].
 /// It means user-process can receive messages from malicious processes too,
-/// which can use or not use [framework][`crate`];
+/// which can use or not use [`framework`](https://github.com/egnees/dsbuild);
 ///
 /// [^note]: add some kind of protection against malicious processes in future.
 pub enum AddressResolvePolicy {
@@ -47,43 +47,43 @@ pub enum AddressResolvePolicy {
     },
 }
 
-/// Specifies configuration of [`System`].
-pub struct SystemConfig {
-    /// Max number of threads which will be used to handle events inside of the [`System`].
+/// Represents configuration of [`RealSystem`].
+pub struct RealSystemConfig {
+    /// Max number of threads which will be used to handle events inside of the [`RealSystem`].
     max_threads: usize,
 
-    /// Max size of buffer of pending events inside of the [`System`].
+    /// Max size of buffer of pending events inside of the [`RealSystem`].
     event_buffer_size: usize,
 
     /// Policy for resolving [network addresses][`Address`] by process name.
     resolve_policy: AddressResolvePolicy,
 
-    /// Host which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
+    /// Host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     host: String,
 
-    /// Port which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
+    /// Port which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     port: u16,
 }
 
-impl SystemConfig {
-    /// Default size of the event buffer inside of the [`System`].
+impl RealSystemConfig {
+    /// Default size of the event buffer inside of the [`RealSystem`].
     pub const DEFAULT_EVENT_BUFFER_SIZE: usize = 1024;
 
-    /// Default number of threads, which are used to handle events inside of the [`System`].
+    /// Default number of threads, which are used to handle events inside of the [`RealSystem`].
     pub const DEFAULT_MAX_THREADS: usize = 1;
 
-    /// Creates new instance of [`SystemConfig`].
+    /// Creates new instance of [`RealSystemConfig`].
     ///
-    /// * `max_threads` - Specifies max number of threads which will be used by [`System`] to handle events.
+    /// * `max_threads` - Specifies max number of threads which will be used by [`RealSystem`] to handle events.
     ///     This value must be greater than zero.
-    /// * `event_buffer_size` - Specifies size of the pending events buffer inside of the [`System`].
+    /// * `event_buffer_size` - Specifies size of the pending events buffer inside of the [`RealSystem`].
     ///     If the buffer is full, all threads will be blocked at the moment of sending event to the buffer,
     ///     while some old event won`t be processed.
     ///
     ///     This value must be greater than zero.
     /// * `resolve_policy` - Specifies policy for resolving [network addresses][`Address`] by process name.
-    /// * `host` - Specifies host which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
-    /// * `port` - Specifies port which will be used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
+    /// * `host` - Specifies host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
+    /// * `port` - Specifies port which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     pub fn new(
         max_threads: usize,
         event_buffer_size: usize,
@@ -96,7 +96,7 @@ impl SystemConfig {
         } else if max_threads == 0 {
             Err("Max threads can not be 0".to_owned())
         } else {
-            Ok(SystemConfig {
+            Ok(RealSystemConfig {
                 max_threads,
                 event_buffer_size,
                 resolve_policy,
@@ -106,10 +106,10 @@ impl SystemConfig {
         }
     }
 
-    /// Alias for [`SystemConfig::new`] method, which creates new [`SystemConfig`]
-    /// with specified number of threads, used to handle events inside of [`System`].
+    /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
+    /// with specified number of threads, used to handle events inside of [`RealSystem`].
     ///
-    /// Instead of `event_buffer_size` used [`SystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
+    /// Instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
     pub fn new_with_max_threads(
         max_threads: usize,
         resolve_policy: AddressResolvePolicy,
@@ -125,10 +125,10 @@ impl SystemConfig {
         )
     }
 
-    /// Alias for [`SystemConfig::new`] method, which creates new [`SystemConfig`]
-    /// with specified size of buffer, which is used to store pending events inside of [`System`].
+    /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
+    /// with specified size of buffer, which is used to store pending events inside of [`RealSystem`].
     ///
-    /// Instead of `max_threads` used [`SystemConfig::DEFAULT_MAX_THREADS`].
+    /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`].
     pub fn new_with_buffer_size(
         event_buffer_size: usize,
         resolve_policy: AddressResolvePolicy,
@@ -144,11 +144,11 @@ impl SystemConfig {
         )
     }
 
-    /// Alias for [`SystemConfig::new`] method, which creates new [`SystemConfig`]
+    /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
     /// with default parameters.
     ///
-    /// Instead of `max_threads` used [`SystemConfig::DEFAULT_MAX_THREADS`],
-    /// and instead of `event_buffer_size` used [`SystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
+    /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`],
+    /// and instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
     pub fn default(
         resolve_policy: AddressResolvePolicy,
         host: String,
@@ -165,11 +165,11 @@ impl SystemConfig {
 }
 
 /// Represents real system, which is responsible
-/// for interaction with [processes][`Process`] provided by used, time, network, and other OS features.
-pub struct System {
+/// for interacting with [`user-processes`][`Process`], time, network, and other [OS](https://en.wikipedia.org/wiki/Operating_system) features.
+pub struct RealSystem {
     /// Represents [network address][`AddressResolver`] resolver,
-    /// which is configured according to provided by [`SystemConfig`]
-    /// [resolve policy][`SystemConfig::resolve_policy`].
+    /// which is configured according to provided by [`RealSystemConfig`]
+    /// [resolve policy][`RealSystemConfig::resolve_policy`].
     resolver: Box<dyn AddressResolver>,
 
     /// Represents [process manager][`ProcessManager`], which is used to manage [user-processes][`Process`].
@@ -181,24 +181,24 @@ pub struct System {
     /// Represents [network_manager][`NetworkManager`], which is used to work with network.
     network_manager: NetworkManager<GRpcMessenger>,
 
-    /// Corresponds to [`SystemConfig::max_threads`].
+    /// Corresponds to [`RealSystemConfig::max_threads`].
     max_threads: usize,
 
-    /// Corresponds to [`SystemConfig::event_buffer_size`].
+    /// Corresponds to [`RealSystemConfig::event_buffer_size`].
     event_buffer_size: usize,
 
-    /// Corresponds to [`SystemConfig::host`],
-    /// which is used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
+    /// Corresponds to [`RealSystemConfig::host`],
+    /// which is used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     host: String,
 
-    /// Corresponds to [`SystemConfig::port`],
-    /// which is used by [`System`] to listen for the incoming [messages][`crate::common::message::Message`].
+    /// Corresponds to [`RealSystemConfig::port`],
+    /// which is used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     port: u16,
 }
 
-impl System {
-    /// Creates new instance of [`System`] from [`SystemConfig`].
-    pub fn new(config: SystemConfig) -> Result<Self, String> {
+impl RealSystem {
+    /// Creates new instance of [`RealSystem`] from [`RealSystemConfig`].
+    pub fn new(config: RealSystemConfig) -> Result<Self, String> {
         // Create process manager.
         let process_manager = ProcessManager::default();
 
@@ -218,7 +218,7 @@ impl System {
         };
 
         // Build and return created system.
-        Ok(System {
+        Ok(RealSystem {
             resolver,
             process_manager,
             time_manager,
@@ -270,7 +270,7 @@ impl System {
     }
 
     /// Assistant function which is used to handle [process actions][`ProcessAction`] list.
-    /// Applies [`System::handle_process_action`] to every action inside.
+    /// Applies [`RealSystem::handle_process_action`] to every action inside.
     fn handle_process_actions(
         &mut self,
         actions: &[ProcessAction],
@@ -351,10 +351,10 @@ impl System {
     }
 
     /// Returns [future][`core::future::Future`] which execution will lead to loop,
-    /// in which [`System`] will wait for incoming [events][`Event`] and handle them.
+    /// in which [`RealSystem`] will wait for incoming [events][`Event`] and handle them.
     ///
-    /// Every [event][`Event`] will be handled by [process_manager][`System::process_manager`]
-    /// and produce few [actions][`ProcessAction`] which will be handled by [`System`]
+    /// Every [event][`Event`] will be handled by [process_manager][`RealSystem::process_manager`]
+    /// and produce few [actions][`ProcessAction`] which will be handled by [`RealSystem`]
     /// and will lead to interaction with OS and appearing of new [events][`Event`],
     /// which also need to be handled, and so on.
     ///
@@ -374,7 +374,7 @@ impl System {
     ///     If user wants to stop the runtime, [user-process][`Process`] need panic.
     ///
     /// [^note]: Essentially communication channels with OS are organized using only one [multi-channel][`tokio::sync::mpsc::channel`],
-    /// which will have one [receiver][`tokio::sync::mpsc::Receiver`] end and few [senders][`Sender`] ends. Receiver end will be holden by [`System`] and sender ends will be holden by OS interaction actors,
+    /// which will have one [receiver][`tokio::sync::mpsc::Receiver`] end and few [senders][`Sender`] ends. Receiver end will be holden by [`RealSystem`] and sender ends will be holden by OS interaction actors,
     /// like [`NetworkManager`] and [`TimeManager`]. For example, every timer, produced by [`TimeManager`], will have one [sender end][`Sender`],
     /// and [network listener][`NetworkManager`] also will hold one [sender end][`Sender`]. After timer fired, or listener stops,
     /// [sender][`Sender`] will be dropped. After all [senders][`Sender`] are dropped, loop will be ended.
@@ -420,7 +420,7 @@ impl System {
         Ok(())
     }
 
-    /// Runs the [system][`System`] using [asynchronous runtime][tokio::runtime::Runtime].
+    /// Runs the [system][`RealSystem`] using [asynchronous runtime][tokio::runtime::Runtime].
     pub fn run(&mut self) -> Result<(), String> {
         // Create runtime according to specified number of threads.
         let runtime = tokio::runtime::Builder::new_multi_thread()
