@@ -103,10 +103,10 @@
 
 </span><span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="doccomment">/// Represents a message,
-/// which is used by processes to communicate with each other.
+<span class="doccomment">/// Represents message,
+/// which can be used by [`processes`][`crate::Process`] to communicate with each other.
 ///
-/// In message&#39;s data can be stored any data types, which implements [`Serialize`] and [`Deserialize`] traits.
+/// In message data can be stored any data types, which implements [`Serialize`] and [`Deserialize`] traits.
 </span><span class="attr">#[derive(Serialize, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, Debug)]
 </span><span class="kw">pub struct </span>Message {
     tip: String,
@@ -172,10 +172,10 @@
     <span class="kw">where
         </span>T: Deserialize&lt;<span class="lifetime">&#39;a</span>&gt;,
     {
-        <span class="kw">let </span>data_deserealized =
+        <span class="kw">let </span>data_deserialized =
             serde_json::from_slice::&lt;<span class="lifetime">&#39;a</span>, T&gt;(<span class="self">self</span>.data.as_slice()).map_err(|err| err.to_string())<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(data_deserealized)
+        <span class="prelude-val">Ok</span>(data_deserialized)
     }
 }
 

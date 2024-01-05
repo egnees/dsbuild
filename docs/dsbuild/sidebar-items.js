@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["common","process_lib","real_mode","virtual_mode"]};
+window.SIDEBAR_ITEMS = {"enum":["AddressResolvePolicy"],"mod":["common","process_lib","real_mode","virtual_mode"],"struct":["Address","Message","ProcessGuard","ProcessWrapper","RealSystem","RealSystemConfig","VirtualSystem"],"trait":["Context","Process"]};

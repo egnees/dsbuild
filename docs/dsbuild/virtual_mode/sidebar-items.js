@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["process_wrapper","simulation","virtual_context"]};
+window.SIDEBAR_ITEMS = {"mod":["process_wrapper","virtual_context","virtual_system"]};

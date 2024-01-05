@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["events","network","process_manager","real_context","system","time"]};
+window.SIDEBAR_ITEMS = {"mod":["events","network","process_manager","real_context","real_system","time"]};
