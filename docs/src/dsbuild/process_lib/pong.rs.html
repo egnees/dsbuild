@@ -115,6 +115,9 @@
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Implementation of [`PongProcess`].
 
 </span><span class="kw">use </span><span class="kw">crate</span>::common::{context::Context, message::Message, process::Process};
@@ -226,7 +229,10 @@
         <span class="self">self</span>.set_timer(ctx);
 
         <span class="kw">if </span><span class="self">self</span>.verbose {
-            <span class="macro">println!</span>(<span class="string">&quot;PongProcess: received pong message with requested pong number={}.&quot;</span>, requested_pong);
+            <span class="macro">println!</span>(
+                <span class="string">&quot;PongProcess: received pong message with requested pong number={}.&quot;</span>,
+                requested_pong
+            );
         }
 
         <span class="prelude-val">Ok</span>(())

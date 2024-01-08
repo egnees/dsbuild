@@ -179,6 +179,12 @@
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Implementation of [`PingProcess`].
 
 </span><span class="kw">use </span><span class="kw">crate</span>::common::{context::Context, message::Message, process::Process};
@@ -243,7 +249,10 @@
         ctx.set_timer(<span class="self">Self</span>::PING_TIMER.to_owned(), <span class="self">self</span>.delay);
 
         <span class="kw">if </span><span class="self">self</span>.verbose {
-            <span class="macro">println!</span>(<span class="string">&quot;PingProcess: sent ping message with requested pong number={}.&quot;</span>, pong_request);
+            <span class="macro">println!</span>(
+                <span class="string">&quot;PingProcess: sent ping message with requested pong number={}.&quot;</span>,
+                pong_request
+            );
         }
     }
 
@@ -284,7 +293,7 @@
 
     <span class="doccomment">/// Creates new verbose [`PingProcess`] with delay, partner process name
     /// and need count of pongs to receive before terminate.
-    /// 
+    ///
     /// See [`PingProcess::new`] for details.
     </span><span class="kw">pub fn </span>new_verbose(delay: f64, partner: String, need_cnt: u32) -&gt; <span class="self">Self </span>{
         <span class="macro">assert!</span>(delay &gt; <span class="number">0.0</span>);
@@ -343,7 +352,10 @@
         }
 
         <span class="kw">if </span><span class="self">self</span>.verbose {
-            <span class="macro">println!</span>(<span class="string">&quot;PingProcess: received pong response with sequence number={}.&quot;</span>, pong_sequence_number);
+            <span class="macro">println!</span>(
+                <span class="string">&quot;PingProcess: received pong response with sequence number={}.&quot;</span>,
+                pong_sequence_number
+            );
         }
 
         <span class="kw">if </span><span class="self">self</span>.last_pong == <span class="self">self</span>.need_cnt {

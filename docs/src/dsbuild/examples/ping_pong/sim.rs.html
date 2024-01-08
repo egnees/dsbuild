@@ -74,8 +74,8 @@
 //!
 //! Creates Ping and Pong processes, add them to system, and make them communicate with each other.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::VirtualSystem;
-<span class="kw">use </span><span class="kw">crate</span>::examples::ping_pong::{pinger, ponger};
+</span><span class="kw">use </span><span class="kw">crate</span>::examples::ping_pong::{pinger, ponger};
+<span class="kw">use </span><span class="kw">crate</span>::VirtualSystem;
 
 <span class="doccomment">/// Runs simulation with specified number of ping-pong iterations.
 </span><span class="kw">pub fn </span>run_sim(need_cycles: u32) {
@@ -103,7 +103,7 @@
     <span class="comment">// Connect both nodes to the network.
     </span>sim.network().connect_node(PINGER_NAME);
     sim.network().connect_node(PONGER_NAME);
-    
+
     <span class="comment">// Add pinger to the node.
     </span><span class="kw">let </span>pinger = pinger::create_pinger(<span class="number">0.1</span>, PONGER_NAME.to_owned(), need_cycles);
     <span class="kw">let </span>pinger_wrapper = sim.add_process(PINGER_NAME, pinger, PINGER_NODE);
@@ -125,7 +125,7 @@
     // Pinger will send ponger message, but ponger will ignore it.
     </span>sim.make_steps(<span class="number">2</span>);
 
-    <span class="comment">// Now pinger must try to send more messages, 
+    <span class="comment">// Now pinger must try to send more messages,
     // but ponger is not started yet.
     </span>sim.make_steps(<span class="number">2</span>);
 
@@ -141,4 +141,5 @@
     <span class="comment">// In the end, check that both processes are stopped.
     </span><span class="macro">assert!</span>(pinger_wrapper.read().is_stopped());
     <span class="macro">assert!</span>(ponger_wrapper.read().is_stopped());
-}</code></pre></div></section></main></body></html>
+}
+</code></pre></div></section></main></body></html>
