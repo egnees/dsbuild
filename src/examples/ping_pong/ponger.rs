@@ -1,4 +1,4 @@
-//! Assists [`PongProcess`] functionality.
+//! Assistant for [`PongProcess`] functionality.
 
 use crate::process_lib::pong::PongProcess;
 

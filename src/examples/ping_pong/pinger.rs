@@ -1,4 +1,4 @@
-//! Assists [`PingProcess`] functionality.
+//! Assistant for [`PingProcess`] functionality.
 
 use crate::process_lib::ping::PingProcess;
 

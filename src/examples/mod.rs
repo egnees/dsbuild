@@ -1,4 +1,4 @@
-//! Collection of [`framework`](https://egnees.github.io/dsbuild) usage examples.
+//! Collection of [`framework`](https://github.com/egnees/dsbuild) usage examples.
 //!
 //! In every example there is created some distributed system,
 //! which is launched in real time, and also tested in simulation.
