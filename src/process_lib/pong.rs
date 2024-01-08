@@ -109,7 +109,10 @@ impl Process for PongProcess {
         self.set_timer(ctx);
 
         if self.verbose {
-            println!("PongProcess: received pong message with requested pong number={}.", requested_pong);
+            println!(
+                "PongProcess: received pong message with requested pong number={}.",
+                requested_pong
+            );
         }
 
         Ok(())

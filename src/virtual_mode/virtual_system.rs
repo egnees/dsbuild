@@ -147,8 +147,6 @@ impl VirtualSystem {
     }
 
     /// Perform `steps` steps through the simulation.
-    /// 
-    /// As a result not more than `steps` events will be handled.
     pub fn make_steps(&mut self, steps: u32) {
         for _ in 0..steps {
             let something_happen = self.step();
@@ -159,8 +157,6 @@ impl VirtualSystem {
     }
 
     /// Perform single step through the simulation.
-    ///
-    /// As a result not more than one event will be handled.
     pub fn step(&mut self) -> bool {
         self.inner.step()
     }

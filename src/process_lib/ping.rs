@@ -62,7 +62,10 @@ impl PingProcess {
         ctx.set_timer(Self::PING_TIMER.to_owned(), self.delay);
 
         if self.verbose {
-            println!("PingProcess: sent ping message with requested pong number={}.", pong_request);
+            println!(
+                "PingProcess: sent ping message with requested pong number={}.",
+                pong_request
+            );
         }
     }
 
@@ -103,7 +106,7 @@ impl PingProcess {
 
     /// Creates new verbose [`PingProcess`] with delay, partner process name
     /// and need count of pongs to receive before terminate.
-    /// 
+    ///
     /// See [`PingProcess::new`] for details.
     pub fn new_verbose(delay: f64, partner: String, need_cnt: u32) -> Self {
         assert!(delay > 0.0);
@@ -162,7 +165,10 @@ impl Process for PingProcess {
         }
 
         if self.verbose {
-            println!("PingProcess: received pong response with sequence number={}.", pong_sequence_number);
+            println!(
+                "PingProcess: received pong response with sequence number={}.",
+                pong_sequence_number
+            );
         }
 
         if self.last_pong == self.need_cnt {

@@ -2,8 +2,8 @@
 //!
 //! Creates Ping and Pong processes, add them to system, and make them communicate with each other.
 
-use crate::VirtualSystem;
 use crate::examples::ping_pong::{pinger, ponger};
+use crate::VirtualSystem;
 
 /// Runs simulation with specified number of ping-pong iterations.
 pub fn run_sim(need_cycles: u32) {
@@ -31,7 +31,7 @@ pub fn run_sim(need_cycles: u32) {
     // Connect both nodes to the network.
     sim.network().connect_node(PINGER_NAME);
     sim.network().connect_node(PONGER_NAME);
-    
+
     // Add pinger to the node.
     let pinger = pinger::create_pinger(0.1, PONGER_NAME.to_owned(), need_cycles);
     let pinger_wrapper = sim.add_process(PINGER_NAME, pinger, PINGER_NODE);
@@ -53,7 +53,7 @@ pub fn run_sim(need_cycles: u32) {
     // Pinger will send ponger message, but ponger will ignore it.
     sim.make_steps(2);
 
-    // Now pinger must try to send more messages, 
+    // Now pinger must try to send more messages,
     // but ponger is not started yet.
     sim.make_steps(2);
 
