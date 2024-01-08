@@ -11,8 +11,8 @@ use crate::{Address, AddressResolvePolicy, RealSystem, RealSystemConfig};
 /// Runs real system with specified number of ping-pong iterations.
 pub fn run_real(need_cycles: u32) {
     // Pinger and Ponger name.
-    const PONGER_NAME: &'static str = "Ponger";
-    const PINGER_NAME: &'static str = "Pinger";
+    const PONGER_NAME: &str = "Ponger";
+    const PINGER_NAME: &str = "Pinger";
 
     // Process ports.
     const PINGER_PORT: u16 = 10091;

@@ -8,12 +8,12 @@ use crate::examples::ping_pong::{pinger, ponger};
 /// Runs simulation with specified number of ping-pong iterations.
 pub fn run_sim(need_cycles: u32) {
     // Pinger and names.
-    const PONGER_NAME: &'static str = "Ponger";
-    const PINGER_NAME: &'static str = "Pinger";
+    const PONGER_NAME: &str = "Ponger";
+    const PINGER_NAME: &str = "Pinger";
 
     // Process nodes.
-    const PONGER_NODE: &'static str = "Ponger node";
-    const PINGER_NODE: &'static str = "Pinger node";
+    const PONGER_NODE: &str = "Ponger node";
+    const PINGER_NODE: &str = "Pinger node";
 
     // Create simulation with specified seed.
     let mut sim = VirtualSystem::new(12345);
