@@ -139,6 +139,46 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Implementation of [`PingProcess`].
 
 </span><span class="kw">use </span><span class="kw">crate</span>::common::{context::Context, message::Message, process::Process};
@@ -161,6 +201,8 @@
     </span>is_started: bool,
     <span class="doccomment">/// Indicates whether the process is stopped.
     </span>is_stopped: bool,
+    <span class="doccomment">/// Specifies process speak ability.
+    </span>verbose: bool,
 }
 
 <span class="kw">impl </span>PingProcess {
@@ -193,10 +235,16 @@
     /// # Panics
     /// - In case of message can not be created, which means incorrect implementation of [Message] class.
     </span><span class="kw">fn </span>ping(<span class="kw-2">&amp;</span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Context) {
-        <span class="kw">let </span>msg = Message::borrow_new(<span class="self">Self</span>::PING_TIP, <span class="self">self</span>.last_pong + <span class="number">1</span>)
+        <span class="kw">let </span>pong_request = <span class="self">self</span>.last_pong + <span class="number">1</span>;
+
+        <span class="kw">let </span>msg = Message::borrow_new(<span class="self">Self</span>::PING_TIP, pong_request)
             .expect(<span class="string">&quot;Can not create ping message from u32&quot;</span>);
         ctx.send_message(msg, <span class="self">self</span>.partner.clone());
         ctx.set_timer(<span class="self">Self</span>::PING_TIMER.to_owned(), <span class="self">self</span>.delay);
+
+        <span class="kw">if </span><span class="self">self</span>.verbose {
+            <span class="macro">println!</span>(<span class="string">&quot;PingProcess: sent ping message with requested pong number={}.&quot;</span>, pong_request);
+        }
     }
 
     <span class="doccomment">/// Returns last received pong number.
@@ -230,6 +278,26 @@
             need_cnt,
             is_started: <span class="bool-val">false</span>,
             is_stopped: <span class="bool-val">false</span>,
+            verbose: <span class="bool-val">false</span>,
+        }
+    }
+
+    <span class="doccomment">/// Creates new verbose [`PingProcess`] with delay, partner process name
+    /// and need count of pongs to receive before terminate.
+    /// 
+    /// See [`PingProcess::new`] for details.
+    </span><span class="kw">pub fn </span>new_verbose(delay: f64, partner: String, need_cnt: u32) -&gt; <span class="self">Self </span>{
+        <span class="macro">assert!</span>(delay &gt; <span class="number">0.0</span>);
+        <span class="macro">assert!</span>(need_cnt &gt; <span class="number">0</span>);
+
+        <span class="self">Self </span>{
+            last_pong: <span class="number">0</span>,
+            delay,
+            partner,
+            need_cnt,
+            is_started: <span class="bool-val">false</span>,
+            is_stopped: <span class="bool-val">false</span>,
+            verbose: <span class="bool-val">true</span>,
         }
     }
 }
@@ -238,6 +306,10 @@
     <span class="doccomment">/// Called when system is started.
     /// Pings partner process.
     </span><span class="kw">fn </span>on_start(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
+        <span class="kw">if </span><span class="self">self</span>.verbose {
+            <span class="macro">println!</span>(<span class="string">&quot;PingProcess: stared.&quot;</span>);
+        }
+
         <span class="self">self</span>.is_started = <span class="bool-val">true</span>;
         <span class="self">self</span>.ping(ctx);
         <span class="prelude-val">Ok</span>(())
@@ -270,11 +342,19 @@
             <span class="self">self</span>.last_pong += <span class="number">1</span>;
         }
 
+        <span class="kw">if </span><span class="self">self</span>.verbose {
+            <span class="macro">println!</span>(<span class="string">&quot;PingProcess: received pong response with sequence number={}.&quot;</span>, pong_sequence_number);
+        }
+
         <span class="kw">if </span><span class="self">self</span>.last_pong == <span class="self">self</span>.need_cnt {
             ctx.cancel_timer(<span class="self">Self</span>::PING_TIMER.into());
             ctx.stop_process();
 
             <span class="self">self</span>.is_stopped = <span class="bool-val">true</span>;
+
+            <span class="kw">if </span><span class="self">self</span>.verbose {
+                <span class="macro">println!</span>(<span class="string">&quot;PingProcess: stopped.&quot;</span>);
+            }
         }
 
         <span class="prelude-val">Ok</span>(())

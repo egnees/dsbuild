@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"dsbuild":[["impl <a class=\"trait\" href=\"https://docs.rs/serde/1.0.194/serde/ser/trait.Serialize.html\" title=\"trait serde::ser::Serialize\">Serialize</a> for <a class=\"struct\" href=\"dsbuild/common/message/struct.Message.html\" title=\"struct dsbuild::common::message::Message\">Message</a>"]]
+"dsbuild":[["impl <a class=\"trait\" href=\"https://docs.rs/serde/1.0.195/serde/ser/trait.Serialize.html\" title=\"trait serde::ser::Serialize\">Serialize</a> for <a class=\"struct\" href=\"dsbuild/common/message/struct.Message.html\" title=\"struct dsbuild::common::message::Message\">Message</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
