@@ -145,4 +145,23 @@ impl VirtualSystem {
     pub fn step_until_no_events(&mut self) {
         self.inner.step_until_no_events()
     }
+
+    /// Perform `steps` steps through the simulation.
+    /// 
+    /// As a result not more than `steps` events will be handled.
+    pub fn make_steps(&mut self, steps: u32) {
+        for _ in 0..steps {
+            let something_happen = self.step();
+            if !something_happen {
+                break;
+            }
+        }
+    }
+
+    /// Perform single step through the simulation.
+    ///
+    /// As a result not more than one event will be handled.
+    pub fn step(&mut self) -> bool {
+        self.inner.step()
+    }
 }

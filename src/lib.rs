@@ -28,3 +28,6 @@ pub use common::{
 
 // Public module.
 pub mod process_lib;
+
+// Examples
+pub mod examples;

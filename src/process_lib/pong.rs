@@ -13,6 +13,12 @@ pub struct PongProcess {
     /// after that pong process will be stopped
     /// (in seconds).
     max_inactivity_window: f64,
+    /// Stopped flag.
+    stopped: bool,
+    // Started flag.
+    started: bool,
+    // Specifies process speak ability
+    verbose: bool,
 }
 
 impl PongProcess {
@@ -32,7 +38,30 @@ impl PongProcess {
     pub fn new(max_inactivity_window: f64) -> Self {
         Self {
             max_inactivity_window,
+            stopped: false,
+            started: false,
+            verbose: false,
         }
+    }
+
+    /// Creates new verbose [`PongProcess`] with specified inactivity window (in seconds).
+    pub fn new_verbose(max_inactivity_window: f64) -> Self {
+        Self {
+            max_inactivity_window,
+            stopped: false,
+            started: false,
+            verbose: true,
+        }
+    }
+
+    /// Check if process is stopped.
+    pub fn is_stopped(&self) -> bool {
+        self.stopped
+    }
+
+    /// Check if process is started.
+    pub fn is_started(&self) -> bool {
+        self.started
     }
 }
 
@@ -40,14 +69,25 @@ impl Process for PongProcess {
     /// Called when system is started.
     /// Sets inactivity window timer.
     fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
+        if self.verbose {
+            println!("PongProcess: started.");
+        }
+
+        self.started = true;
+
         self.set_timer(ctx);
         Ok(())
     }
 
     /// Called when timer is fired and stops the process.
     fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String> {
+        if self.verbose {
+            println!("PongProcess: stopped.");
+        }
+
         assert_eq!(name, Self::TIMER_NAME);
         ctx.stop_process();
+        self.stopped = true;
         Ok(())
     }
 
@@ -67,6 +107,11 @@ impl Process for PongProcess {
         let answer = Message::borrow_new(Self::PONG_TIP, requested_pong)?;
         ctx.send_message(answer, from);
         self.set_timer(ctx);
+
+        if self.verbose {
+            println!("PongProcess: received pong message with requested pong number={}.", requested_pong);
+        }
+
         Ok(())
     }
 }

@@ -30,9 +30,9 @@ name = "dsbuild"
 path = "src/lib.rs"
 
 [[bin]]
-name = "pinger"
-path = "bin/pinger.rs"
+name = "ping-pong-real"
+path = "bin/ping_pong_real.rs"
 
 [[bin]]
-name = "ponger"
-path = "bin/ponger.rs"
+name = "ping-pong-sim"
+path = "bin/ping_pong_sim.rs"
