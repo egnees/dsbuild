@@ -9,14 +9,20 @@
 <a href="#9" id="9">9</a>
 <a href="#10" id="10">10</a>
 <a href="#11" id="11">11</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::real_mode::events::Event;
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Definition of the [`TimerSetter`] trait, which is used by [`super::time_manager::TimeManager`] to set timers.
+
+</span><span class="kw">use </span><span class="kw">crate</span>::real_mode::events::Event;
 
 <span class="kw">use </span><span class="kw">super</span>::defs::<span class="kw-2">*</span>;
 
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>tokio::sync::mpsc::Sender;
 
-<span class="attr">#[async_trait]
+<span class="doccomment">/// Specifies [`TimerSetter`] trait, which is used by [`super::time_manager::TimeManager]` to set timers.
+</span><span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>TimerSetter {
     <span class="kw">async fn </span>set_timer(request: SetTimerRequest, sender: Sender&lt;Event&gt;);
 }
