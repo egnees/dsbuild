@@ -138,6 +138,9 @@ pub struct RealSystem {
 impl RealSystem {
     /// Creates new instance of [`RealSystem`] from [`RealSystemConfig`].
     pub fn new(config: RealSystemConfig) -> Result<Self, String> {
+        // Init logger.
+        env_logger::Builder::new().filter_level(log::LevelFilter::Info).init();
+
         // Create process manager.
         let process_manager = ProcessManager::new(config.host.clone(), config.port);
 

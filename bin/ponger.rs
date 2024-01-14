@@ -16,7 +16,7 @@ fn main() {
     let listen_port = args[1].parse::<u16>().expect("Can not parse listen port");
 
     // Create ponger process.
-    let ponger = ponger::create_ponger(10.0);
+    let ponger = ponger::create_ponger(60.0 * 60.0); // 60 minutes.
 
     // Create system config.
     let config = RealSystemConfig::default("127.0.0.1".to_owned(), listen_port).unwrap();

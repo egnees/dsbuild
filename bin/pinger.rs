@@ -23,7 +23,7 @@ fn main() {
 
     // Set ponger address.
     let ponger_addr = Address::new(ponger_host.to_string(), ponger_port, "PONGER".to_string());
-    let pinger = pinger::create_pinger(0.1, ponger_addr, 100);
+    let pinger = pinger::create_pinger(1.0, ponger_addr, 100);
 
     // Create config.
     let config = RealSystemConfig::default("127.0.0.1".to_owned(), listen_port).unwrap();
