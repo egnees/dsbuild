@@ -2,7 +2,7 @@
 
 ## Installation
 Before using framework, one should install the following:
-  - [Rust compiler](https://www.rust-lang.org/tools/install)
+  - [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
   - [gRPC Protocol Buffer Compiler](https://grpc.io/docs/protoc-installation/)
 
 ## Examples
