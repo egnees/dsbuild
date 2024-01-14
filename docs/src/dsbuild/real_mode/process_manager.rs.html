@@ -179,13 +179,35 @@
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of [`ProcessManager`], which is responsible for managing [user processes][`Process`].
 
 </span><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 <span class="kw">use </span><span class="kw">crate</span>::common::actions::ProcessAction;
-<span class="kw">use </span><span class="kw">crate</span>::common::process::{Process, ProcessState};
+<span class="kw">use </span><span class="kw">crate</span>::common::process::{Address, Process, ProcessState};
 
 <span class="kw">use </span><span class="kw">super</span>::events::Event;
 <span class="kw">use </span><span class="kw">super</span>::real_context::RealContext;
@@ -195,8 +217,11 @@
 /// It manages states of user processes and maintains number of active processes.
 /// [`ProcessManager`] is also responsible for handling system [events][`Event`] and receiving
 /// response [actions][ProcessAction] of [user processes][`Process`].
-</span><span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>ProcessManager {
+    <span class="doccomment">/// Host of the system.
+    </span>host: String,
+    <span class="doccomment">/// Port of the system.
+    </span>port: u16,
     <span class="doccomment">/// Holds mapping from process name to (process state, process implementation pointer) pair.
     </span>process_info: HashMap&lt;String, (ProcessState, Arc&lt;RwLock&lt;<span class="kw">dyn </span>Process&gt;&gt;)&gt;,
     <span class="doccomment">/// Number of active processes.
@@ -204,6 +229,16 @@
 }
 
 <span class="kw">impl </span>ProcessManager {
+    <span class="doccomment">/// Creates a new [`ProcessManager`] instance.
+    </span><span class="kw">pub fn </span>new(host: String, port: u16) -&gt; <span class="self">Self </span>{
+        ProcessManager {
+            host,
+            port,
+            process_info: HashMap::new(),
+            active_process: <span class="number">0</span>,
+        }
+    }
+
     <span class="doccomment">/// Check if process state corresponds to active process.
     </span><span class="kw">fn </span>is_active(state: ProcessState) -&gt; bool {
         state == ProcessState::Running
@@ -262,23 +297,29 @@
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
                 }
 
-                <span class="kw">let </span><span class="kw-2">mut </span>process = <span class="self">self</span>.get_process(<span class="kw-2">&amp;</span>process_name)<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>context = RealContext::new(Address::new(
+                    <span class="self">self</span>.host.clone(),
+                    <span class="self">self</span>.port,
+                    process_name.clone(),
+                ));
 
-                <span class="kw">let </span><span class="kw-2">mut </span>context = RealContext::new(process_name);
+                <span class="kw">let </span><span class="kw-2">mut </span>process = <span class="self">self</span>.get_process(<span class="kw-2">&amp;</span>process_name)<span class="question-mark">?</span>;
 
                 process.on_timer(timer_name, <span class="kw-2">&amp;mut </span>context)<span class="question-mark">?</span>;
 
                 new_actions.append(<span class="kw-2">&amp;mut </span>context.get_actions());
             }
             Event::MessageReceived { msg, from, to } =&gt; {
-                <span class="kw">let </span>state = <span class="self">self</span>.get_state(to.as_str())<span class="question-mark">?</span>;
+                <span class="kw">let </span>receiver_address = Address::new(<span class="self">self</span>.host.clone(), <span class="self">self</span>.port, to.clone());
+
+                <span class="kw">let </span>state = <span class="self">self</span>.get_state(<span class="kw-2">&amp;</span>to)<span class="question-mark">?</span>;
                 <span class="kw">if </span>!<span class="self">Self</span>::is_active(<span class="kw-2">*</span>state) {
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
                 }
 
                 <span class="kw">let </span><span class="kw-2">mut </span>process = <span class="self">self</span>.get_process(<span class="kw-2">&amp;</span>to)<span class="question-mark">?</span>;
 
-                <span class="kw">let </span><span class="kw-2">mut </span>context = RealContext::new(to);
+                <span class="kw">let </span><span class="kw-2">mut </span>context = RealContext::new(receiver_address);
 
                 process.on_message(msg, from, <span class="kw-2">&amp;mut </span>context)<span class="question-mark">?</span>;
 
@@ -288,7 +329,10 @@
                 <span class="self">self</span>.active_process = <span class="number">0</span>;
 
                 <span class="kw">for </span>(process_name, (state, process)) <span class="kw">in </span><span class="self">self</span>.process_info.iter_mut() {
-                    <span class="kw">let </span><span class="kw-2">mut </span>context = RealContext::new(process_name.clone());
+                    <span class="kw">let </span>process_address =
+                        Address::new(<span class="self">self</span>.host.clone(), <span class="self">self</span>.port, process_name.to_owned());
+
+                    <span class="kw">let </span><span class="kw-2">mut </span>context = RealContext::new(process_address);
 
                     <span class="kw-2">*</span>state = ProcessState::Running;
                     <span class="self">self</span>.active_process += <span class="number">1</span>;

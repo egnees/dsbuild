@@ -76,9 +76,17 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Implementation of [`IsolatedProcess`].
 
-</span><span class="kw">use </span><span class="kw">crate</span>::common::{context::Context, message::Message, process::Process};
+</span><span class="kw">use </span><span class="kw">crate</span>::common::{
+    context::Context,
+    message::Message,
+    process::{Address, Process},
+};
 
 <span class="doccomment">/// Isolated process is not connected to the network.
 /// It just sets consecutive timers one by one,
@@ -148,7 +156,7 @@
     </span><span class="kw">fn </span>on_message(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         _msg: Message,
-        _from: String,
+        _from: Address,
         _ctx: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Context,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="prelude-val">Err</span>(<span class="string">&quot;No messages for isolated process&quot;</span>.to_owned())

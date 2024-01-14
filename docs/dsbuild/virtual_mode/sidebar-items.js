@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["process_wrapper","virtual_context","virtual_system"]};
+window.SIDEBAR_ITEMS = {"mod":["node_manager","process_wrapper","virtual_context","virtual_system"]};

@@ -140,11 +140,62 @@
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, RwLock};
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Definition of [`process wrapper`][`VirtualProcessWrapper`] which is used in the virtual system.
+
+</span><span class="kw">use </span>std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
+
+<span class="kw">use </span>log::warn;
 
 <span class="kw">use </span><span class="kw">crate</span>::common::{
     actions::{ProcessAction, StopPolicy, TimerBehavior},
-    process::{Process, ProcessState},
+    process::{Address, Process, ProcessState},
 };
 
 <span class="kw">use </span>dslab_mp::{
@@ -152,39 +203,63 @@
     process::Process <span class="kw">as </span>SimulationProcess,
 };
 
-<span class="kw">use </span><span class="kw">super</span>::virtual_context::VirtualContext;
+<span class="kw">use super</span>::{node_manager::NodeManager, virtual_context::VirtualContext};
 
-<span class="attr">#[derive(Clone)]
+<span class="doccomment">/// Represents virtual process wrapper, which is to be passed to the [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html).
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>VirtualProcessWrapper&lt;P: Process + Clone + <span class="lifetime">&#39;static</span>&gt; {
-    process_name: String,
+    process_address: Address,
     user_process: Arc&lt;RwLock&lt;P&gt;&gt;,
     process_state: ProcessState,
+    node_manager: Rc&lt;RefCell&lt;NodeManager&gt;&gt;,
 }
 
 <span class="kw">impl</span>&lt;P: Process + Clone + <span class="lifetime">&#39;static</span>&gt; VirtualProcessWrapper&lt;P&gt; {
-    <span class="kw">pub fn </span>new(process_name: String, process_impl: Arc&lt;RwLock&lt;P&gt;&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            process_name,
+    <span class="doccomment">/// Create new virtual process wrapper.
+    </span><span class="kw">pub fn </span>new(
+        process_address: Address,
+        process_impl: Arc&lt;RwLock&lt;P&gt;&gt;,
+        node_manager: Rc&lt;RefCell&lt;NodeManager&gt;&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="comment">// let full_process_name = node_manager
+        //     .borrow()
+        //     .get_full_process_name(&amp;process_address)
+        //     .expect(&quot;Implementation error: can not get full process name&quot;);
+
+        </span><span class="self">Self </span>{
+            process_address,
             user_process: process_impl,
             process_state: ProcessState::Initialized,
+            node_manager,
         }
     }
 
-    <span class="kw">fn </span>create_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; VirtualContext {
+    <span class="doccomment">/// Create virtual context, which matches to the virtual process wrapper.
+    </span><span class="kw">fn </span>create_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; VirtualContext {
         VirtualContext {
-            process_name: <span class="self">self</span>.process_name.clone(),
+            process_address: <span class="self">self</span>.process_address.clone(),
             actions: Vec::new(),
         }
     }
 
-    <span class="kw">fn </span>handle_process_actions(<span class="kw-2">&amp;mut </span><span class="self">self</span>, actions: Vec&lt;ProcessAction&gt;, ctx: <span class="kw-2">&amp;mut </span>SimulationContext) {
+    <span class="doccomment">/// Handle process actions and transform them to the
+    /// [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html) actions.
+    </span><span class="kw">fn </span>handle_process_actions(<span class="kw-2">&amp;mut </span><span class="self">self</span>, actions: Vec&lt;ProcessAction&gt;, ctx: <span class="kw-2">&amp;mut </span>SimulationContext) {
         <span class="kw">for </span>action <span class="kw">in </span>actions {
             <span class="kw">if </span><span class="self">self</span>.process_state == ProcessState::Stopped {
                 <span class="kw">break</span>;
             }
             <span class="kw">match </span>action {
                 ProcessAction::MessageSent { msg, from: <span class="kw">_</span>, to } =&gt; {
-                    ctx.send(msg.into(), to);
+                    <span class="comment">// Try to resolve full process name by its address.
+                    </span><span class="kw">match </span><span class="self">self</span>.node_manager.borrow().get_full_process_name(<span class="kw-2">&amp;</span>to) {
+                        <span class="prelude-val">Ok</span>(full_process_name) =&gt; {
+                            ctx.send(msg.into(), full_process_name);
+                        }
+                        <span class="prelude-val">Err</span>(err) =&gt; {
+                            <span class="macro">warn!</span>(<span class="string">&quot;Message not sent: {}&quot;</span>, err);
+                        }
+                    }
                 }
 
                 ProcessAction::ProcessStopped {
@@ -216,7 +291,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;P: Process + Clone + <span class="lifetime">&#39;static</span>&gt; SimulationProcess <span class="kw">for </span>VirtualProcessWrapper&lt;P&gt; {
+<span class="doccomment">/// Implementation of [`DSLab MP`](https://osukhoroslov.github.io/dslab_mp/index.html) process trait.
+</span><span class="kw">impl</span>&lt;P: Process + Clone + <span class="lifetime">&#39;static</span>&gt; SimulationProcess <span class="kw">for </span>VirtualProcessWrapper&lt;P&gt; {
     <span class="kw">fn </span>on_message(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         msg: SimulationMessage,
@@ -227,15 +303,25 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>virt_ctx = <span class="self">self</span>.create_context();
+        <span class="comment">// Create virtual context to pass it into dslab process.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>virt_ctx = <span class="self">self</span>.create_context();
 
-        <span class="kw">let </span>result = <span class="self">self
+        <span class="comment">// Get process address by it&#39;s full name.
+        </span><span class="kw">let </span>from_address = <span class="self">self
+            </span>.node_manager
+            .borrow()
+            .get_process_address(<span class="kw-2">&amp;</span>from)
+            .expect(<span class="string">&quot;Incorrect implementation: received message from not registered process.&quot;</span>);
+
+        <span class="comment">// Callback dslab process on message method.
+        </span><span class="kw">let </span>result = <span class="self">self
             </span>.user_process
             .write()
-            .expect(<span class="string">&quot;Can not read process, probably datarace detected&quot;</span>)
-            .on_message(msg.into(), from, <span class="kw-2">&amp;mut </span>virt_ctx);
+            .expect(<span class="string">&quot;Can not write in process, probably datarace appeared&quot;</span>)
+            .on_message(msg.into(), from_address, <span class="kw-2">&amp;mut </span>virt_ctx);
 
-        <span class="self">self</span>.handle_process_actions(virt_ctx.actions, ctx);
+        <span class="comment">// handle process actions.
+        </span><span class="self">self</span>.handle_process_actions(virt_ctx.actions, ctx);
 
         result
     }
@@ -256,7 +342,7 @@
         <span class="kw">let </span>result = <span class="self">self
             </span>.user_process
             .write()
-            .expect(<span class="string">&quot;Can not read process, probably datarace detected&quot;</span>)
+            .expect(<span class="string">&quot;Can not write in process, probably datarace appeared&quot;</span>)
             .on_start(<span class="kw-2">&amp;mut </span>virt_ctx);
 
         <span class="self">self</span>.handle_process_actions(virt_ctx.actions, ctx);
@@ -274,7 +360,7 @@
         <span class="kw">let </span>result = <span class="self">self
             </span>.user_process
             .write()
-            .expect(<span class="string">&quot;Can not read process, probably datarace detected&quot;</span>)
+            .expect(<span class="string">&quot;Can not write in process, probably datarace appeared&quot;</span>)
             .on_timer(timer, <span class="kw-2">&amp;mut </span>virt_ctx);
 
         <span class="self">self</span>.handle_process_actions(virt_ctx.actions, ctx);

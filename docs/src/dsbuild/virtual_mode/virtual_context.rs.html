@@ -57,22 +57,24 @@
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::common::{
     actions::{ProcessAction, StopPolicy, TimerBehavior},
     context::Context,
     message::Message,
+    process::Address,
 };
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>VirtualContext {
-    <span class="kw">pub </span>process_name: String,
+    <span class="kw">pub </span>process_address: Address,
     <span class="kw">pub </span>actions: Vec&lt;ProcessAction&gt;,
 }
 
 <span class="kw">impl </span>Context <span class="kw">for </span>VirtualContext {
     <span class="kw">fn </span>set_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String, delay: f64) {
         <span class="kw">let </span>action = ProcessAction::TimerSet {
-            process_name: <span class="self">self</span>.process_name.clone(),
+            process_name: <span class="self">self</span>.process_address.process_name.clone(),
             timer_name: name,
             delay,
             behavior: TimerBehavior::OverrideExisting,
@@ -82,7 +84,7 @@
     }
     <span class="kw">fn </span>set_timer_once(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String, delay: f64) {
         <span class="kw">let </span>action = ProcessAction::TimerSet {
-            process_name: <span class="self">self</span>.process_name.clone(),
+            process_name: <span class="self">self</span>.process_address.process_name.clone(),
             timer_name: name,
             delay,
             behavior: TimerBehavior::SetOnce,
@@ -92,16 +94,16 @@
     }
     <span class="kw">fn </span>cancel_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String) {
         <span class="kw">let </span>action = ProcessAction::TimerCancelled {
-            process_name: <span class="self">self</span>.process_name.clone(),
+            process_name: <span class="self">self</span>.process_address.process_name.clone(),
             timer_name: name,
         };
 
         <span class="self">self</span>.actions.push(action);
     }
-    <span class="kw">fn </span>send_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, to: String) {
+    <span class="kw">fn </span>send_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, to: Address) {
         <span class="kw">let </span>action = ProcessAction::MessageSent {
             msg,
-            from: <span class="self">self</span>.process_name.clone(),
+            from: <span class="self">self</span>.process_address.clone(),
             to,
         };
 
@@ -109,7 +111,7 @@
     }
     <span class="kw">fn </span>stop_process(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>action = ProcessAction::ProcessStopped {
-            process_name: <span class="self">self</span>.process_name.clone(),
+            process_name: <span class="self">self</span>.process_address.process_name.clone(),
             policy: StopPolicy::Immediately,
         };
 

@@ -25,51 +25,9 @@
 <a href="#25" id="25">25</a>
 <a href="#26" id="26">26</a>
 <a href="#27" id="27">27</a>
-<a href="#28" id="28">28</a>
-<a href="#29" id="29">29</a>
-<a href="#30" id="30">30</a>
-<a href="#31" id="31">31</a>
-<a href="#32" id="32">32</a>
-<a href="#33" id="33">33</a>
-<a href="#34" id="34">34</a>
-<a href="#35" id="35">35</a>
-<a href="#36" id="36">36</a>
-<a href="#37" id="37">37</a>
-<a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a>
-<a href="#40" id="40">40</a>
-<a href="#41" id="41">41</a>
-<a href="#42" id="42">42</a>
-<a href="#43" id="43">43</a>
-<a href="#44" id="44">44</a>
-<a href="#45" id="45">45</a>
-<a href="#46" id="46">46</a>
-<a href="#47" id="47">47</a>
-<a href="#48" id="48">48</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definitions which are used in [network][`super`] submodule.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::common::message::Message;
-
-<span class="doccomment">/// Represents [`process`][`crate::Process`] address, which is used in
-/// [`real system`][`crate::RealSystem`] to route [`network messages`][crate::Message].
-</span><span class="attr">#[derive(Clone, Debug, PartialEq, PartialOrd)]
-</span><span class="kw">pub struct </span>Address {
-    <span class="doccomment">/// Specifies host,
-    /// which is used to deliver messages
-    /// to the [real system][`crate::real_mode::real_system::RealSystem`] instance
-    /// through the network.
-    </span><span class="kw">pub </span>host: String,
-
-    <span class="doccomment">/// Specifies port,
-    /// which is used to deliver messages
-    /// to the [real system][`crate::real_mode::real_system::RealSystem`] instance
-    /// through the network.
-    </span><span class="kw">pub </span>port: u16,
-
-    <span class="doccomment">/// Specifies process name
-    /// inside of the [real system][`crate::real_mode::real_system::RealSystem`] instance.
-    </span><span class="kw">pub </span>process_name: String,
-}
+</span><span class="kw">use </span><span class="kw">crate</span>::common::{message::Message, process::Address};
 
 <span class="doccomment">/// Used to pass requests to some object,
 /// which implements [`AsyncMessenger`][`super::messenger::AsyncMessenger`] trait.

@@ -56,16 +56,27 @@
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
+<span class="kw">use </span>log::warn;
 <span class="kw">use </span>tokio::{sync::mpsc::Sender, task::JoinHandle};
 
-<span class="kw">use crate</span>::{common::message::Message, real_mode::events::Event};
-
-<span class="kw">use super</span>::{
-    defs::{Address, ProcessSendRequest},
-    messenger::AsyncMessenger,
+<span class="kw">use crate</span>::{
+    common::{message::Message, process::Address},
+    real_mode::events::Event,
 };
+
+<span class="kw">use super</span>::{defs::ProcessSendRequest, messenger::AsyncMessenger};
 
 <span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>NetworkManager&lt;M: AsyncMessenger&gt; {
@@ -85,10 +96,11 @@
         }
 
         <span class="kw">let </span>handler = tokio::spawn(<span class="kw">async move </span>{
-            M::listen(host, port, sender)
-                .<span class="kw">await
-                </span>.map_err(|e| <span class="string">&quot;Can not start listen: &quot;</span>.to_owned() + e.to_string().as_str())
-                .unwrap();
+            <span class="kw">let </span>listen_result = M::listen(host.clone(), port, sender).<span class="kw">await</span>;
+
+            <span class="kw">if </span>listen_result.is_err() {
+                <span class="macro">warn!</span>(<span class="string">&quot;Can not start listen on {}:{}&quot;</span>, host, port);
+            }
         });
 
         <span class="self">self</span>.listen_handler = <span class="prelude-val">Some</span>(handler);
@@ -103,7 +115,15 @@
             message: msg,
         };
 
-        tokio::spawn(<span class="kw">async move </span>{ M::send(request).<span class="kw">await</span>.expect(<span class="string">&quot;Can not send message&quot;</span>) });
+        tokio::spawn(<span class="kw">async move </span>{
+            <span class="kw">let </span>send_result = M::send(request.clone()).<span class="kw">await</span>;
+            <span class="kw">if </span>send_result.is_err() {
+                <span class="macro">warn!</span>(
+                    <span class="string">&quot;Can not send message from {:?} to {:?}&quot;</span>,
+                    <span class="kw-2">&amp;</span>request.sender_address, <span class="kw-2">&amp;</span>request.receiver_address
+                );
+            }
+        });
     }
 
     <span class="kw">pub fn </span>stop_listen(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {

@@ -161,10 +161,45 @@
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of [`VirtualSystem`].
 
 </span><span class="kw">use </span>std::{
-    cell::{Ref, RefMut},
+    cell::{RefCell, RefMut},
+    rc::Rc,
     sync::{Arc, RwLock},
 };
 
@@ -173,7 +208,7 @@
     system::System <span class="kw">as </span>Simulation,
 };
 
-<span class="kw">use </span><span class="kw">super</span>::process_wrapper::VirtualProcessWrapper;
+<span class="kw">use super</span>::{node_manager::NodeManager, process_wrapper::VirtualProcessWrapper};
 <span class="kw">use </span><span class="kw">crate</span>::common::process::{Process, ProcessWrapper};
 
 <span class="doccomment">/// Represents virtual system, which is responsible
@@ -184,6 +219,7 @@
 /// framework for simulation of network, time, etc.
 </span><span class="kw">pub struct </span>VirtualSystem {
     inner: Simulation,
+    node_manager: Rc&lt;RefCell&lt;NodeManager&gt;&gt;,
 }
 
 <span class="kw">impl </span>VirtualSystem {
@@ -191,6 +227,7 @@
     </span><span class="kw">pub fn </span>new(seed: u64) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             inner: Simulation::new(seed),
+            node_manager: Rc::new(RefCell::new(NodeManager::default())),
         }
     }
 
@@ -204,9 +241,19 @@
     <span class="comment">// Node ------------------------------------------------------
 
     </span><span class="doccomment">/// Adds a node to the simulation.
+    /// Note that node names must be unique and does not contain `/` symbol.
     ///
-    /// Note that node names must be unique.
-    </span><span class="kw">pub fn </span>add_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) {
+    /// # Panics
+    ///
+    /// - In case node with such `name` already exists.
+    /// - In case `name` is empty or contains `/` character.
+    </span><span class="kw">pub fn </span>add_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, host: <span class="kw-2">&amp;</span>str, port: u16) {
+        <span class="comment">// Add node to the node manager.
+        </span><span class="self">self</span>.node_manager
+            .borrow_mut()
+            .add_node(name.to_owned(), host.to_owned(), port)
+            .unwrap();
+
         <span class="self">self</span>.inner.add_node(name);
     }
 
@@ -235,13 +282,11 @@
         <span class="self">self</span>.inner.recover_node(node_name);
     }
 
-    <span class="doccomment">/// Returns an immutable reference to the node.
-    </span><span class="kw">pub fn </span>get_node(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Ref&lt;Node&gt;&gt; {
-        <span class="self">self</span>.inner.get_node(name)
-    }
-
     <span class="doccomment">/// Returns a mutable reference to the node.
-    </span><span class="kw">pub fn </span>get_mut_node(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;RefMut&lt;Node&gt;&gt; {
+    /// 
+    /// Can not make method public because
+    /// process names on dslab nodes are not the same as in the framework.  
+    </span><span class="kw">fn </span>get_mut_node(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;RefMut&lt;Node&gt;&gt; {
         <span class="self">self</span>.inner.get_mut_node(name)
     }
 
@@ -256,34 +301,55 @@
     ///
     /// # Panics
     ///
-    /// - If `process name` is already used.
+    /// - If node with such name `node_name` does not exists.
+    /// - If process with such `process name` is already exists on the node with `node_name`.
+    /// - If process name or node name is empty or contains `/` symbol.
     </span><span class="kw">pub fn </span>add_process&lt;P: Process + Clone + <span class="lifetime">&#39;static</span>&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         process_name: <span class="kw-2">&amp;</span>str,
         process: P,
         node_name: <span class="kw-2">&amp;</span>str,
     ) -&gt; ProcessWrapper&lt;P&gt; {
-        <span class="kw">let </span>process_ref = Arc::new(RwLock::new(process));
+        <span class="comment">// Add process to the node manager.
+        </span><span class="kw">let </span>process_address = <span class="self">self
+            </span>.node_manager
+            .borrow_mut()
+            .add_process_to_node(node_name.to_owned(), process_name.to_owned())
+            .unwrap();
 
-        <span class="kw">let </span>process_wrapper = ProcessWrapper {
-            process_ref: process_ref.clone(),
-        };
+        <span class="comment">// Get full process name.
+        </span><span class="kw">let </span>full_process_name = <span class="self">self
+            </span>.node_manager
+            .borrow()
+            .get_full_process_name(<span class="kw-2">&amp;</span>process_address)
+            .expect(<span class="string">&quot;Implementation error: can not get full name of registered process.&quot;</span>);
 
-        <span class="kw">let </span>virtual_proc_wrapper = VirtualProcessWrapper::new(process_name.to_owned(), process_ref);
+        <span class="comment">// Configure process ref.
+        </span><span class="kw">let </span>process_ref = Arc::new(RwLock::new(process));
 
+        <span class="comment">// Configure virtual process wrapper.
+        </span><span class="kw">let </span>node_manager_ref = <span class="self">self</span>.node_manager.clone();
+        <span class="kw">let </span>virtual_proc_wrapper =
+            VirtualProcessWrapper::new(process_address, process_ref.clone(), node_manager_ref);
+
+        <span class="comment">// Configure wrapper to the dslab.
+        </span><span class="kw">let </span>process_wrapper = ProcessWrapper { process_ref };
         <span class="kw">let </span>boxed_wrapper = Box::new(virtual_proc_wrapper);
 
-        <span class="self">self</span>.inner
-            .add_process(process_name, boxed_wrapper, node_name);
+        <span class="comment">// Add virtual process wrapper to the dslab.
+        </span><span class="self">self</span>.inner
+            .add_process(<span class="kw-2">&amp;</span>full_process_name, boxed_wrapper, node_name);
 
-        process_wrapper
+        <span class="comment">// Return process wrapper to user.
+        </span>process_wrapper
     }
 
     <span class="doccomment">/// Start process
     /// Call on_start method of process
     </span><span class="kw">pub fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>, proc: <span class="kw-2">&amp;</span>str, node: <span class="kw-2">&amp;</span>str) {
+        <span class="kw">let </span>full_process_name = <span class="self">self</span>.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>node_ref) = <span class="self">self</span>.get_mut_node(node) {
-            node_ref.send_local_message(proc.to_string(), SimulationMessage::new(<span class="string">&quot;START&quot;</span>, <span class="string">&quot;&quot;</span>));
+            node_ref.send_local_message(full_process_name, SimulationMessage::new(<span class="string">&quot;START&quot;</span>, <span class="string">&quot;&quot;</span>));
         }
     }
 
@@ -293,13 +359,15 @@
     }
 
     <span class="doccomment">/// Returns the number of messages sent by the process.
-    </span><span class="kw">pub fn </span>sent_message_count(<span class="kw-2">&amp;</span><span class="self">self</span>, proc: <span class="kw-2">&amp;</span>str) -&gt; u64 {
-        <span class="self">self</span>.inner.sent_message_count(proc)
+    </span><span class="kw">pub fn </span>sent_message_count(<span class="kw-2">&amp;</span><span class="self">self</span>, proc: <span class="kw-2">&amp;</span>str, node: <span class="kw-2">&amp;</span>str) -&gt; u64 {
+        <span class="kw">let </span>full_process_name = <span class="self">self</span>.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
+        <span class="self">self</span>.inner.sent_message_count(<span class="kw-2">&amp;</span>full_process_name)
     }
 
     <span class="doccomment">/// Returns the number of messages received by the process.
-    </span><span class="kw">pub fn </span>received_message_count(<span class="kw-2">&amp;</span><span class="self">self</span>, proc: <span class="kw-2">&amp;</span>str) -&gt; u64 {
-        <span class="self">self</span>.inner.received_message_count(proc)
+    </span><span class="kw">pub fn </span>received_message_count(<span class="kw-2">&amp;</span><span class="self">self</span>, proc: <span class="kw-2">&amp;</span>str, node: <span class="kw-2">&amp;</span>str) -&gt; u64 {
+        <span class="kw">let </span>full_process_name = <span class="self">self</span>.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
+        <span class="self">self</span>.inner.received_message_count(<span class="kw-2">&amp;</span>full_process_name)
     }
 
     <span class="comment">// Simulation -----------------------------------------------------

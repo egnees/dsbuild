@@ -9,11 +9,11 @@
 <a href="#9" id="9">9</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Assistant for [`PingProcess`] functionality.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::process_lib::ping::PingProcess;
+</span><span class="kw">use crate</span>::{common::process::Address, process_lib::ping::PingProcess};
 
 <span class="doccomment">/// Creates new [`PingProcess`] with specified delay,
 /// partner process name and need count of pongs to receive before stop.
-</span><span class="kw">pub fn </span>create_pinger(delay: f64, partner: String, need_cnt: u32) -&gt; PingProcess {
+</span><span class="kw">pub fn </span>create_pinger(delay: f64, partner: Address, need_cnt: u32) -&gt; PingProcess {
     PingProcess::new_verbose(delay, partner, need_cnt)
 }
 </code></pre></div></section></main></body></html>

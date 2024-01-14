@@ -70,11 +70,21 @@
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simulation of real-time usage of the Ping-Pong ecosystem.
 //!
 //! Creates Ping and Pong processes, add them to system, and make them communicate with each other.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::examples::ping_pong::{pinger, ponger};
+</span><span class="kw">use </span><span class="kw">crate</span>::common::process::Address;
+<span class="kw">use </span><span class="kw">crate</span>::examples::ping_pong::{pinger, ponger};
 <span class="kw">use </span><span class="kw">crate</span>::VirtualSystem;
 
 <span class="doccomment">/// Runs simulation with specified number of ping-pong iterations.
@@ -83,9 +93,17 @@
     </span><span class="kw">const </span>PONGER_NAME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Ponger&quot;</span>;
     <span class="kw">const </span>PINGER_NAME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Pinger&quot;</span>;
 
+    <span class="comment">// Process ports.
+    </span><span class="kw">const </span>PINGER_PORT: u16 = <span class="number">10091</span>;
+    <span class="kw">const </span>PONGER_PORT: u16 = <span class="number">10092</span>;
+
     <span class="comment">// Process nodes.
     </span><span class="kw">const </span>PONGER_NODE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Ponger node&quot;</span>;
     <span class="kw">const </span>PINGER_NODE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Pinger node&quot;</span>;
+
+    <span class="comment">// Process addresses.
+    </span><span class="kw">let </span>ponger_addr: Address =
+        Address::new(<span class="string">&quot;127.0.0.1&quot;</span>.to_string(), PONGER_PORT, PONGER_NAME.to_owned());
 
     <span class="comment">// Create simulation with specified seed.
     </span><span class="kw">let </span><span class="kw-2">mut </span>sim = VirtualSystem::new(<span class="number">12345</span>);
@@ -95,17 +113,17 @@
     sim.network().set_delays(<span class="number">0.025</span>, <span class="number">0.375</span>);
 
     <span class="comment">// Add pinger node to the simulation.
-    </span>sim.add_node(PINGER_NODE);
+    </span>sim.add_node(PINGER_NODE, <span class="string">&quot;127.0.0.1&quot;</span>, PINGER_PORT);
 
     <span class="comment">// Add ponger node to the simulation.
-    </span>sim.add_node(PONGER_NODE);
+    </span>sim.add_node(PONGER_NODE, <span class="string">&quot;127.0.0.1&quot;</span>, PONGER_PORT);
 
     <span class="comment">// Connect both nodes to the network.
     </span>sim.network().connect_node(PINGER_NAME);
     sim.network().connect_node(PONGER_NAME);
 
     <span class="comment">// Add pinger to the node.
-    </span><span class="kw">let </span>pinger = pinger::create_pinger(<span class="number">0.1</span>, PONGER_NAME.to_owned(), need_cycles);
+    </span><span class="kw">let </span>pinger = pinger::create_pinger(<span class="number">0.1</span>, ponger_addr.clone(), need_cycles);
     <span class="kw">let </span>pinger_wrapper = sim.add_process(PINGER_NAME, pinger, PINGER_NODE);
 
     <span class="comment">// Add ponger to the node.

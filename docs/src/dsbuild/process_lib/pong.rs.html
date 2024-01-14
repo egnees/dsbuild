@@ -118,9 +118,17 @@
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
 <a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Implementation of [`PongProcess`].
 
-</span><span class="kw">use </span><span class="kw">crate</span>::common::{context::Context, message::Message, process::Process};
+</span><span class="kw">use </span><span class="kw">crate</span>::common::{
+    context::Context,
+    message::Message,
+    process::{Address, Process},
+};
 
 <span class="doccomment">/// [`PongProcess`] waits for messages with tip equals to [`PING_TIP`][`PongProcess::PING_TIP`],
 /// and answers them with pong messages with tip equals to [`PONG_TIP`][`PongProcess::PONG_TIP`]
@@ -218,7 +226,7 @@
     </span><span class="kw">fn </span>on_message(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         msg: Message,
-        from: String,
+        from: Address,
         ctx: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Context,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="macro">assert_eq!</span>(msg.get_tip(), <span class="self">Self</span>::PING_TIP);

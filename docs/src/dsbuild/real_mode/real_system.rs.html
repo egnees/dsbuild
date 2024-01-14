@@ -348,91 +348,6 @@
 <a href="#348" id="348">348</a>
 <a href="#349" id="349">349</a>
 <a href="#350" id="350">350</a>
-<a href="#351" id="351">351</a>
-<a href="#352" id="352">352</a>
-<a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a>
-<a href="#355" id="355">355</a>
-<a href="#356" id="356">356</a>
-<a href="#357" id="357">357</a>
-<a href="#358" id="358">358</a>
-<a href="#359" id="359">359</a>
-<a href="#360" id="360">360</a>
-<a href="#361" id="361">361</a>
-<a href="#362" id="362">362</a>
-<a href="#363" id="363">363</a>
-<a href="#364" id="364">364</a>
-<a href="#365" id="365">365</a>
-<a href="#366" id="366">366</a>
-<a href="#367" id="367">367</a>
-<a href="#368" id="368">368</a>
-<a href="#369" id="369">369</a>
-<a href="#370" id="370">370</a>
-<a href="#371" id="371">371</a>
-<a href="#372" id="372">372</a>
-<a href="#373" id="373">373</a>
-<a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
-<a href="#410" id="410">410</a>
-<a href="#411" id="411">411</a>
-<a href="#412" id="412">412</a>
-<a href="#413" id="413">413</a>
-<a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a>
-<a href="#416" id="416">416</a>
-<a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
-<a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a>
-<a href="#424" id="424">424</a>
-<a href="#425" id="425">425</a>
-<a href="#426" id="426">426</a>
-<a href="#427" id="427">427</a>
-<a href="#428" id="428">428</a>
-<a href="#429" id="429">429</a>
-<a href="#430" id="430">430</a>
-<a href="#431" id="431">431</a>
-<a href="#432" id="432">432</a>
-<a href="#433" id="433">433</a>
-<a href="#434" id="434">434</a>
-<a href="#435" id="435">435</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of [`RealSystem`] and [`RealSystemConfig`].
 
 </span><span class="kw">use </span>std::sync::{Arc, RwLock};
@@ -446,41 +361,10 @@
 
 <span class="kw">use super</span>::{
     events::Event,
-    network::{
-        grpc_messenger::GRpcMessenger, manual_resolver::ManualResolver,
-        network_manager::NetworkManager, resolver::AddressResolver,
-    },
+    network::{grpc_messenger::GRpcMessenger, network_manager::NetworkManager},
     process_manager::ProcessManager,
     time::{basic_timer_setter::BasicTimerSetter, time_manager::TimeManager},
 };
-
-<span class="kw">pub use </span><span class="kw">super</span>::network::defs::Address;
-
-<span class="doccomment">/// Represents policy for resolving [`network address`][`crate::Address`] by [`process`][`crate::Process`] name.
-///
-/// It allows to know [`network address`][`Address`] of [user-process][`Process`]
-/// to send [messages][`crate::Message`] to it.
-///
-/// Note that address resolving does not filter out not registered processes in general[^note].
-/// It means user-process can receive messages from malicious processes too,
-/// which can use or not use [`framework`](https://github.com/egnees/dsbuild);
-///
-/// [^note]: add some kind of protection against malicious processes in future.
-</span><span class="kw">pub enum </span>AddressResolvePolicy {
-    <span class="doccomment">/// - Only processes with names corresponds[addresses][`Address`] in `resolve_list` will be resolved.
-    /// - Attempts to send [message][`crate::common::message::Message`] to the processes which name not in `resolve_list` will lead to error.
-    /// - All process names in the `resolve_list` must be unique.
-    /// - [Messages][`crate::common::message::Message`] from not registered processes will be accepted and delivered too.
-    ///
-    /// Remark: probably in future there will be possibility
-    /// to add [resolve records][`Address`] directly from [user-process][`Process`]
-    /// using [context][`crate::common::context::Context`].
-    </span>Manual {
-        <span class="doccomment">/// List of [process names][`Address::process_name`] and their [addresses][`Address`],
-        /// which will be used to send [messages][`crate::common::message::Message] to them.
-        </span>resolve_list: Vec&lt;Address&gt;,
-    },
-}
 
 <span class="doccomment">/// Represents configuration of [`RealSystem`].
 </span><span class="kw">pub struct </span>RealSystemConfig {
@@ -489,9 +373,6 @@
 
     <span class="doccomment">/// Max size of buffer of pending events inside of the [`RealSystem`].
     </span>event_buffer_size: usize,
-
-    <span class="doccomment">/// Policy for resolving [network addresses][`Address`] by process name.
-    </span>resolve_policy: AddressResolvePolicy,
 
     <span class="doccomment">/// Host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     </span>host: String,
@@ -516,13 +397,11 @@
     ///     while some old event won`t be processed.
     ///
     ///     This value must be greater than zero.
-    /// * `resolve_policy` - Specifies policy for resolving [network addresses][`Address`] by process name.
     /// * `host` - Specifies host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     /// * `port` - Specifies port which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     </span><span class="kw">pub fn </span>new(
         max_threads: usize,
         event_buffer_size: usize,
-        resolve_policy: AddressResolvePolicy,
         host: String,
         port: u16,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, String&gt; {
@@ -534,7 +413,6 @@
             <span class="prelude-val">Ok</span>(RealSystemConfig {
                 max_threads,
                 event_buffer_size,
-                resolve_policy,
                 host,
                 port,
             })
@@ -547,17 +425,10 @@
     /// Instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
     </span><span class="kw">pub fn </span>new_with_max_threads(
         max_threads: usize,
-        resolve_policy: AddressResolvePolicy,
         host: String,
         port: u16,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, String&gt; {
-        <span class="self">Self</span>::new(
-            max_threads,
-            <span class="self">Self</span>::DEFAULT_EVENT_BUFFER_SIZE,
-            resolve_policy,
-            host,
-            port,
-        )
+        <span class="self">Self</span>::new(max_threads, <span class="self">Self</span>::DEFAULT_EVENT_BUFFER_SIZE, host, port)
     }
 
     <span class="doccomment">/// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
@@ -566,17 +437,10 @@
     /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`].
     </span><span class="kw">pub fn </span>new_with_buffer_size(
         event_buffer_size: usize,
-        resolve_policy: AddressResolvePolicy,
         host: String,
         port: u16,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, String&gt; {
-        <span class="self">Self</span>::new(
-            <span class="self">Self</span>::DEFAULT_MAX_THREADS,
-            event_buffer_size,
-            resolve_policy,
-            host,
-            port,
-        )
+        <span class="self">Self</span>::new(<span class="self">Self</span>::DEFAULT_MAX_THREADS, event_buffer_size, host, port)
     }
 
     <span class="doccomment">/// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
@@ -584,15 +448,10 @@
     ///
     /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`],
     /// and instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
-    </span><span class="kw">pub fn </span>default(
-        resolve_policy: AddressResolvePolicy,
-        host: String,
-        port: u16,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, String&gt; {
+    </span><span class="kw">pub fn </span>default(host: String, port: u16) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, String&gt; {
         <span class="self">Self</span>::new(
             <span class="self">Self</span>::DEFAULT_MAX_THREADS,
             <span class="self">Self</span>::DEFAULT_EVENT_BUFFER_SIZE,
-            resolve_policy,
             host,
             port,
         )
@@ -602,11 +461,6 @@
 <span class="doccomment">/// Represents real system, which is responsible
 /// for interacting with [`user-processes`][`Process`], time, network, and other [OS](https://en.wikipedia.org/wiki/Operating_system) features.
 </span><span class="kw">pub struct </span>RealSystem {
-    <span class="doccomment">/// Represents [network address][`AddressResolver`] resolver,
-    /// which is configured according to provided by [`RealSystemConfig`]
-    /// [resolve policy][`RealSystemConfig::resolve_policy`].
-    </span>resolver: Box&lt;<span class="kw">dyn </span>AddressResolver&gt;,
-
     <span class="doccomment">/// Represents [process manager][`ProcessManager`], which is used to manage [user-processes][`Process`].
     </span>process_manager: ProcessManager,
 
@@ -635,7 +489,7 @@
     <span class="doccomment">/// Creates new instance of [`RealSystem`] from [`RealSystemConfig`].
     </span><span class="kw">pub fn </span>new(config: RealSystemConfig) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, String&gt; {
         <span class="comment">// Create process manager.
-        </span><span class="kw">let </span>process_manager = ProcessManager::default();
+        </span><span class="kw">let </span>process_manager = ProcessManager::new(config.host.clone(), config.port);
 
         <span class="comment">// Create time manager.
         </span><span class="kw">let </span>time_manager = TimeManager::new();
@@ -643,18 +497,8 @@
         <span class="comment">// Create network manager.
         </span><span class="kw">let </span>network_manager = NetworkManager::default();
 
-        <span class="comment">// Create resolver.
-        </span><span class="kw">let </span>resolver = <span class="kw">match </span>config.resolve_policy {
-            AddressResolvePolicy::Manual {
-                resolve_list: trusted,
-            } =&gt; Box::new(
-                ManualResolver::from_trusted_list(trusted).expect(<span class="string">&quot;Can not create resolver&quot;</span>),
-            ),
-        };
-
         <span class="comment">// Build and return created system.
         </span><span class="prelude-val">Ok</span>(RealSystem {
-            resolver,
             process_manager,
             time_manager,
             network_manager,
@@ -678,16 +522,6 @@
         process_name: <span class="kw-2">&amp;</span>str,
         process: P,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;ProcessWrapper&lt;P&gt;, String&gt; {
-        <span class="comment">// Define process address.
-        </span><span class="kw">let </span>process_address = Address {
-            host: <span class="self">self</span>.host.clone(),
-            port: <span class="self">self</span>.port,
-            process_name: process_name.to_owned(),
-        };
-
-        <span class="comment">// Add process to the resolver.
-        </span><span class="self">self</span>.resolver.add_record(<span class="kw-2">&amp;</span>process_address)<span class="question-mark">?</span>;
-
         <span class="comment">// Create process lock.
         </span><span class="kw">let </span>process_lock = Arc::new(RwLock::new(process));
 
@@ -732,13 +566,9 @@
         <span class="kw">match </span>action {
             <span class="comment">// Process message sent action.
             </span>ProcessAction::MessageSent { msg, from, to } =&gt; {
-                <span class="comment">// Get sender and receiver addresses.
-                </span><span class="kw">let </span>sender = <span class="self">self</span>.resolver.resolve(from)<span class="question-mark">?</span>;
-                <span class="kw">let </span>receiver = <span class="self">self</span>.resolver.resolve(to)<span class="question-mark">?</span>;
-
                 <span class="comment">// Send message using network manager.
                 </span><span class="self">self</span>.network_manager
-                    .send_message(sender, receiver, msg.clone());
+                    .send_message(from.clone(), to.clone(), msg.clone());
             }
 
             <span class="comment">// Process timer set action.

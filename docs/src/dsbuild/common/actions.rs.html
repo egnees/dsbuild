@@ -58,9 +58,13 @@
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of user process [actions](`ProcessAction`).
 
 </span><span class="kw">use </span><span class="kw">crate</span>::common::message::Message;
+
+<span class="kw">use </span><span class="kw">super</span>::process::Address;
 
 <span class="doccomment">/// Specifies the behavior of timer set
 /// in the presence of existing active timer with this name.
@@ -87,13 +91,13 @@
         <span class="doccomment">/// Message which was sent.
         </span>msg: Message,
         <span class="doccomment">/// Name of process-sender of message.
-        </span>from: String,
+        </span>from: Address,
         <span class="doccomment">/// Name of process-receiver of message.
-        </span>to: String,
+        </span>to: Address,
     },
     <span class="doccomment">/// Specifies timer establishment action.
     </span>TimerSet {
-        <span class="doccomment">/// Name of process which set the timer.
+        <span class="doccomment">/// Full name of process which set the timer.
         </span>process_name: String,
         <span class="doccomment">/// Name of timer.
         </span>timer_name: String,
@@ -105,14 +109,14 @@
     },
     <span class="doccomment">/// Specifies timer canceling action.
     </span>TimerCancelled {
-        <span class="doccomment">/// Name of process which cancelled the timer.
+        <span class="doccomment">/// Full name of process which cancelled the timer.
         </span>process_name: String,
         <span class="doccomment">/// Name of timer.
         </span>timer_name: String,
     },
     <span class="doccomment">/// Specifies user request to stop the process.
     </span>ProcessStopped {
-        <span class="doccomment">/// Name of process, requested to stop.
+        <span class="doccomment">/// Address of process, requested to stop.
         </span>process_name: String,
         <span class="doccomment">/// Specifies policy on stopping process.
         </span>policy: StopPolicy,

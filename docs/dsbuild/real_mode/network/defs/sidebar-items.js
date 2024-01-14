@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Address","ProcessSendRequest","ProcessSendResponse"]};
+window.SIDEBAR_ITEMS = {"struct":["ProcessSendRequest","ProcessSendResponse"]};

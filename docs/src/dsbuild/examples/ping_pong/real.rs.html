@@ -82,19 +82,6 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Real-time usage of the Ping-Pong ecosystem.
 //!
 //! Creates Ping and Pong processes in two different threads and make them communicate with each other.
@@ -102,8 +89,9 @@
 </span><span class="kw">use </span>std::thread::{<span class="self">self</span>, sleep};
 <span class="kw">use </span>std::time::Duration;
 
+<span class="kw">use </span><span class="kw">crate</span>::common::process::Address;
 <span class="kw">use </span><span class="kw">crate</span>::examples::ping_pong::{pinger, ponger};
-<span class="kw">use crate</span>::{Address, AddressResolvePolicy, RealSystem, RealSystemConfig};
+<span class="kw">use crate</span>::{RealSystem, RealSystemConfig};
 
 <span class="doccomment">/// Runs real system with specified number of ping-pong iterations.
 </span><span class="kw">pub fn </span>run_real(need_cycles: u32) {
@@ -115,22 +103,17 @@
     </span><span class="kw">const </span>PINGER_PORT: u16 = <span class="number">10091</span>;
     <span class="kw">const </span>PONGER_PORT: u16 = <span class="number">10092</span>;
 
+    <span class="comment">// Process addresses.
+    </span><span class="kw">let </span>ponger_addr: Address =
+        Address::new(<span class="string">&quot;127.0.0.1&quot;</span>.to_string(), PONGER_PORT, PONGER_NAME.to_owned());
+
     <span class="comment">// Spawn pinger.
     </span><span class="kw">let </span>pinger_thread = thread::spawn(<span class="kw">move </span>|| {
         <span class="comment">// Create pinger process with 0.1 second retry delay and 100 need pings before stop.
-        </span><span class="kw">let </span>pinger = pinger::create_pinger(<span class="number">0.1</span>, PONGER_NAME.to_owned(), need_cycles);
-
-        <span class="comment">// Create address resolver, which will resolve ponger&#39;s address.
-        </span><span class="kw">let </span>policy = AddressResolvePolicy::Manual {
-            resolve_list: <span class="macro">vec!</span>[Address {
-                host: <span class="string">&quot;127.0.0.1&quot;</span>.to_owned(),
-                port: PONGER_PORT,
-                process_name: PONGER_NAME.to_owned(),
-            }],
-        };
+        </span><span class="kw">let </span>pinger = pinger::create_pinger(<span class="number">0.1</span>, ponger_addr, need_cycles);
 
         <span class="comment">// Create config, which will help to create system.
-        </span><span class="kw">let </span>config = RealSystemConfig::default(policy, <span class="string">&quot;127.0.0.1&quot;</span>.to_owned(), PINGER_PORT)
+        </span><span class="kw">let </span>config = RealSystemConfig::default(<span class="string">&quot;127.0.0.1&quot;</span>.to_owned(), PINGER_PORT)
             .expect(<span class="string">&quot;Can not create config&quot;</span>);
 
         <span class="comment">// Create system by config.
@@ -158,17 +141,8 @@
         <span class="comment">// Create ponger process with 1 second inactivity window.
         </span><span class="kw">let </span>ponger = ponger::create_ponger(<span class="number">3.0</span>);
 
-        <span class="comment">// Create address resolver, which will resolve pinger&#39;s address.
-        </span><span class="kw">let </span>policy = AddressResolvePolicy::Manual {
-            resolve_list: <span class="macro">vec!</span>[Address {
-                host: <span class="string">&quot;127.0.0.1&quot;</span>.to_owned(),
-                port: PINGER_PORT,
-                process_name: PINGER_NAME.to_owned(),
-            }],
-        };
-
         <span class="comment">// Create config, which will help to create system.
-        </span><span class="kw">let </span>config = RealSystemConfig::default(policy, <span class="string">&quot;127.0.0.1&quot;</span>.to_owned(), PONGER_PORT)
+        </span><span class="kw">let </span>config = RealSystemConfig::default(<span class="string">&quot;127.0.0.1&quot;</span>.to_owned(), PONGER_PORT)
             .expect(<span class="string">&quot;Can not create config&quot;</span>);
 
         <span class="comment">// Create system by config.

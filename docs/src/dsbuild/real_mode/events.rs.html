@@ -19,9 +19,11 @@
 <a href="#19" id="19">19</a>
 <a href="#20" id="20">20</a>
 <a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of events inside of the system in real mode.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::common::message::Message;
+</span><span class="kw">use </span><span class="kw">crate</span>::common::{message::Message, process::Address};
 
 <span class="doccomment">/// Specifies events appearing in the system in real mode.
 </span><span class="attr">#[derive(Clone, PartialEq, Debug)]
@@ -34,8 +36,10 @@
     <span class="doccomment">/// Specifies event of receiving message.
     </span>MessageReceived {
         msg: Message,
-        from: String,
-        to: String,
+        <span class="doccomment">/// Address of the message sender.
+        </span>from: Address,
+        <span class="doccomment">/// Name of message-receiver.
+        </span>to: String,
     },
     <span class="doccomment">/// Specifies event of system start.
     </span>SystemStarted {},

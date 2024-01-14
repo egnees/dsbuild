@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["AddressResolvePolicy"],"struct":["RealSystem","RealSystemConfig"]};
+window.SIDEBAR_ITEMS = {"struct":["RealSystem","RealSystemConfig"]};

@@ -134,8 +134,6 @@
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of asynchronous messenger [`GRpcMessenger`] structure.
 
 </span><span class="kw">use </span>std::net::{IpAddr, SocketAddr};
@@ -149,6 +147,7 @@
 
 <span class="kw">use </span><span class="kw">super</span>::messenger::AsyncMessenger;
 <span class="kw">use </span><span class="kw">crate</span>::common::message::Message;
+<span class="kw">use </span><span class="kw">crate</span>::common::process::Address;
 <span class="kw">use </span><span class="kw">crate</span>::real_mode::events::Event;
 
 <span class="kw">pub mod </span>message_passing {
@@ -174,24 +173,21 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;SendMessageResponse&gt;, Status&gt; {
         <span class="kw">let </span>req = request.into_inner();
 
-        <span class="kw">let </span>sender_address = Address {
-            host: req.sender_host,
-            port: req.sender_port <span class="kw">as </span>u16,
-            process_name: req.sender_process,
-        };
+        <span class="kw">let </span>sender_address =
+            Address::new(req.sender_host, req.sender_port <span class="kw">as </span>u16, req.sender_process);
 
-        <span class="kw">let </span>receiver_address = Address {
-            host: req.receiver_host,
-            port: req.receiver_port <span class="kw">as </span>u16,
-            process_name: req.receiver_process,
-        };
+        <span class="kw">let </span>receiver_address = Address::new(
+            req.receiver_host,
+            req.receiver_port <span class="kw">as </span>u16,
+            req.receiver_process,
+        );
 
         <span class="kw">let </span>message = Message::new_raw(<span class="kw-2">&amp;</span>req.message_tip, <span class="kw-2">&amp;</span>req.message_data)
             .map_err(|e| Status::new(tonic::Code::Internal, e))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>event = Event::MessageReceived {
             msg: message,
-            from: sender_address.process_name,
+            from: sender_address,
             to: receiver_address.process_name,
         };
 
