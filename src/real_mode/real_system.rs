@@ -11,41 +11,10 @@ use crate::common::{
 
 use super::{
     events::Event,
-    network::{
-        grpc_messenger::GRpcMessenger, manual_resolver::ManualResolver,
-        network_manager::NetworkManager, resolver::AddressResolver,
-    },
+    network::{grpc_messenger::GRpcMessenger, network_manager::NetworkManager},
     process_manager::ProcessManager,
     time::{basic_timer_setter::BasicTimerSetter, time_manager::TimeManager},
 };
-
-pub use super::network::defs::Address;
-
-/// Represents policy for resolving [`network address`][`crate::Address`] by [`process`][`crate::Process`] name.
-///
-/// It allows to know [`network address`][`Address`] of [user-process][`Process`]
-/// to send [messages][`crate::Message`] to it.
-///
-/// Note that address resolving does not filter out not registered processes in general[^note].
-/// It means user-process can receive messages from malicious processes too,
-/// which can use or not use [`framework`](https://github.com/egnees/dsbuild);
-///
-/// [^note]: add some kind of protection against malicious processes in future.
-pub enum AddressResolvePolicy {
-    /// - Only processes with names corresponds[addresses][`Address`] in `resolve_list` will be resolved.
-    /// - Attempts to send [message][`crate::common::message::Message`] to the processes which name not in `resolve_list` will lead to error.
-    /// - All process names in the `resolve_list` must be unique.
-    /// - [Messages][`crate::common::message::Message`] from not registered processes will be accepted and delivered too.
-    ///
-    /// Remark: probably in future there will be possibility
-    /// to add [resolve records][`Address`] directly from [user-process][`Process`]
-    /// using [context][`crate::common::context::Context`].
-    Manual {
-        /// List of [process names][`Address::process_name`] and their [addresses][`Address`],
-        /// which will be used to send [messages][`crate::common::message::Message] to them.
-        resolve_list: Vec<Address>,
-    },
-}
 
 /// Represents configuration of [`RealSystem`].
 pub struct RealSystemConfig {
@@ -54,9 +23,6 @@ pub struct RealSystemConfig {
 
     /// Max size of buffer of pending events inside of the [`RealSystem`].
     event_buffer_size: usize,
-
-    /// Policy for resolving [network addresses][`Address`] by process name.
-    resolve_policy: AddressResolvePolicy,
 
     /// Host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     host: String,
@@ -81,13 +47,11 @@ impl RealSystemConfig {
     ///     while some old event won`t be processed.
     ///
     ///     This value must be greater than zero.
-    /// * `resolve_policy` - Specifies policy for resolving [network addresses][`Address`] by process name.
     /// * `host` - Specifies host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     /// * `port` - Specifies port which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     pub fn new(
         max_threads: usize,
         event_buffer_size: usize,
-        resolve_policy: AddressResolvePolicy,
         host: String,
         port: u16,
     ) -> Result<Self, String> {
@@ -99,7 +63,6 @@ impl RealSystemConfig {
             Ok(RealSystemConfig {
                 max_threads,
                 event_buffer_size,
-                resolve_policy,
                 host,
                 port,
             })
@@ -112,17 +75,10 @@ impl RealSystemConfig {
     /// Instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
     pub fn new_with_max_threads(
         max_threads: usize,
-        resolve_policy: AddressResolvePolicy,
         host: String,
         port: u16,
     ) -> Result<Self, String> {
-        Self::new(
-            max_threads,
-            Self::DEFAULT_EVENT_BUFFER_SIZE,
-            resolve_policy,
-            host,
-            port,
-        )
+        Self::new(max_threads, Self::DEFAULT_EVENT_BUFFER_SIZE, host, port)
     }
 
     /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
@@ -131,17 +87,10 @@ impl RealSystemConfig {
     /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`].
     pub fn new_with_buffer_size(
         event_buffer_size: usize,
-        resolve_policy: AddressResolvePolicy,
         host: String,
         port: u16,
     ) -> Result<Self, String> {
-        Self::new(
-            Self::DEFAULT_MAX_THREADS,
-            event_buffer_size,
-            resolve_policy,
-            host,
-            port,
-        )
+        Self::new(Self::DEFAULT_MAX_THREADS, event_buffer_size, host, port)
     }
 
     /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
@@ -149,15 +98,10 @@ impl RealSystemConfig {
     ///
     /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`],
     /// and instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
-    pub fn default(
-        resolve_policy: AddressResolvePolicy,
-        host: String,
-        port: u16,
-    ) -> Result<Self, String> {
+    pub fn default(host: String, port: u16) -> Result<Self, String> {
         Self::new(
             Self::DEFAULT_MAX_THREADS,
             Self::DEFAULT_EVENT_BUFFER_SIZE,
-            resolve_policy,
             host,
             port,
         )
@@ -167,11 +111,6 @@ impl RealSystemConfig {
 /// Represents real system, which is responsible
 /// for interacting with [`user-processes`][`Process`], time, network, and other [OS](https://en.wikipedia.org/wiki/Operating_system) features.
 pub struct RealSystem {
-    /// Represents [network address][`AddressResolver`] resolver,
-    /// which is configured according to provided by [`RealSystemConfig`]
-    /// [resolve policy][`RealSystemConfig::resolve_policy`].
-    resolver: Box<dyn AddressResolver>,
-
     /// Represents [process manager][`ProcessManager`], which is used to manage [user-processes][`Process`].
     process_manager: ProcessManager,
 
@@ -200,7 +139,7 @@ impl RealSystem {
     /// Creates new instance of [`RealSystem`] from [`RealSystemConfig`].
     pub fn new(config: RealSystemConfig) -> Result<Self, String> {
         // Create process manager.
-        let process_manager = ProcessManager::default();
+        let process_manager = ProcessManager::new(config.host.clone(), config.port);
 
         // Create time manager.
         let time_manager = TimeManager::new();
@@ -208,18 +147,8 @@ impl RealSystem {
         // Create network manager.
         let network_manager = NetworkManager::default();
 
-        // Create resolver.
-        let resolver = match config.resolve_policy {
-            AddressResolvePolicy::Manual {
-                resolve_list: trusted,
-            } => Box::new(
-                ManualResolver::from_trusted_list(trusted).expect("Can not create resolver"),
-            ),
-        };
-
         // Build and return created system.
         Ok(RealSystem {
-            resolver,
             process_manager,
             time_manager,
             network_manager,
@@ -243,16 +172,6 @@ impl RealSystem {
         process_name: &str,
         process: P,
     ) -> Result<ProcessWrapper<P>, String> {
-        // Define process address.
-        let process_address = Address {
-            host: self.host.clone(),
-            port: self.port,
-            process_name: process_name.to_owned(),
-        };
-
-        // Add process to the resolver.
-        self.resolver.add_record(&process_address)?;
-
         // Create process lock.
         let process_lock = Arc::new(RwLock::new(process));
 
@@ -297,13 +216,9 @@ impl RealSystem {
         match action {
             // Process message sent action.
             ProcessAction::MessageSent { msg, from, to } => {
-                // Get sender and receiver addresses.
-                let sender = self.resolver.resolve(from)?;
-                let receiver = self.resolver.resolve(to)?;
-
                 // Send message using network manager.
                 self.network_manager
-                    .send_message(sender, receiver, msg.clone());
+                    .send_message(from.clone(), to.clone(), msg.clone());
             }
 
             // Process timer set action.

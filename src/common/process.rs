@@ -49,7 +49,7 @@ pub trait Process: DynClone {
     fn on_message(
         &mut self,
         msg: Message,
-        from: String,
+        from: Address,
         ctx: &mut dyn Context,
     ) -> Result<(), String>;
 }
@@ -107,5 +107,43 @@ impl<P: Process + 'static> ProcessWrapper<P> {
             .expect("Can not read process, probably runtime has been panicked");
 
         ProcessGuard { inner: read_guard }
+    }
+}
+
+/// Represents [`process`][`crate::Process`] address, which is used in
+/// [`real system`][`crate::RealSystem`] and [`virtual system`][`crate::VirtualSystem`]
+///  to route [`network messages`][crate::Message].
+#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
+pub struct Address {
+    /// Specifies host,
+    /// which is used to deliver messages
+    /// to the [real system][`crate::real_mode::real_system::RealSystem`] instance
+    /// through the network.
+    pub host: String,
+
+    /// Specifies port,
+    /// which is used to deliver messages
+    /// to the [real system][`crate::real_mode::real_system::RealSystem`] instance
+    /// through the network.
+    pub port: u16,
+
+    /// Specifies process name
+    /// inside of the [real system][`crate::real_mode::real_system::RealSystem`] instance.
+    pub process_name: String,
+}
+
+impl Address {
+    /// Creates new address instance.
+    pub fn new(host: String, port: u16, process_name: String) -> Self {
+        Self {
+            host,
+            port,
+            process_name,
+        }
+    }
+
+    /// Creates new node address instance with empty process name.
+    pub(crate) fn new_node_address(host: String, port: u16) -> Self {
+        Self::new(host, port, "".to_owned())
     }
 }

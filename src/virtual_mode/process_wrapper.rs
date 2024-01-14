@@ -1,8 +1,16 @@
-use std::sync::{Arc, RwLock};
+//! Definition of [`process wrapper`][`VirtualProcessWrapper`] which is used in the virtual system.
+
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
+
+use log::warn;
 
 use crate::common::{
     actions::{ProcessAction, StopPolicy, TimerBehavior},
-    process::{Process, ProcessState},
+    process::{Address, Process, ProcessState},
 };
 
 use dslab_mp::{
@@ -10,31 +18,47 @@ use dslab_mp::{
     process::Process as SimulationProcess,
 };
 
-use super::virtual_context::VirtualContext;
+use super::{node_manager::NodeManager, virtual_context::VirtualContext};
 
+/// Represents virtual process wrapper, which is to be passed to the [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html).
 #[derive(Clone)]
 pub struct VirtualProcessWrapper<P: Process + Clone + 'static> {
-    process_name: String,
+    process_address: Address,
     user_process: Arc<RwLock<P>>,
     process_state: ProcessState,
+    node_manager: Rc<RefCell<NodeManager>>,
 }
 
 impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
-    pub fn new(process_name: String, process_impl: Arc<RwLock<P>>) -> Self {
+    /// Create new virtual process wrapper.
+    pub fn new(
+        process_address: Address,
+        process_impl: Arc<RwLock<P>>,
+        node_manager: Rc<RefCell<NodeManager>>,
+    ) -> Self {
+        // let full_process_name = node_manager
+        //     .borrow()
+        //     .get_full_process_name(&process_address)
+        //     .expect("Implementation error: can not get full process name");
+
         Self {
-            process_name,
+            process_address,
             user_process: process_impl,
             process_state: ProcessState::Initialized,
+            node_manager,
         }
     }
 
+    /// Create virtual context, which matches to the virtual process wrapper.
     fn create_context(&self) -> VirtualContext {
         VirtualContext {
-            process_name: self.process_name.clone(),
+            process_address: self.process_address.clone(),
             actions: Vec::new(),
         }
     }
 
+    /// Handle process actions and transform them to the
+    /// [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html) actions.
     fn handle_process_actions(&mut self, actions: Vec<ProcessAction>, ctx: &mut SimulationContext) {
         for action in actions {
             if self.process_state == ProcessState::Stopped {
@@ -42,7 +66,15 @@ impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
             }
             match action {
                 ProcessAction::MessageSent { msg, from: _, to } => {
-                    ctx.send(msg.into(), to);
+                    // Try to resolve full process name by its address.
+                    match self.node_manager.borrow().get_full_process_name(&to) {
+                        Ok(full_process_name) => {
+                            ctx.send(msg.into(), full_process_name);
+                        }
+                        Err(err) => {
+                            warn!("Message not sent: {}", err);
+                        }
+                    }
                 }
 
                 ProcessAction::ProcessStopped {
@@ -74,6 +106,7 @@ impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
     }
 }
 
+/// Implementation of [`DSLab MP`](https://osukhoroslov.github.io/dslab_mp/index.html) process trait.
 impl<P: Process + Clone + 'static> SimulationProcess for VirtualProcessWrapper<P> {
     fn on_message(
         &mut self,
@@ -85,14 +118,24 @@ impl<P: Process + Clone + 'static> SimulationProcess for VirtualProcessWrapper<P
             return Ok(());
         }
 
+        // Create virtual context to pass it into dslab process.
         let mut virt_ctx = self.create_context();
 
+        // Get process address by it's full name.
+        let from_address = self
+            .node_manager
+            .borrow()
+            .get_process_address(&from)
+            .expect("Incorrect implementation: received message from not registered process.");
+
+        // Callback dslab process on message method.
         let result = self
             .user_process
             .write()
-            .expect("Can not read process, probably datarace detected")
-            .on_message(msg.into(), from, &mut virt_ctx);
+            .expect("Can not write in process, probably datarace appeared")
+            .on_message(msg.into(), from_address, &mut virt_ctx);
 
+        // handle process actions.
         self.handle_process_actions(virt_ctx.actions, ctx);
 
         result
@@ -114,7 +157,7 @@ impl<P: Process + Clone + 'static> SimulationProcess for VirtualProcessWrapper<P
         let result = self
             .user_process
             .write()
-            .expect("Can not read process, probably datarace detected")
+            .expect("Can not write in process, probably datarace appeared")
             .on_start(&mut virt_ctx);
 
         self.handle_process_actions(virt_ctx.actions, ctx);
@@ -132,7 +175,7 @@ impl<P: Process + Clone + 'static> SimulationProcess for VirtualProcessWrapper<P
         let result = self
             .user_process
             .write()
-            .expect("Can not read process, probably datarace detected")
+            .expect("Can not write in process, probably datarace appeared")
             .on_timer(timer, &mut virt_ctx);
 
         self.handle_process_actions(virt_ctx.actions, ctx);

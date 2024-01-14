@@ -1,6 +1,10 @@
 //! Implementation of [`PongProcess`].
 
-use crate::common::{context::Context, message::Message, process::Process};
+use crate::common::{
+    context::Context,
+    message::Message,
+    process::{Address, Process},
+};
 
 /// [`PongProcess`] waits for messages with tip equals to [`PING_TIP`][`PongProcess::PING_TIP`],
 /// and answers them with pong messages with tip equals to [`PONG_TIP`][`PongProcess::PONG_TIP`]
@@ -98,7 +102,7 @@ impl Process for PongProcess {
     fn on_message(
         &mut self,
         msg: Message,
-        from: String,
+        from: Address,
         ctx: &mut dyn Context,
     ) -> Result<(), String> {
         assert_eq!(msg.get_tip(), Self::PING_TIP);

@@ -1,7 +1,8 @@
 //! Definition of [`VirtualSystem`].
 
 use std::{
-    cell::{Ref, RefMut},
+    cell::{RefCell, RefMut},
+    rc::Rc,
     sync::{Arc, RwLock},
 };
 
@@ -10,7 +11,7 @@ use dslab_mp::{
     system::System as Simulation,
 };
 
-use super::process_wrapper::VirtualProcessWrapper;
+use super::{node_manager::NodeManager, process_wrapper::VirtualProcessWrapper};
 use crate::common::process::{Process, ProcessWrapper};
 
 /// Represents virtual system, which is responsible
@@ -21,6 +22,7 @@ use crate::common::process::{Process, ProcessWrapper};
 /// framework for simulation of network, time, etc.
 pub struct VirtualSystem {
     inner: Simulation,
+    node_manager: Rc<RefCell<NodeManager>>,
 }
 
 impl VirtualSystem {
@@ -28,6 +30,7 @@ impl VirtualSystem {
     pub fn new(seed: u64) -> Self {
         Self {
             inner: Simulation::new(seed),
+            node_manager: Rc::new(RefCell::new(NodeManager::default())),
         }
     }
 
@@ -41,9 +44,19 @@ impl VirtualSystem {
     // Node ------------------------------------------------------
 
     /// Adds a node to the simulation.
+    /// Note that node names must be unique and does not contain `/` symbol.
     ///
-    /// Note that node names must be unique.
-    pub fn add_node(&mut self, name: &str) {
+    /// # Panics
+    ///
+    /// - In case node with such `name` already exists.
+    /// - In case `name` is empty or contains `/` character.
+    pub fn add_node(&mut self, name: &str, host: &str, port: u16) {
+        // Add node to the node manager.
+        self.node_manager
+            .borrow_mut()
+            .add_node(name.to_owned(), host.to_owned(), port)
+            .unwrap();
+
         self.inner.add_node(name);
     }
 
@@ -72,13 +85,11 @@ impl VirtualSystem {
         self.inner.recover_node(node_name);
     }
 
-    /// Returns an immutable reference to the node.
-    pub fn get_node(&self, name: &str) -> Option<Ref<Node>> {
-        self.inner.get_node(name)
-    }
-
     /// Returns a mutable reference to the node.
-    pub fn get_mut_node(&self, name: &str) -> Option<RefMut<Node>> {
+    /// 
+    /// Can not make method public because
+    /// process names on dslab nodes are not the same as in the framework.  
+    fn get_mut_node(&self, name: &str) -> Option<RefMut<Node>> {
         self.inner.get_mut_node(name)
     }
 
@@ -93,34 +104,55 @@ impl VirtualSystem {
     ///
     /// # Panics
     ///
-    /// - If `process name` is already used.
+    /// - If node with such name `node_name` does not exists.
+    /// - If process with such `process name` is already exists on the node with `node_name`.
+    /// - If process name or node name is empty or contains `/` symbol.
     pub fn add_process<P: Process + Clone + 'static>(
         &mut self,
         process_name: &str,
         process: P,
         node_name: &str,
     ) -> ProcessWrapper<P> {
+        // Add process to the node manager.
+        let process_address = self
+            .node_manager
+            .borrow_mut()
+            .add_process_to_node(node_name.to_owned(), process_name.to_owned())
+            .unwrap();
+
+        // Get full process name.
+        let full_process_name = self
+            .node_manager
+            .borrow()
+            .get_full_process_name(&process_address)
+            .expect("Implementation error: can not get full name of registered process.");
+
+        // Configure process ref.
         let process_ref = Arc::new(RwLock::new(process));
 
-        let process_wrapper = ProcessWrapper {
-            process_ref: process_ref.clone(),
-        };
+        // Configure virtual process wrapper.
+        let node_manager_ref = self.node_manager.clone();
+        let virtual_proc_wrapper =
+            VirtualProcessWrapper::new(process_address, process_ref.clone(), node_manager_ref);
 
-        let virtual_proc_wrapper = VirtualProcessWrapper::new(process_name.to_owned(), process_ref);
-
+        // Configure wrapper to the dslab.
+        let process_wrapper = ProcessWrapper { process_ref };
         let boxed_wrapper = Box::new(virtual_proc_wrapper);
 
+        // Add virtual process wrapper to the dslab.
         self.inner
-            .add_process(process_name, boxed_wrapper, node_name);
+            .add_process(&full_process_name, boxed_wrapper, node_name);
 
+        // Return process wrapper to user.
         process_wrapper
     }
 
     /// Start process
     /// Call on_start method of process
     pub fn start(&mut self, proc: &str, node: &str) {
+        let full_process_name = self.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
         if let Some(mut node_ref) = self.get_mut_node(node) {
-            node_ref.send_local_message(proc.to_string(), SimulationMessage::new("START", ""));
+            node_ref.send_local_message(full_process_name, SimulationMessage::new("START", ""));
         }
     }
 
@@ -130,13 +162,15 @@ impl VirtualSystem {
     }
 
     /// Returns the number of messages sent by the process.
-    pub fn sent_message_count(&self, proc: &str) -> u64 {
-        self.inner.sent_message_count(proc)
+    pub fn sent_message_count(&self, proc: &str, node: &str) -> u64 {
+        let full_process_name = self.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
+        self.inner.sent_message_count(&full_process_name)
     }
 
     /// Returns the number of messages received by the process.
-    pub fn received_message_count(&self, proc: &str) -> u64 {
-        self.inner.received_message_count(proc)
+    pub fn received_message_count(&self, proc: &str, node: &str) -> u64 {
+        let full_process_name = self.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
+        self.inner.received_message_count(&full_process_name)
     }
 
     // Simulation -----------------------------------------------------
