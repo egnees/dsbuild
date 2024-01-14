@@ -16,7 +16,7 @@ struct TimerID {
 }
 
 /// Specifies [`time_manager`][`TimeManager`], 
-/// which can use some [`TimeSetter`] implementation to set and manage timers.
+/// which can use some [`TimerSetter`] implementation to set and manage timers.
 #[derive(Default)]
 pub struct TimeManager<T: TimerSetter> {
     pending_timers: HashMap<TimerID, JoinHandle<()>>,
