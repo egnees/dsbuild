@@ -23,7 +23,7 @@ mod common;
 pub use common::{
     context::Context,
     message::Message,
-    process::{Process, ProcessGuard, ProcessWrapper},
+    process::{Process, Address, ProcessGuard, ProcessWrapper},
 };
 
 // Public module.
