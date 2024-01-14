@@ -10,12 +10,12 @@ See [examples submodule](https://egnees.github.io/dsbuild/docs/dsbuild/examples/
 
 ## Running examples
 
-To run [Ping Process](https://github.com/egnees/dsbuild/blob/master/bin/pinger.rs), type from the root of repository
+To run [ping process example](https://github.com/egnees/dsbuild/blob/master/bin/pinger.rs), type from the root of repository
 ```
 cargo run --bin pinger <listen_host> <listen_port> <ponger_host> <ponger_port>
 ```
 
-To run [Pong Process](https://github.com/egnees/dsbuild/blob/master/bin/ponger.rs), type from the root of repository
+To run [pong process example](https://github.com/egnees/dsbuild/blob/master/bin/ponger.rs), type from the root of repository
 ```
 cargo run --bin ponger <listen_host> <listen_port>
 ```
