@@ -28,7 +28,7 @@ type from the root of repository
 cargo run --bin ping-pong-real
 ```
 
-To run [testing of ping-pong ecosystem in simulation](https://egnees.github.io/dsbuild/docs/dsbuild/examples/ping_pong/sim/index.html), type from the root of repository
+To run [testing of ping-pong in simulation](https://egnees.github.io/dsbuild/docs/dsbuild/examples/ping_pong/sim/index.html), type from the root of repository
 ```
 cargo run --bin ping-pong-sim
 ```
