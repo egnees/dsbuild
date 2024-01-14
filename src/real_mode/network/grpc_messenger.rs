@@ -11,6 +11,7 @@ use super::defs::*;
 
 use super::messenger::AsyncMessenger;
 use crate::common::message::Message;
+use crate::common::process::Address;
 use crate::real_mode::events::Event;
 
 pub mod message_passing {
@@ -36,24 +37,21 @@ impl MessagePassing for MessagePassingService {
     ) -> Result<Response<SendMessageResponse>, Status> {
         let req = request.into_inner();
 
-        let sender_address = Address {
-            host: req.sender_host,
-            port: req.sender_port as u16,
-            process_name: req.sender_process,
-        };
+        let sender_address =
+            Address::new(req.sender_host, req.sender_port as u16, req.sender_process);
 
-        let receiver_address = Address {
-            host: req.receiver_host,
-            port: req.receiver_port as u16,
-            process_name: req.receiver_process,
-        };
+        let receiver_address = Address::new(
+            req.receiver_host,
+            req.receiver_port as u16,
+            req.receiver_process,
+        );
 
         let message = Message::new_raw(&req.message_tip, &req.message_data)
             .map_err(|e| Status::new(tonic::Code::Internal, e))?;
 
         let event = Event::MessageReceived {
             msg: message,
-            from: sender_address.process_name,
+            from: sender_address,
             to: receiver_address.process_name,
         };
 

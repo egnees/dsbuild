@@ -1,13 +1,14 @@
 use std::marker::PhantomData;
 
+use log::warn;
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
 
-use crate::{common::message::Message, real_mode::events::Event};
-
-use super::{
-    defs::{Address, ProcessSendRequest},
-    messenger::AsyncMessenger,
+use crate::{
+    common::{message::Message, process::Address},
+    real_mode::events::Event,
 };
+
+use super::{defs::ProcessSendRequest, messenger::AsyncMessenger};
 
 #[derive(Default)]
 pub struct NetworkManager<M: AsyncMessenger> {
@@ -27,10 +28,11 @@ impl<M: AsyncMessenger> NetworkManager<M> {
         }
 
         let handler = tokio::spawn(async move {
-            M::listen(host, port, sender)
-                .await
-                .map_err(|e| "Can not start listen: ".to_owned() + e.to_string().as_str())
-                .unwrap();
+            let listen_result = M::listen(host.clone(), port, sender).await;
+
+            if listen_result.is_err() {
+                warn!("Can not start listen on {}:{}", host, port);
+            }
         });
 
         self.listen_handler = Some(handler);
@@ -45,7 +47,15 @@ impl<M: AsyncMessenger> NetworkManager<M> {
             message: msg,
         };
 
-        tokio::spawn(async move { M::send(request).await.expect("Can not send message") });
+        tokio::spawn(async move {
+            let send_result = M::send(request.clone()).await;
+            if send_result.is_err() {
+                warn!(
+                    "Can not send message from {:?} to {:?}",
+                    &request.sender_address, &request.receiver_address
+                );
+            }
+        });
     }
 
     pub fn stop_listen(&mut self) {

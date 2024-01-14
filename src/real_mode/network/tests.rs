@@ -3,13 +3,13 @@ use std::sync::{Arc, Mutex};
 use tokio::{runtime::Runtime, sync::mpsc};
 
 use crate::{
-    common::message::Message,
-    real_mode::{events::Event, network::resolver::AddressResolver},
+    common::{message::Message, process::Address},
+    real_mode::events::Event,
 };
 
 use super::{
-    defs::*, grpc_messenger::GRpcMessenger, manual_resolver::ManualResolver,
-    messenger::AsyncMessenger, network_manager::NetworkManager,
+    defs::*, grpc_messenger::GRpcMessenger, messenger::AsyncMessenger,
+    network_manager::NetworkManager,
 };
 
 #[test]
@@ -73,7 +73,7 @@ fn test_grpc_messenger() {
     };
     let ping_message_event = Event::MessageReceived {
         msg: ping_message.clone(),
-        from: ping_address.process_name.clone(),
+        from: ping_address.clone(),
         to: pong_address.process_name.clone(),
     };
 
@@ -89,7 +89,7 @@ fn test_grpc_messenger() {
     };
     let pong_message_event = Event::MessageReceived {
         msg: pong_message.clone(),
-        from: pong_address.process_name,
+        from: pong_address.clone(),
         to: ping_address.process_name,
     };
 
@@ -154,74 +154,6 @@ fn test_grpc_messenger() {
 }
 
 #[test]
-fn test_manual_resolver() {
-    // Create resolver.
-    let mut resolver = ManualResolver::default();
-
-    // Add the first process address.
-    let first_address = Address {
-        host: "12345".to_owned(),
-        port: 12345,
-        process_name: "process1".to_owned(),
-    };
-
-    resolver
-        .add_record(&first_address)
-        .expect("Can not add address with process name which is not present");
-
-    // Add the other one first process address.
-    let new_first_address = Address {
-        host: "123".to_owned(),
-        port: 123,
-        process_name: "process1".to_owned(),
-    };
-
-    resolver
-        .add_record(&new_first_address)
-        .expect_err("Resolver allows to add address with the same process name twice");
-
-    // Try to resolve the first one address by the first process name.
-    assert_eq!(
-        first_address,
-        resolver
-            .resolve("process1")
-            .expect("Can not resolve the first process address")
-    );
-
-    // Try to resolve address by not existing process name.
-    resolver
-        .resolve("process3")
-        .expect_err("Resolver allows to resolve address by not registered process name");
-
-    // Check the second address can be added.
-    let second_address = Address {
-        host: "12345".to_owned(),
-        port: 1223,
-        process_name: "process2".to_owned(),
-    };
-
-    resolver
-        .add_record(&second_address)
-        .expect("Can not add the second process address");
-
-    // Check the second process address can be resolved.
-    assert_eq!(
-        second_address,
-        resolver
-            .resolve("process2")
-            .expect("Can not resolve the second process address")
-    );
-
-    // Check that the first one address still can be resolved.
-    assert_eq!(
-        first_address,
-        resolver
-            .resolve("process1")
-            .expect("Can not resolve the first process address in the second time")
-    );
-}
-
-#[test]
 fn test_network_manager() {
     // Initialize listener address.
     let listen_address = Address {
@@ -240,7 +172,7 @@ fn test_network_manager() {
     // Create runtime.
     let runtime = tokio::runtime::Runtime::new().expect("Can not create runtime");
 
-    // Initialzie network manager.
+    // Initialize network manager.
     let network_manager = Arc::new(Mutex::new(NetworkManager::<GRpcMessenger>::default()));
 
     let (sender, mut receiver) = mpsc::channel(32);
@@ -287,7 +219,7 @@ fn test_network_manager() {
             } => panic!("Incorrect event received"),
             Event::MessageReceived { msg, from, to } => {
                 assert_eq!(msg, message);
-                assert_eq!(from, sender_addr.process_name);
+                assert_eq!(from, sender_addr);
                 assert_eq!(to, listen_addr.process_name);
             }
             Event::SystemStarted {} => panic!("Incorrect event received"),

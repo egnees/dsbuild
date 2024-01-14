@@ -2,6 +2,7 @@
 //!
 //! Creates Ping and Pong processes, add them to system, and make them communicate with each other.
 
+use crate::common::process::Address;
 use crate::examples::ping_pong::{pinger, ponger};
 use crate::VirtualSystem;
 
@@ -11,9 +12,17 @@ pub fn run_sim(need_cycles: u32) {
     const PONGER_NAME: &str = "Ponger";
     const PINGER_NAME: &str = "Pinger";
 
+    // Process ports.
+    const PINGER_PORT: u16 = 10091;
+    const PONGER_PORT: u16 = 10092;
+
     // Process nodes.
     const PONGER_NODE: &str = "Ponger node";
     const PINGER_NODE: &str = "Pinger node";
+
+    // Process addresses.
+    let ponger_addr: Address =
+        Address::new("127.0.0.1".to_string(), PONGER_PORT, PONGER_NAME.to_owned());
 
     // Create simulation with specified seed.
     let mut sim = VirtualSystem::new(12345);
@@ -23,17 +32,17 @@ pub fn run_sim(need_cycles: u32) {
     sim.network().set_delays(0.025, 0.375);
 
     // Add pinger node to the simulation.
-    sim.add_node(PINGER_NODE);
+    sim.add_node(PINGER_NODE, "127.0.0.1", PINGER_PORT);
 
     // Add ponger node to the simulation.
-    sim.add_node(PONGER_NODE);
+    sim.add_node(PONGER_NODE, "127.0.0.1", PONGER_PORT);
 
     // Connect both nodes to the network.
     sim.network().connect_node(PINGER_NAME);
     sim.network().connect_node(PONGER_NAME);
 
     // Add pinger to the node.
-    let pinger = pinger::create_pinger(0.1, PONGER_NAME.to_owned(), need_cycles);
+    let pinger = pinger::create_pinger(0.1, ponger_addr.clone(), need_cycles);
     let pinger_wrapper = sim.add_process(PINGER_NAME, pinger, PINGER_NODE);
 
     // Add ponger to the node.

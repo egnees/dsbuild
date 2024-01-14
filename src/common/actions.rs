@@ -2,6 +2,8 @@
 
 use crate::common::message::Message;
 
+use super::process::Address;
+
 /// Specifies the behavior of timer set
 /// in the presence of existing active timer with this name.
 #[derive(Clone, Debug)]
@@ -27,13 +29,13 @@ pub enum ProcessAction {
         /// Message which was sent.
         msg: Message,
         /// Name of process-sender of message.
-        from: String,
+        from: Address,
         /// Name of process-receiver of message.
-        to: String,
+        to: Address,
     },
     /// Specifies timer establishment action.
     TimerSet {
-        /// Name of process which set the timer.
+        /// Full name of process which set the timer.
         process_name: String,
         /// Name of timer.
         timer_name: String,
@@ -45,14 +47,14 @@ pub enum ProcessAction {
     },
     /// Specifies timer canceling action.
     TimerCancelled {
-        /// Name of process which cancelled the timer.
+        /// Full name of process which cancelled the timer.
         process_name: String,
         /// Name of timer.
         timer_name: String,
     },
     /// Specifies user request to stop the process.
     ProcessStopped {
-        /// Name of process, requested to stop.
+        /// Address of process, requested to stop.
         process_name: String,
         /// Specifies policy on stopping process.
         policy: StopPolicy,

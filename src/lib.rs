@@ -10,7 +10,7 @@
 mod real_mode;
 
 // Re-export public entities.
-pub use real_mode::real_system::{Address, AddressResolvePolicy, RealSystem, RealSystemConfig};
+pub use real_mode::real_system::{RealSystem, RealSystemConfig};
 
 mod virtual_mode;
 

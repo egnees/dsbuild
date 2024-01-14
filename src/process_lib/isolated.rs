@@ -1,6 +1,10 @@
 //! Implementation of [`IsolatedProcess`].
 
-use crate::common::{context::Context, message::Message, process::Process};
+use crate::common::{
+    context::Context,
+    message::Message,
+    process::{Address, Process},
+};
 
 /// Isolated process is not connected to the network.
 /// It just sets consecutive timers one by one,
@@ -70,7 +74,7 @@ impl Process for IsolatedProcess {
     fn on_message(
         &mut self,
         _msg: Message,
-        _from: String,
+        _from: Address,
         _ctx: &mut dyn Context,
     ) -> Result<(), String> {
         Err("No messages for isolated process".to_owned())

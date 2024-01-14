@@ -3,22 +3,23 @@ use std::sync::{Arc, RwLock};
 use super::{
     events::Event,
     process_manager::ProcessManager,
-    real_system::{AddressResolvePolicy, RealSystem, RealSystemConfig},
+    real_system::{RealSystem, RealSystemConfig},
 };
-use crate::common::message::Message;
+use crate::common::{message::Message, process::Address};
 
 use crate::process_lib::{isolated::IsolatedProcess, ping::PingProcess, pong::PongProcess};
 
 #[test]
 fn test_process_manager() {
     // Create manager
-    let mut manager = ProcessManager::default();
+    let mut manager = ProcessManager::new("127.0.0.1".to_owned(), 10036);
 
     // Create two ping proc
     const PONG_NAME: &str = "pong_process";
+    let pong_address: Address = Address::new("127.0.0.1".to_owned(), 10036, PONG_NAME.to_owned());
 
-    let proc_1 = PingProcess::new(0.5, PONG_NAME.into(), 1);
-    let proc_2 = PingProcess::new(0.5, PONG_NAME.into(), 2);
+    let proc_1 = PingProcess::new(0.5, pong_address.clone(), 1);
+    let proc_2 = PingProcess::new(0.5, pong_address.clone(), 2);
 
     // Create wrappers for them
     let proc_1_wrapper = Arc::new(RwLock::new(proc_1));
@@ -75,7 +76,7 @@ fn test_process_manager() {
     // First, check what message to unknown process is delivered to nobody
     let message_to_unknown_event = Event::MessageReceived {
         msg: pong_message.clone(),
-        from: PONG_NAME.into(),
+        from: pong_address.clone(),
         to: "unknown".into(),
     };
     manager
@@ -101,7 +102,7 @@ fn test_process_manager() {
     // Create event associated with message to the first ping process
     let message_to_first_event = Event::MessageReceived {
         msg: pong_message.clone(),
-        from: PONG_NAME.into(),
+        from: pong_address.clone(),
         to: FIRST_PING_NAME.into(),
     };
     let actions = manager
@@ -135,7 +136,7 @@ fn test_process_manager() {
     // Create event associated with message to the second ping process
     let message_to_second_event = Event::MessageReceived {
         msg: pong_message.clone(),
-        from: PONG_NAME.into(),
+        from: pong_address.clone(),
         to: SECOND_PING_NAME.into(),
     };
 
@@ -158,7 +159,7 @@ fn test_process_manager() {
         Message::borrow_new(PingProcess::PONG_TIP, 2u32).expect("Can not create message");
     let message_to_second_event = Event::MessageReceived {
         msg: pong_message.clone(),
-        from: PONG_NAME.into(),
+        from: pong_address.clone(),
         to: SECOND_PING_NAME.into(),
     };
 
@@ -184,14 +185,17 @@ fn test_process_manager() {
 #[test]
 fn test_process_manager_process_state() {
     // Create process manager.
-    let mut manager = ProcessManager::default();
+    let mut manager = ProcessManager::new("127.0.0.1".to_owned(), 10035);
 
     // Create two ping processes.
     const FIRST_NAME: &str = "proc_1";
     const SECOND_NAME: &str = "proc_2";
+    let first_address: Address = Address::new("127.0.0.1".to_owned(), 10035, FIRST_NAME.to_owned());
+    let second_address: Address =
+        Address::new("127.0.0.1".to_owned(), 10035, FIRST_NAME.to_owned());
 
-    let proc_1 = PingProcess::new(0.5, FIRST_NAME.into(), 1);
-    let proc_2 = PingProcess::new(0.5, SECOND_NAME.into(), 2);
+    let proc_1 = PingProcess::new(0.5, first_address.clone(), 1);
+    let proc_2 = PingProcess::new(0.5, second_address.clone(), 2);
 
     // Add the first one to manager.
     manager
@@ -241,10 +245,7 @@ fn test_system_basic() {
     const NEED_CNT: u32 = 2;
 
     // Create system.
-    let resolve_policy = AddressResolvePolicy::Manual {
-        resolve_list: vec![],
-    };
-    let config = RealSystemConfig::default(resolve_policy, "127.0.0.1".to_owned(), 10035)
+    let config = RealSystemConfig::default("127.0.0.1".to_owned(), 10035)
         .expect("Can not create default config");
     let mut system = RealSystem::new(config).expect("Can not create system");
 
@@ -269,6 +270,8 @@ fn test_communication_inside_system() {
     const THIRD_PING_NAME: &str = "PING3";
     const PONG_NAME: &str = "PONG";
 
+    let pong_address: Address = Address::new("127.0.0.1".to_owned(), 59936, PONG_NAME.to_owned());
+
     const FIRST_NEED: u32 = 5;
     const SECOND_NEED: u32 = 3;
     const THIRD_NEED: u32 = 6;
@@ -277,10 +280,7 @@ fn test_communication_inside_system() {
     const PONG_DELAY: f64 = 0.4;
 
     // Create system.
-    let resolve_policy = AddressResolvePolicy::Manual {
-        resolve_list: vec![],
-    };
-    let config = RealSystemConfig::default(resolve_policy, "127.0.0.1".to_owned(), 59936)
+    let config = RealSystemConfig::default("127.0.0.1".to_owned(), 59936)
         .expect("Can not create default config");
     let mut system = RealSystem::new(config).expect("Can not create system");
 
@@ -288,21 +288,21 @@ fn test_communication_inside_system() {
     let first_ping = system
         .add_process(
             FIRST_PING_NAME.into(),
-            PingProcess::new(COMMON_DELAY, PONG_NAME.into(), FIRST_NEED),
+            PingProcess::new(COMMON_DELAY, pong_address.clone(), FIRST_NEED),
         )
         .expect("Can not add the first ping process");
 
     let second_ping = system
         .add_process(
             SECOND_PING_NAME.into(),
-            PingProcess::new(COMMON_DELAY, PONG_NAME.into(), SECOND_NEED),
+            PingProcess::new(COMMON_DELAY, pong_address.clone(), SECOND_NEED),
         )
         .expect("Can not add the second ping process");
 
     let third_ping = system
         .add_process(
             THIRD_PING_NAME.into(),
-            PingProcess::new(COMMON_DELAY, PONG_NAME.into(), THIRD_NEED),
+            PingProcess::new(COMMON_DELAY, pong_address.clone(), THIRD_NEED),
         )
         .expect("Can not add the third ping process");
 

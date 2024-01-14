@@ -2,7 +2,7 @@
 
 use dyn_clone::DynClone;
 
-use super::message::Message;
+use super::{message::Message, process::Address};
 
 /// Represents proxy, which provides process-system interaction.
 pub trait Context: DynClone {
@@ -17,7 +17,7 @@ pub trait Context: DynClone {
     fn cancel_timer(&mut self, name: String);
 
     /// Send message to another process.
-    fn send_message(&mut self, msg: Message, to: String);
+    fn send_message(&mut self, msg: Message, to: Address);
 
     /// Stop the process.
     fn stop_process(&mut self);

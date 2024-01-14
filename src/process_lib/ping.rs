@@ -1,6 +1,10 @@
 //! Implementation of [`PingProcess`].
 
-use crate::common::{context::Context, message::Message, process::Process};
+use crate::common::{
+    context::Context,
+    message::Message,
+    process::{Address, Process},
+};
 
 /// [`PingProcess`] sends consecutive ping messages to the partner process with specified delay.
 /// It waits for the consecutive pong responses, while the last pong response is not received.
@@ -10,10 +14,10 @@ pub struct PingProcess {
     last_pong: u32,
     /// Specifies delay between consecutive pings.
     delay: f64,
-    /// Specifies name of partner process,
+    /// Specifies address of partner process,
     /// which must send pongs in response to pings.
     /// For example, it can be [`PongProcess`][`super::pong::PongProcess`].
-    partner: String,
+    partner: Address,
     /// The number of pongs, which are needed to be received.
     need_cnt: u32,
     /// Indicates whether the process is started.
@@ -89,7 +93,7 @@ impl PingProcess {
     ///
     /// * `delay` must be greater than zero.
     /// * `need_cnt` must be greater than zero.
-    pub fn new(delay: f64, partner: String, need_cnt: u32) -> Self {
+    pub fn new(delay: f64, partner: Address, need_cnt: u32) -> Self {
         assert!(delay > 0.0);
         assert!(need_cnt > 0);
 
@@ -108,7 +112,7 @@ impl PingProcess {
     /// and need count of pongs to receive before terminate.
     ///
     /// See [`PingProcess::new`] for details.
-    pub fn new_verbose(delay: f64, partner: String, need_cnt: u32) -> Self {
+    pub fn new_verbose(delay: f64, partner: Address, need_cnt: u32) -> Self {
         assert!(delay > 0.0);
         assert!(need_cnt > 0);
 
@@ -153,7 +157,7 @@ impl Process for PingProcess {
     fn on_message(
         &mut self,
         msg: Message,
-        from: String,
+        from: Address,
         ctx: &mut dyn Context,
     ) -> Result<(), String> {
         assert_eq!(self.partner, from);

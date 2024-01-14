@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use crate::common::actions::ProcessAction;
-use crate::common::process::{Process, ProcessState};
+use crate::common::process::{Address, Process, ProcessState};
 
 use super::events::Event;
 use super::real_context::RealContext;
@@ -14,8 +14,11 @@ use super::real_context::RealContext;
 /// It manages states of user processes and maintains number of active processes.
 /// [`ProcessManager`] is also responsible for handling system [events][`Event`] and receiving
 /// response [actions][ProcessAction] of [user processes][`Process`].
-#[derive(Default)]
 pub struct ProcessManager {
+    /// Host of the system.
+    host: String,
+    /// Port of the system.
+    port: u16,
     /// Holds mapping from process name to (process state, process implementation pointer) pair.
     process_info: HashMap<String, (ProcessState, Arc<RwLock<dyn Process>>)>,
     /// Number of active processes.
@@ -23,6 +26,16 @@ pub struct ProcessManager {
 }
 
 impl ProcessManager {
+    /// Creates a new [`ProcessManager`] instance.
+    pub fn new(host: String, port: u16) -> Self {
+        ProcessManager {
+            host,
+            port,
+            process_info: HashMap::new(),
+            active_process: 0,
+        }
+    }
+
     /// Check if process state corresponds to active process.
     fn is_active(state: ProcessState) -> bool {
         state == ProcessState::Running
@@ -81,23 +94,29 @@ impl ProcessManager {
                     return Ok(vec![]);
                 }
 
-                let mut process = self.get_process(&process_name)?;
+                let mut context = RealContext::new(Address::new(
+                    self.host.clone(),
+                    self.port,
+                    process_name.clone(),
+                ));
 
-                let mut context = RealContext::new(process_name);
+                let mut process = self.get_process(&process_name)?;
 
                 process.on_timer(timer_name, &mut context)?;
 
                 new_actions.append(&mut context.get_actions());
             }
             Event::MessageReceived { msg, from, to } => {
-                let state = self.get_state(to.as_str())?;
+                let receiver_address = Address::new(self.host.clone(), self.port, to.clone());
+
+                let state = self.get_state(&to)?;
                 if !Self::is_active(*state) {
                     return Ok(vec![]);
                 }
 
                 let mut process = self.get_process(&to)?;
 
-                let mut context = RealContext::new(to);
+                let mut context = RealContext::new(receiver_address);
 
                 process.on_message(msg, from, &mut context)?;
 
@@ -107,7 +126,10 @@ impl ProcessManager {
                 self.active_process = 0;
 
                 for (process_name, (state, process)) in self.process_info.iter_mut() {
-                    let mut context = RealContext::new(process_name.clone());
+                    let process_address =
+                        Address::new(self.host.clone(), self.port, process_name.to_owned());
+
+                    let mut context = RealContext::new(process_address);
 
                     *state = ProcessState::Running;
                     self.active_process += 1;

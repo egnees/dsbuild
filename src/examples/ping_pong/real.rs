@@ -5,8 +5,9 @@
 use std::thread::{self, sleep};
 use std::time::Duration;
 
+use crate::common::process::Address;
 use crate::examples::ping_pong::{pinger, ponger};
-use crate::{Address, AddressResolvePolicy, RealSystem, RealSystemConfig};
+use crate::{RealSystem, RealSystemConfig};
 
 /// Runs real system with specified number of ping-pong iterations.
 pub fn run_real(need_cycles: u32) {
@@ -18,22 +19,17 @@ pub fn run_real(need_cycles: u32) {
     const PINGER_PORT: u16 = 10091;
     const PONGER_PORT: u16 = 10092;
 
+    // Process addresses.
+    let ponger_addr: Address =
+        Address::new("127.0.0.1".to_string(), PONGER_PORT, PONGER_NAME.to_owned());
+
     // Spawn pinger.
     let pinger_thread = thread::spawn(move || {
         // Create pinger process with 0.1 second retry delay and 100 need pings before stop.
-        let pinger = pinger::create_pinger(0.1, PONGER_NAME.to_owned(), need_cycles);
-
-        // Create address resolver, which will resolve ponger's address.
-        let policy = AddressResolvePolicy::Manual {
-            resolve_list: vec![Address {
-                host: "127.0.0.1".to_owned(),
-                port: PONGER_PORT,
-                process_name: PONGER_NAME.to_owned(),
-            }],
-        };
+        let pinger = pinger::create_pinger(0.1, ponger_addr, need_cycles);
 
         // Create config, which will help to create system.
-        let config = RealSystemConfig::default(policy, "127.0.0.1".to_owned(), PINGER_PORT)
+        let config = RealSystemConfig::default("127.0.0.1".to_owned(), PINGER_PORT)
             .expect("Can not create config");
 
         // Create system by config.
@@ -61,17 +57,8 @@ pub fn run_real(need_cycles: u32) {
         // Create ponger process with 1 second inactivity window.
         let ponger = ponger::create_ponger(3.0);
 
-        // Create address resolver, which will resolve pinger's address.
-        let policy = AddressResolvePolicy::Manual {
-            resolve_list: vec![Address {
-                host: "127.0.0.1".to_owned(),
-                port: PINGER_PORT,
-                process_name: PINGER_NAME.to_owned(),
-            }],
-        };
-
         // Create config, which will help to create system.
-        let config = RealSystemConfig::default(policy, "127.0.0.1".to_owned(), PONGER_PORT)
+        let config = RealSystemConfig::default("127.0.0.1".to_owned(), PONGER_PORT)
             .expect("Can not create config");
 
         // Create system by config.
