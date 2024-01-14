@@ -2,8 +2,8 @@
 
 ## Installation
 Before using framework, one should install the following:
-  - [Rust compiler](https://www.rust-lang.org/tools/install).
-  - [gRPC Protocol Buffer Compiler](https://grpc.io/docs/protoc-installation/).
+  - [Rust compiler](https://www.rust-lang.org/tools/install)
+  - [gRPC Protocol Buffer Compiler](https://grpc.io/docs/protoc-installation/)
 
 ## Examples
 See [examples submodule](https://egnees.github.io/dsbuild/docs/dsbuild/examples/index.html) and [bin subfolder](https://github.com/egnees/dsbuild/tree/master/bin).
