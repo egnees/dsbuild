@@ -17,7 +17,7 @@ cargo run --bin pinger <listen_host> <listen_port> <ponger_host> <ponger_port>
 
 To run [Pong Process](https://egnees.github.io/dsbuild/docs/dsbuild/process_lib/pong/struct.PongProcess.html), type from the root of repository
 ```
-cargo run --bin pong <listen_host> <listen_port>
+cargo run --bin ponger <listen_host> <listen_port>
 ```
 
 After this `pinger` and `ponger` processes must start communication between each other.
