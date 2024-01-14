@@ -116,7 +116,7 @@
 }
 
 <span class="doccomment">/// Specifies [`time_manager`][`TimeManager`], 
-/// which can use some [`TimeSetter`] implementation to set and manage timers.
+/// which can use some [`TimerSetter`] implementation to set and manage timers.
 </span><span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>TimeManager&lt;T: TimerSetter&gt; {
     pending_timers: HashMap&lt;TimerID, JoinHandle&lt;()&gt;&gt;,

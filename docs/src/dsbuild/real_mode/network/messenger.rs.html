@@ -50,7 +50,7 @@
     </span><span class="kw">async fn </span>send(request: ProcessSendRequest) -&gt; <span class="prelude-ty">Result</span>&lt;ProcessSendResponse, String&gt;;
 
     <span class="doccomment">/// Creates [future][`core::future::Future`], which execution 
-    /// will create listener or incoming [`messages`][[`crate::common::message::Message`]
+    /// will create listener of incoming [`messages`][`crate::common::message::Message`]
     /// from other [user processes][`crate::common::process::Process`].
     </span><span class="kw">async fn </span>listen(host: String, port: u16, pass_to: Sender&lt;Event&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt;;
 }
