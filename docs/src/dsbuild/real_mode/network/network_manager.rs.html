@@ -98,8 +98,8 @@
         <span class="kw">let </span>handler = tokio::spawn(<span class="kw">async move </span>{
             <span class="kw">let </span>listen_result = M::listen(host.clone(), port, sender).<span class="kw">await</span>;
 
-            <span class="kw">if </span>listen_result.is_err() {
-                <span class="macro">warn!</span>(<span class="string">&quot;Can not start listen on {}:{}&quot;</span>, host, port);
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(info) = listen_result {
+                <span class="macro">warn!</span>(<span class="string">&quot;Can not start listen on {}:{};\n{}.&quot;</span>, host, port, info);
             }
         });
 
@@ -117,10 +117,10 @@
 
         tokio::spawn(<span class="kw">async move </span>{
             <span class="kw">let </span>send_result = M::send(request.clone()).<span class="kw">await</span>;
-            <span class="kw">if </span>send_result.is_err() {
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(info) = send_result {
                 <span class="macro">warn!</span>(
-                    <span class="string">&quot;Can not send message from {:?} to {:?}&quot;</span>,
-                    <span class="kw-2">&amp;</span>request.sender_address, <span class="kw-2">&amp;</span>request.receiver_address
+                    <span class="string">&quot;Can not send message from {:?} to {:?};\n{}.&quot;</span>,
+                    <span class="kw-2">&amp;</span>request.sender_address, <span class="kw-2">&amp;</span>request.receiver_address, info
                 );
             }
         });
