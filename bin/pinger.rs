@@ -3,6 +3,7 @@
 use dsbuild::{examples::ping_pong::pinger, Address, RealSystemConfig, RealSystem};
 
 /// Accepts arguments from the command line.
+/// * listen_host
 /// * listen_port
 /// * ponger_host
 /// * ponger_port
