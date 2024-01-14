@@ -10,7 +10,7 @@
 
 </span><span class="kw">use </span><span class="kw">crate</span>::process_lib::pong::PongProcess;
 
-<span class="doccomment">/// Creates new [`PongProcess`] with specified `max_inactivity_window`.
+<span class="doccomment">/// Creates new [`PongProcess`] with specified `max_inactivity_window` (in seconds).
 </span><span class="kw">pub fn </span>create_ponger(max_inactivity_window: f64) -&gt; PongProcess {
     PongProcess::new_verbose(max_inactivity_window)
 }
