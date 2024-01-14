@@ -7,26 +7,32 @@ use dsbuild::{examples::ping_pong::pinger, Address, RealSystemConfig, RealSystem
 /// * ponger_host
 /// * ponger_port
 fn main() {
+    // Init logging.
+    env_logger::Builder::new().filter_level(log::LevelFilter::Warn).init();
+
     // Parse command line arguments.
     let args = std::env::args().collect::<Vec<String>>();
-    if args.len() < 4 {
-        println!("Usage: {} <listen_port> <ponger_host> <ponger_port>", args[0]);
+    if args.len() < 5 {
+        println!("Usage: {} <listen_host> <listen_port> <ponger_host> <ponger_port>", args[0]);
         return;
     }
 
+    // Get the listen_host.
+    let listen_host = &args[1];
+
     // Get the listen_port.
-    let listen_port = args[1].parse::<u16>().expect("Can not parse listen port");
+    let listen_port = args[2].parse::<u16>().expect("Can not parse listen port");
 
     // Get ponger host and port.
-    let ponger_host = &args[2];
-    let ponger_port = args[3].parse::<u16>().expect("Can not parse ponger port");
+    let ponger_host = &args[3];
+    let ponger_port = args[4].parse::<u16>().expect("Can not parse ponger port");
 
     // Set ponger address.
     let ponger_addr = Address::new(ponger_host.to_string(), ponger_port, "PONGER".to_string());
     let pinger = pinger::create_pinger(1.0, ponger_addr, 100);
 
     // Create config.
-    let config = RealSystemConfig::default("127.0.0.1".to_owned(), listen_port).unwrap();
+    let config = RealSystemConfig::default(listen_host.to_owned(), listen_port).unwrap();
 
     // Create system with specified config.
     let mut system = RealSystem::new(config).unwrap();

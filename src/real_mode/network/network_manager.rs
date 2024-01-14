@@ -30,8 +30,8 @@ impl<M: AsyncMessenger> NetworkManager<M> {
         let handler = tokio::spawn(async move {
             let listen_result = M::listen(host.clone(), port, sender).await;
 
-            if listen_result.is_err() {
-                warn!("Can not start listen on {}:{}", host, port);
+            if let Err(info) = listen_result {
+                warn!("Can not start listen on {}:{};\n{}.", host, port, info);
             }
         });
 
@@ -49,10 +49,10 @@ impl<M: AsyncMessenger> NetworkManager<M> {
 
         tokio::spawn(async move {
             let send_result = M::send(request.clone()).await;
-            if send_result.is_err() {
+            if let Err(info) = send_result {
                 warn!(
-                    "Can not send message from {:?} to {:?}",
-                    &request.sender_address, &request.receiver_address
+                    "Can not send message from {:?} to {:?};\n{}.",
+                    &request.sender_address, &request.receiver_address, info
                 );
             }
         });
