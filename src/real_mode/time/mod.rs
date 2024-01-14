@@ -1,3 +1,5 @@
+//! Definition of asynchronous timer manager.
+
 mod timer_setter;
 
 pub mod basic_timer_setter;

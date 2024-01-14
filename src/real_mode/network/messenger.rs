@@ -21,8 +21,8 @@ pub trait AsyncMessenger {
     /// -  [`String`] will error in case of unsuccessful sending
     async fn send(request: ProcessSendRequest) -> Result<ProcessSendResponse, String>;
 
-    /// Creates [future][`core::future::Future`], which execution will lead to
-    /// sending [message][`crate::common::message::Message`] between user [processes][`crate::common::process::Process`],
-    /// through network, based on specified `request`.
+    /// Creates [future][`core::future::Future`], which execution 
+    /// will create listener or incoming [`messages`][[`crate::common::message::Message`]
+    /// from other [user processes][`crate::common::process::Process`].
     async fn listen(host: String, port: u16, pass_to: Sender<Event>) -> Result<(), String>;
 }

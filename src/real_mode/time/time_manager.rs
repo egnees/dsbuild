@@ -1,3 +1,5 @@
+//! Definition of [`time_manager`][`TimeManager`], which is responsible for managing time and timers.
+
 use std::{collections::HashMap, marker::PhantomData};
 
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
@@ -6,19 +8,24 @@ use crate::real_mode::events::Event;
 
 use super::{defs::SetTimerRequest, timer_setter::TimerSetter};
 
+/// Specifies id of timer.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
 struct TimerID {
     process_name: String,
     timer_name: String,
 }
 
+/// Specifies [`time_manager`][`TimeManager`], 
+/// which can use some [`TimeSetter`] implementation to set and manage timers.
 #[derive(Default)]
 pub struct TimeManager<T: TimerSetter> {
     pending_timers: HashMap<TimerID, JoinHandle<()>>,
     _phantom: PhantomData<T>,
 }
 
+/// Implementation [`TimeManager`].
 impl<T: TimerSetter> TimeManager<T> {
+    /// Create new time manager.
     pub fn new() -> TimeManager<T> {
         Self {
             pending_timers: HashMap::default(),
@@ -26,6 +33,11 @@ impl<T: TimerSetter> TimeManager<T> {
         }
     }
 
+    /// Allows to set the timer with specified.
+    /// * `sender` - Sender end of channel, in which [`timer fired event`][Event::TimerFired] will be sent after triggering.
+    /// * `process_name` - name of process, which created the timer.
+    /// * `timer_name` - name of timer.
+    /// * `overwrite` - specifies whether to overwrite existing timer or not.
     pub fn set_timer(
         &mut self,
         sender: Sender<Event>,
