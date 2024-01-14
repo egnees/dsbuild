@@ -5,7 +5,7 @@ Before using framework, one should install the following:
   - [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
   - [gRPC Protocol Buffer Compiler](https://grpc.io/docs/protoc-installation/)
 
-It installation completed successfully, one must be able to build project without errors
+If installation completed successfully, one must be able to build project without errors
 ```
 cargo build
 ```
