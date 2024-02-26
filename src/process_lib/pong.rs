@@ -1,7 +1,7 @@
 //! Implementation of [`PongProcess`].
 
 use crate::common::{
-    context::Context,
+    context::TContext,
     message::Message,
     process::{Address, Process},
 };
@@ -34,7 +34,7 @@ impl PongProcess {
     pub const PING_TIP: &'static str = super::ping::PingProcess::PING_TIP;
 
     /// Assistant function which sets timer with specified delay and name.
-    fn set_timer(&self, ctx: &mut dyn Context) {
+    fn set_timer(&self, ctx: &mut dyn TContext) {
         ctx.set_timer(Self::TIMER_NAME.to_owned(), self.max_inactivity_window);
     }
 
@@ -72,7 +72,7 @@ impl PongProcess {
 impl Process for PongProcess {
     /// Called when system is started.
     /// Sets inactivity window timer.
-    fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_start(&mut self, ctx: &mut dyn TContext) -> Result<(), String> {
         if self.verbose {
             println!("PongProcess: started.");
         }
@@ -84,7 +84,7 @@ impl Process for PongProcess {
     }
 
     /// Called when timer is fired and stops the process.
-    fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_timer(&mut self, name: String, ctx: &mut dyn TContext) -> Result<(), String> {
         if self.verbose {
             println!("PongProcess: stopped.");
         }
@@ -103,7 +103,7 @@ impl Process for PongProcess {
         &mut self,
         msg: Message,
         from: Address,
-        ctx: &mut dyn Context,
+        ctx: &mut dyn TContext,
     ) -> Result<(), String> {
         assert_eq!(msg.get_tip(), Self::PING_TIP);
 

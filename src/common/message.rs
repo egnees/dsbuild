@@ -78,10 +78,10 @@ impl Message {
     }
 }
 
-use dslab_mp::message::Message as DSlabMessage;
+use dslab_async_mp::message::Message as DSLabMessage;
 
-impl From<DSlabMessage> for Message {
-    fn from(msg: DSlabMessage) -> Self {
+impl From<DSLabMessage> for Message {
+    fn from(msg: DSLabMessage) -> Self {
         Self {
             tip: msg.tip.clone(),
             data: msg.data.clone().into(),
@@ -89,9 +89,9 @@ impl From<DSlabMessage> for Message {
     }
 }
 
-impl From<Message> for DSlabMessage {
+impl From<Message> for DSLabMessage {
     fn from(msg: Message) -> Self {
-        DSlabMessage {
+        DSLabMessage {
             tip: msg.tip.clone(),
             data: std::str::from_utf8(msg.data.as_slice())
                 .expect("Can not cast Message data to str")

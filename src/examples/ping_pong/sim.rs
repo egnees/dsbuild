@@ -4,7 +4,7 @@
 
 use crate::common::process::Address;
 use crate::examples::ping_pong::{pinger, ponger};
-use crate::VirtualSystem;
+use crate::System;
 
 /// Runs simulation with specified number of ping-pong iterations.
 pub fn run_sim(need_cycles: u32) {
@@ -25,7 +25,7 @@ pub fn run_sim(need_cycles: u32) {
         Address::new("127.0.0.1".to_string(), PONGER_PORT, PONGER_NAME.to_owned());
 
     // Create simulation with specified seed.
-    let mut sim = VirtualSystem::new(12345);
+    let mut sim = System::new(12345);
 
     // Configure simulation network.
     sim.network().set_drop_rate(0.65);

@@ -12,7 +12,7 @@ use super::defs::*;
 use super::messenger::AsyncMessenger;
 use crate::common::message::Message;
 use crate::common::process::Address;
-use crate::real_mode::events::Event;
+use crate::real::events::Event;
 
 pub mod message_passing {
     tonic::include_proto!("message_passing");

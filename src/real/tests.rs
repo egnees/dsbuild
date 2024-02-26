@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use super::{
     events::Event,
     process_manager::ProcessManager,
-    real_system::{RealSystem, RealSystemConfig},
+    real::{RealSystem, RealSystemConfig},
 };
 use crate::common::{message::Message, process::Address};
 

@@ -4,7 +4,7 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use tokio::{sync::mpsc::Sender, task::JoinHandle};
 
-use crate::real_mode::events::Event;
+use crate::real::events::Event;
 
 use super::{defs::SetTimerRequest, timer_setter::TimerSetter};
 

@@ -4,7 +4,7 @@ use tokio::{runtime::Runtime, sync::mpsc};
 
 use crate::{
     common::{message::Message, process::Address},
-    real_mode::events::Event,
+    real::events::Event,
 };
 
 use super::{

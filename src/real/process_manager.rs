@@ -6,8 +6,8 @@ use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use crate::common::actions::ProcessAction;
 use crate::common::process::{Address, Process, ProcessState};
 
+use super::context::RealContextImpl;
 use super::events::Event;
-use super::real_context::RealContext;
 
 /// Process manager is responsible for managing [user processes][`Process`].
 ///
@@ -94,7 +94,7 @@ impl ProcessManager {
                     return Ok(vec![]);
                 }
 
-                let mut context = RealContext::new(Address::new(
+                let mut context = RealContextImpl::new(Address::new(
                     self.host.clone(),
                     self.port,
                     process_name.clone(),
@@ -116,7 +116,7 @@ impl ProcessManager {
 
                 let mut process = self.get_process(&to)?;
 
-                let mut context = RealContext::new(receiver_address);
+                let mut context = RealContextImpl::new(receiver_address);
 
                 process.on_message(msg, from, &mut context)?;
 
@@ -129,7 +129,7 @@ impl ProcessManager {
                     let process_address =
                         Address::new(self.host.clone(), self.port, process_name.to_owned());
 
-                    let mut context = RealContext::new(process_address);
+                    let mut context = RealContextImpl::new(process_address);
 
                     *state = ProcessState::Running;
                     self.active_process += 1;

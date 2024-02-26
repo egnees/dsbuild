@@ -6,30 +6,30 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use dslab_mp::{
-    message::Message as SimulationMessage, network::Network, node::Node,
-    system::System as Simulation,
-};
+use dslab_async_mp::{network::Network, node::Node, system::System as DSLabSimulation};
 
 use super::{node_manager::NodeManager, process_wrapper::VirtualProcessWrapper};
-use crate::common::process::{Process, ProcessWrapper};
+use crate::{
+    common::process::{Process, ProcessWrapper},
+    Message,
+};
 
 /// Represents virtual system, which is responsible
-/// for interacting with [`user-processes`][`Process`],
-/// simulating time, network, and other [OS](https://en.wikipedia.org/wiki/Operating_system) features.
+/// for interacting with user processes,
+/// time, network, and others.
 ///
-/// [`VirtualSystem`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
-/// framework for simulation of network, time, etc.
-pub struct VirtualSystem {
-    inner: Simulation,
+/// [`System`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
+/// framework for simulating network, time, etc.
+pub struct System {
+    inner: DSLabSimulation,
     node_manager: Rc<RefCell<NodeManager>>,
 }
 
-impl VirtualSystem {
-    /// Creates new [`VirtualSystem`] with provided `seed`.
+impl System {
+    /// Create new [`System`] with provided `seed`.
     pub fn new(seed: u64) -> Self {
         Self {
-            inner: Simulation::new(seed),
+            inner: DSLabSimulation::new(seed),
             node_manager: Rc::new(RefCell::new(NodeManager::default())),
         }
     }
@@ -43,7 +43,7 @@ impl VirtualSystem {
 
     // Node ------------------------------------------------------
 
-    /// Adds a node to the simulation.
+    /// Adds a node to the DSLabSimulation.
     /// Note that node names must be unique and does not contain `/` symbol.
     ///
     /// # Panics
@@ -58,11 +58,6 @@ impl VirtualSystem {
             .unwrap();
 
         self.inner.add_node(name);
-    }
-
-    /// Returns a list of node names in the simulation.
-    pub fn nodes(&self) -> Vec<String> {
-        self.inner.nodes()
     }
 
     /// Crashes the specified node.
@@ -86,7 +81,7 @@ impl VirtualSystem {
     }
 
     /// Returns a mutable reference to the node.
-    /// 
+    ///
     /// Can not make method public because
     /// process names on dslab nodes are not the same as in the framework.  
     fn get_mut_node(&self, name: &str) -> Option<RefMut<Node>> {
@@ -94,7 +89,7 @@ impl VirtualSystem {
     }
 
     /// Checks if the node is crashed.
-    pub fn node_is_crashed(&self, node: &str) -> bool {
+    pub fn is_node_crashed(&self, node: &str) -> bool {
         self.inner.node_is_crashed(node)
     }
 
@@ -147,40 +142,66 @@ impl VirtualSystem {
         process_wrapper
     }
 
-    /// Start process
-    /// Call on_start method of process
-    pub fn start(&mut self, proc: &str, node: &str) {
-        let full_process_name = self.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
-        if let Some(mut node_ref) = self.get_mut_node(node) {
-            node_ref.send_local_message(full_process_name, SimulationMessage::new("START", ""));
-        }
-    }
-
     /// Returns the names of all processes in the system.
     pub fn process_names(&self) -> Vec<String> {
         self.inner.process_names()
     }
 
+    /// Extracts and returns local messages, produced by the process.
+    pub fn read_local_messages(&self, proc: &str, node: &str) -> Vec<Message> {
+        let full_process_name = self
+            .node_manager
+            .borrow()
+            .construct_full_process_name(proc, node)
+            .unwrap();
+
+        self.inner
+            .read_local_messages(&full_process_name)
+            .into_iter()
+            .map(|msg| msg.into())
+            .collect()
+    }
+
+    /// Send local message to the process.
+    pub fn send_local_message(&mut self, proc: &str, node: &str, msg: Message) {
+        let full_process_name = self
+            .node_manager
+            .borrow()
+            .construct_full_process_name(proc, node)
+            .unwrap();
+
+        self.inner
+            .send_local_message(&full_process_name, msg.into());
+    }
+
     /// Returns the number of messages sent by the process.
     pub fn sent_message_count(&self, proc: &str, node: &str) -> u64 {
-        let full_process_name = self.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
+        let full_process_name = self
+            .node_manager
+            .borrow()
+            .construct_full_process_name(proc, node)
+            .unwrap();
         self.inner.sent_message_count(&full_process_name)
     }
 
     /// Returns the number of messages received by the process.
     pub fn received_message_count(&self, proc: &str, node: &str) -> u64 {
-        let full_process_name = self.node_manager.borrow().construct_full_process_name(proc, node).unwrap();
+        let full_process_name = self
+            .node_manager
+            .borrow()
+            .construct_full_process_name(proc, node)
+            .unwrap();
         self.inner.received_message_count(&full_process_name)
     }
 
-    // Simulation -----------------------------------------------------
+    // DSLabSimulation -----------------------------------------------------
 
-    /// Steps through the simulation until there are no pending events left.
+    /// Steps through the DSLabSimulation until there are no pending events left.
     pub fn step_until_no_events(&mut self) {
         self.inner.step_until_no_events()
     }
 
-    /// Perform `steps` steps through the simulation.
+    /// Perform `steps` steps through the DSLabSimulation.
     pub fn make_steps(&mut self, steps: u32) {
         for _ in 0..steps {
             let something_happen = self.step();
@@ -190,7 +211,7 @@ impl VirtualSystem {
         }
     }
 
-    /// Perform single step through the simulation.
+    /// Perform single step through the DSLabSimulation.
     pub fn step(&mut self) -> bool {
         self.inner.step()
     }

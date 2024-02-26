@@ -1,6 +1,7 @@
 use crate::{
     common::process::Address,
-    virtual_mode::virtual_system::VirtualSystem, examples::ping_pong::{pinger, ponger},
+    examples::ping_pong::{pinger, ponger},
+    virt::system::System,
 };
 
 #[test]
@@ -21,11 +22,10 @@ fn test_ping_pong_works_in_simulation() {
     let need_cycles = 100;
 
     // Process addresses.
-    let ponger_addr =
-        Address::new("127.0.0.1".to_string(), PONGER_PORT, PONGER_NAME.to_owned());
+    let ponger_addr = Address::new("127.0.0.1".to_string(), PONGER_PORT, PONGER_NAME.to_owned());
 
     // Create simulation with specified seed.
-    let mut sim = VirtualSystem::new(12345);
+    let mut sim = System::new(12345);
 
     // Configure simulation network.
     sim.network().set_drop_rate(0.65);

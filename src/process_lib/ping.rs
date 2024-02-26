@@ -1,7 +1,7 @@
 //! Implementation of [`PingProcess`].
 
 use crate::common::{
-    context::Context,
+    context::TContext,
     message::Message,
     process::{Address, Process},
 };
@@ -57,7 +57,7 @@ impl PingProcess {
     ///
     /// # Panics
     /// - In case of message can not be created, which means incorrect implementation of [Message] class.
-    fn ping(&self, ctx: &mut dyn Context) {
+    fn ping(&self, ctx: &mut dyn TContext) {
         let pong_request = self.last_pong + 1;
 
         let msg = Message::borrow_new(Self::PING_TIP, pong_request)
@@ -131,7 +131,7 @@ impl PingProcess {
 impl Process for PingProcess {
     /// Called when system is started.
     /// Pings partner process.
-    fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_start(&mut self, ctx: &mut dyn TContext) -> Result<(), String> {
         if self.verbose {
             println!("PingProcess: stared.");
         }
@@ -143,7 +143,7 @@ impl Process for PingProcess {
 
     /// Called when timer is fired.
     /// Retries to send ping message to the partner process.
-    fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_timer(&mut self, name: String, ctx: &mut dyn TContext) -> Result<(), String> {
         assert_eq!(name, Self::PING_TIMER);
         self.ping(ctx);
         Ok(())
@@ -158,7 +158,7 @@ impl Process for PingProcess {
         &mut self,
         msg: Message,
         from: Address,
-        ctx: &mut dyn Context,
+        ctx: &mut dyn TContext,
     ) -> Result<(), String> {
         assert_eq!(self.partner, from);
         assert_eq!(msg.get_tip(), Self::PONG_TIP);

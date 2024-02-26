@@ -5,7 +5,7 @@ use tokio::{sync::mpsc::Sender, task::JoinHandle};
 
 use crate::{
     common::{message::Message, process::Address},
-    real_mode::events::Event,
+    real::events::Event,
 };
 
 use super::{defs::ProcessSendRequest, messenger::AsyncMessenger};

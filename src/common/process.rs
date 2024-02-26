@@ -6,17 +6,16 @@ use std::{
 };
 
 use dyn_clone::DynClone;
+use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::common::{context::Context, message::Message};
 
 /// Represents possible states of the user processes inside of the system.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ProcessState {
-    /// Corresponds to initial state of the process.
-    Initialized,
-    /// Corresponds to state when the process is running.
+    /// Corresponds running process.
     Running,
-    /// Corresponds to state when the process is stopped.
+    /// Corresponds to stopped process.
     Stopped,
 }
 
@@ -40,18 +39,13 @@ pub enum ProcessState {
 /// It allows to send messages, set timers, etc.
 pub trait Process: DynClone {
     /// Called when process starts interaction with system.
-    fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String>;
+    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String>;
 
     /// Called when previously set timer is fired.
-    fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String>;
+    fn on_timer(&mut self, name: String, ctx: Context) -> Result<(), String>;
 
     /// Called when process receives message.
-    fn on_message(
-        &mut self,
-        msg: Message,
-        from: Address,
-        ctx: &mut dyn Context,
-    ) -> Result<(), String>;
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String>;
 }
 
 /// Represents wrapper around user-defined [`process`][crate::Process],
@@ -66,6 +60,16 @@ pub trait Process: DynClone {
 #[derive(Clone)]
 pub struct ProcessWrapper<P: Process + 'static> {
     pub(crate) process_ref: Arc<RwLock<P>>,
+}
+
+/// Represents process wrapper around user-defined [`process`][crate::Process],
+/// which allows to send and receive local messages from the process.
+pub struct IOProcessWrapper<P: Process + 'static> {
+    pub(crate) wrapper: ProcessWrapper<P>,
+    /// Allows to send local messages to the process.
+    pub sender: Sender<Message>,
+    /// Allows to receive local messages from the process.
+    pub receiver: Receiver<Message>,
 }
 
 /// Represents guard for user-defined [`process`][`crate::Process`].
@@ -104,9 +108,16 @@ impl<P: Process + 'static> ProcessWrapper<P> {
         let read_guard = self
             .process_ref
             .read()
-            .expect("Can not read process, probably runtime has been panicked");
+            .expect("Can not read process, probably runtime panicked");
 
         ProcessGuard { inner: read_guard }
+    }
+}
+
+impl<P: Process + 'static> IOProcessWrapper<P> {
+    /// Returns guard for read access to user-defined process.
+    pub fn read(&self) -> ProcessGuard<'_, P> {
+        self.wrapper.read()
     }
 }
 

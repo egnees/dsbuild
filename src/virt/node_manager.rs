@@ -1,8 +1,8 @@
 //! Definition of manager of nodes in virtual system.
 //!
 //! The main purpose of node manager is to map node names to their network addressed,
-//! and also perform mapping from [`dslab_mp`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
-//!  unique process names to their real [`addresses`][`Address`].
+//! and also perform mapping from [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
+//! unique process names to their addresses.
 
 use std::collections::{HashMap, HashSet};
 
@@ -10,9 +10,9 @@ use crate::common::process::Address;
 
 /// Represents node manager.
 ///
-/// WARNING: Node manager does not allow nodes and processes with names, contains `/`.
-/// Allowing this can potentially create problems with mapping to and from
-/// [`dslab_mp`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
+/// WARNING: Node manager does not permit nodes and processes with names, contains `/`.
+/// Allowing this can potentially lead to problems with mapping to and from
+/// [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
 /// process names in form of `node_name/process_name`.
 #[derive(Default)]
 pub struct NodeManager {
@@ -201,11 +201,15 @@ impl NodeManager {
     }
 
     /// Returns full name of the process `process_name` located on the node `node_name`.
-    /// 
+    ///
     /// # Returns
     /// - Error in case process with such `process_name` does not exists on the node with such `node_name`.
     /// - Ok with full process name in case of success.
-    pub fn construct_full_process_name(&self, process_name: &str, node_name: &str) -> Result<String, String> {
+    pub fn construct_full_process_name(
+        &self,
+        process_name: &str,
+        node_name: &str,
+    ) -> Result<String, String> {
         if !self.check_process_exists(node_name, process_name) {
             return Err(format!(
                 "Process with name {} not found on node {}.",

@@ -1,6 +1,6 @@
 //! Definition of asynchronous messenger [`AsyncMessenger`] trait.
 
-use crate::real_mode::events::Event;
+use crate::real::events::Event;
 
 use super::defs::*;
 

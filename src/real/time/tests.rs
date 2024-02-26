@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 use std::time;
 
-use crate::real_mode::events::Event;
-use crate::real_mode::time::time_manager::TimeManager;
+use crate::real::events::Event;
+use crate::real::time::time_manager::TimeManager;
 
 use super::basic_timer_setter::BasicTimerSetter;
 use super::defs::*;

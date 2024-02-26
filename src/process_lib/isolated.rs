@@ -1,7 +1,7 @@
 //! Implementation of [`IsolatedProcess`].
 
 use crate::common::{
-    context::Context,
+    context::TContext,
     message::Message,
     process::{Address, Process},
 };
@@ -29,7 +29,7 @@ impl IsolatedProcess {
     }
 
     /// Assistant function which sets timer with specified delay and name.
-    fn set_timer(&self, ctx: &mut dyn Context) {
+    fn set_timer(&self, ctx: &mut dyn TContext) {
         ctx.set_timer(Self::TIMER_NAME.to_owned(), self.one_timer_delay);
     }
 
@@ -47,7 +47,7 @@ impl IsolatedProcess {
 impl Process for IsolatedProcess {
     /// Called when system is started.
     /// Sets the first timer.
-    fn on_start(&mut self, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_start(&mut self, ctx: &mut dyn TContext) -> Result<(), String> {
         self.set_timer(ctx);
 
         Ok(())
@@ -57,7 +57,7 @@ impl Process for IsolatedProcess {
     /// If after that number of already fired timers is equal
     /// to the total number of timers to fire,
     /// process is stopped.
-    fn on_timer(&mut self, name: String, ctx: &mut dyn Context) -> Result<(), String> {
+    fn on_timer(&mut self, name: String, ctx: &mut dyn TContext) -> Result<(), String> {
         assert_eq!(name, Self::TIMER_NAME);
 
         self.fired_cnt += 1;
@@ -75,7 +75,7 @@ impl Process for IsolatedProcess {
         &mut self,
         _msg: Message,
         _from: Address,
-        _ctx: &mut dyn Context,
+        _ctx: &mut dyn TContext,
     ) -> Result<(), String> {
         Err("No messages for isolated process".to_owned())
     }
