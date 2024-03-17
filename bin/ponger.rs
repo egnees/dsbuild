@@ -1,13 +1,15 @@
 //! Ponger executor.
 
-use dsbuild::{examples::ping_pong::ponger, RealSystemConfig, RealSystem};
+use dsbuild::{examples::ping_pong::ponger, Config, System};
 
 /// Accepts arguments from the command line.
 /// * listen_host
 /// * listen_port
 fn main() {
     // Init logging.
-    env_logger::Builder::new().filter_level(log::LevelFilter::Warn).init();
+    env_logger::Builder::new()
+        .filter_level(log::LevelFilter::Warn)
+        .init();
 
     // Parse command line arguments.
     let args = std::env::args().collect::<Vec<String>>();
@@ -26,10 +28,10 @@ fn main() {
     let ponger = ponger::create_ponger(60.0 * 60.0); // 60 minutes.
 
     // Create system config.
-    let config = RealSystemConfig::default(listen_host.to_owned(), listen_port).unwrap();
+    let config = Config::default(listen_host.to_owned(), listen_port).unwrap();
 
     // Create system with specified config.
-    let mut system = RealSystem::new(config).unwrap();
+    let mut system = System::new(config).unwrap();
 
     // Add ponger process to the system and get reference to it.
     let ponger_wrapper = system.add_process("PONGER", ponger).unwrap();

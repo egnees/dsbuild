@@ -10,7 +10,7 @@ async-io = "2.2.2"
 async-trait = "0.1.75"
 bytes = "1.5.0"
 chrono = "0.4.31"
-dslab-async-mp = { git = "https://github.com/egnees/dslab", branch = "async-mp", version = "0.1.0" }
+dslab-async-mp = { git = "https://github.com/egnees/dslab", branch = "async-mp" }
 dyn-clone = "1.0.16"
 env_logger = "0.10.1"
 log = "0.4.20"
@@ -22,6 +22,7 @@ sugars = "3.0.1"
 timer = "0.2.0"
 tokio = { version = "1.35", features = ["macros", "rt-multi-thread"] }
 tokio-timer = "0.2.13"
+tokio-util = "0.7.10"
 tonic = "0.10.2"
 
 [build-dependencies]
@@ -31,18 +32,21 @@ tonic-build = "0.10.2"
 name = "dsbuild"
 path = "src/lib.rs"
 
-[[bin]]
-name = "ping-pong-real"
-path = "bin/ping_pong_real.rs"
+[workspace]
+members = ["examples/*", "."]
 
-[[bin]]
-name = "ping-pong-sim"
-path = "bin/ping_pong_sim.rs"
+# [[bin]]
+# name = "ping-pong-real"
+# path = "bin/ping_pong_real.rs"
 
-[[bin]]
-name = "pinger"
-path = "bin/pinger.rs"
+# [[bin]]
+# name = "ping-pong-sim"
+# path = "bin/ping_pong_sim.rs"
 
-[[bin]]
-name = "ponger"
-path = "bin/ponger.rs"
+# [[bin]]
+# name = "pinger"
+# path = "bin/pinger.rs"
+
+# [[bin]]
+# name = "ponger"
+# path = "bin/ponger.rs"

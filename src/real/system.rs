@@ -1,350 +1,175 @@
-//! Definition of [`RealSystem`] and [`RealSystemConfig`].
+//! Definition of real system.
 
-use std::sync::{Arc, RwLock};
+use std::{
+    collections::HashMap,
+    future::Future,
+    pin::Pin,
+    sync::{
+        atomic::{AtomicU32, AtomicUsize},
+        Arc, RwLock,
+    },
+};
 
-use tokio::sync::mpsc::{self, Sender};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::common::{
-    actions::{ProcessAction, TimerBehavior},
-    process::{Process, ProcessWrapper},
+use crate::{
+    common::{message::RoutedMessage, process::IOProcessWrapper},
+    Address, Process, ProcessWrapper,
 };
 
 use super::{
-    events::Event,
-    network::{grpc_messenger::GRpcMessenger, network_manager::NetworkManager},
-    process_manager::ProcessManager,
-    time::{basic_timer_setter::BasicTimerSetter, time_manager::TimeManager},
+    network::{self, NetworkRequest},
+    process::{FromSystemMessage, ProcessManager, ToSystemMessage},
 };
 
-/// Represents configuration of [`RealSystem`].
-pub struct RealSystemConfig {
-    /// Max number of threads which will be used to handle events inside of the [`RealSystem`].
-    max_threads: usize,
-
-    /// Max size of buffer of pending events inside of the [`RealSystem`].
-    event_buffer_size: usize,
-
-    /// Host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
+/// Represents real system.
+pub struct System {
+    scheduled: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
+    process_senders: HashMap<String, Sender<FromSystemMessage>>,
+    from_process_receiver: Receiver<ToSystemMessage>,
+    to_system_sender: Sender<ToSystemMessage>, // Just to clone it and pass to different process managers.
+    network_sender: Sender<NetworkRequest>,
+    network_receiver: Receiver<RoutedMessage>,
+    max_buffer_size: usize,
     host: String,
-
-    /// Port which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
     port: u16,
 }
 
-impl RealSystemConfig {
-    /// Default size of the event buffer inside of the [`RealSystem`].
-    pub const DEFAULT_EVENT_BUFFER_SIZE: usize = 1024;
+impl System {
+    /// Create new system with specified size of buffers, host and port.
+    pub fn new(max_buffer_size: usize, host: &str, port: u16) -> Self {
+        let (messages_sender, network_receiver) = mpsc::channel(max_buffer_size);
 
-    /// Default number of threads, which are used to handle events inside of the [`RealSystem`].
-    pub const DEFAULT_MAX_THREADS: usize = 1;
+        let (network_sender, messages_receiver) = mpsc::channel(max_buffer_size);
 
-    /// Creates new instance of [`RealSystemConfig`].
-    ///
-    /// * `max_threads` - Specifies max number of threads which will be used by [`RealSystem`] to handle events.
-    ///     This value must be greater than zero.
-    /// * `event_buffer_size` - Specifies size of the pending events buffer inside of the [`RealSystem`].
-    ///     If the buffer is full, all threads will be blocked at the moment of sending event to the buffer,
-    ///     while some old event won`t be processed.
-    ///
-    ///     This value must be greater than zero.
-    /// * `host` - Specifies host which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
-    /// * `port` - Specifies port which will be used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
-    pub fn new(
-        max_threads: usize,
-        event_buffer_size: usize,
-        host: String,
-        port: u16,
-    ) -> Result<Self, String> {
-        if event_buffer_size == 0 {
-            Err("Event buffer size can not be 0".to_owned())
-        } else if max_threads == 0 {
-            Err("Max threads can not be 0".to_owned())
-        } else {
-            Ok(RealSystemConfig {
-                max_threads,
-                event_buffer_size,
-                host,
-                port,
-            })
-        }
-    }
+        let network_handler =
+            network::handle(messages_sender, messages_receiver, host.to_owned(), port);
 
-    /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
-    /// with specified number of threads, used to handle events inside of [`RealSystem`].
-    ///
-    /// Instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
-    pub fn new_with_max_threads(
-        max_threads: usize,
-        host: String,
-        port: u16,
-    ) -> Result<Self, String> {
-        Self::new(max_threads, Self::DEFAULT_EVENT_BUFFER_SIZE, host, port)
-    }
+        let (to_system_sender, from_process_receiver) = mpsc::channel(max_buffer_size);
 
-    /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
-    /// with specified size of buffer, which is used to store pending events inside of [`RealSystem`].
-    ///
-    /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`].
-    pub fn new_with_buffer_size(
-        event_buffer_size: usize,
-        host: String,
-        port: u16,
-    ) -> Result<Self, String> {
-        Self::new(Self::DEFAULT_MAX_THREADS, event_buffer_size, host, port)
-    }
-
-    /// Alias for [`RealSystemConfig::new`] method, which creates new [`RealSystemConfig`]
-    /// with default parameters.
-    ///
-    /// Instead of `max_threads` used [`RealSystemConfig::DEFAULT_MAX_THREADS`],
-    /// and instead of `event_buffer_size` used [`RealSystemConfig::DEFAULT_EVENT_BUFFER_SIZE`].
-    pub fn default(host: String, port: u16) -> Result<Self, String> {
-        Self::new(
-            Self::DEFAULT_MAX_THREADS,
-            Self::DEFAULT_EVENT_BUFFER_SIZE,
-            host,
+        let mut system = Self {
+            scheduled: Vec::new(),
+            process_senders: HashMap::new(),
+            from_process_receiver,
+            to_system_sender,
+            network_sender,
+            network_receiver,
+            max_buffer_size,
+            host: host.to_owned(),
             port,
-        )
-    }
-}
-
-/// Represents real system, which is responsible
-/// for interacting with [`user-processes`][`Process`], time, network, and other [OS](https://en.wikipedia.org/wiki/Operating_system) features.
-pub struct RealSystem {
-    /// Represents [process manager][`ProcessManager`], which is used to manage [user-processes][`Process`].
-    process_manager: ProcessManager,
-
-    /// Represents [time_manager][`TimeManager`], which is used to work with time and set timers.
-    time_manager: TimeManager<BasicTimerSetter>,
-
-    /// Represents [network_manager][`NetworkManager`], which is used to work with network.
-    network_manager: NetworkManager<GRpcMessenger>,
-
-    /// Corresponds to [`RealSystemConfig::max_threads`].
-    max_threads: usize,
-
-    /// Corresponds to [`RealSystemConfig::event_buffer_size`].
-    event_buffer_size: usize,
-
-    /// Corresponds to [`RealSystemConfig::host`],
-    /// which is used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
-    host: String,
-
-    /// Corresponds to [`RealSystemConfig::port`],
-    /// which is used by [`RealSystem`] to listen for the incoming [messages][`crate::common::message::Message`].
-    port: u16,
-}
-
-impl RealSystem {
-    /// Creates new instance of [`RealSystem`] from [`RealSystemConfig`].
-    pub fn new(config: RealSystemConfig) -> Result<Self, String> {
-        // Create process manager.
-        let process_manager = ProcessManager::new(config.host.clone(), config.port);
-
-        // Create time manager.
-        let time_manager = TimeManager::new();
-
-        // Create network manager.
-        let network_manager = NetworkManager::default();
-
-        // Build and return created system.
-        Ok(RealSystem {
-            process_manager,
-            time_manager,
-            network_manager,
-            max_threads: config.max_threads,
-            event_buffer_size: config.event_buffer_size,
-            host: config.host,
-            port: config.port,
-        })
-    }
-
-    /// Add new [user-process][`Process`] to the system.
-    /// Names of processes must be unique.
-    ///
-    /// # Returns
-    ///
-    /// - [`Ok(ProcessWrapper)`][`ProcessWrapper`] contains wrapper which wraps passed `process`
-    ///     and allows to [get read access][`ProcessWrapper::read`] to the `process`.
-    /// - [`Err(String)`][`Err`] if process with the same name already exists in the system.
-    pub fn add_process<P: Process + 'static>(
-        &mut self,
-        process_name: &str,
-        process: P,
-    ) -> Result<ProcessWrapper<P>, String> {
-        // Create process lock.
-        let process_lock = Arc::new(RwLock::new(process));
-
-        // Create process wrapper.
-        let process_wrapper = ProcessWrapper {
-            process_ref: process_lock.clone(),
         };
 
-        // Add process to process manager.
-        self.process_manager
-            .add_process(process_name.to_owned(), process_lock)?;
+        system.spawn(Box::pin(network_handler));
 
-        // Return process wrapper.
-        Ok(process_wrapper)
+        system
     }
 
-    /// Assistant function which is used to handle [process actions][`ProcessAction`] list.
-    /// Applies [`RealSystem::handle_process_action`] to every action inside.
-    fn handle_process_actions(
-        &mut self,
-        actions: &[ProcessAction],
-        sender: &Sender<Event>,
-    ) -> Result<(), String> {
-        actions
-            .iter()
-            .try_for_each(|action| self.handle_process_action(action, sender))
+    /// Schedule asynchronous activity on execution.
+    pub fn spawn(&mut self, future: impl Future<Output = ()> + Send + 'static) {
+        self.scheduled.push(Box::pin(future));
     }
 
-    /// Handle one [process action][`ProcessAction`].
-    ///
-    /// It performs corresponding call to the [`NetworkManager`] or [`TimeManager`] or other OS interact actor[^note],
-    /// passing clone of `sender` to them, to receive [`Event`] in response to [action][`ProcessAction`],
-    /// that will be handled by [user-process][`Process`] using [`ProcessManager`],
-    /// which will generate new [action][`ProcessAction`] and so on.
-    ///
-    /// [^note]: There are no other interact actors for now.
-    fn handle_process_action(
+    /// Add process with specified name.
+    pub fn add_process<P: Process + 'static>(
         &mut self,
-        action: &ProcessAction,
-        sender: &Sender<Event>,
-    ) -> Result<(), String> {
-        match action {
-            // Process message sent action.
-            ProcessAction::MessageSent { msg, from, to } => {
-                // Send message using network manager.
-                self.network_manager
-                    .send_message(from.clone(), to.clone(), msg.clone());
-            }
+        process: P,
+        name: String,
+    ) -> IOProcessWrapper<P> {
+        let process_ref = Arc::new(RwLock::new(process));
+        let process_wrapper = ProcessWrapper {
+            process_ref: process_ref.clone(),
+        };
 
-            // Process timer set action.
-            ProcessAction::TimerSet {
-                process_name,
-                timer_name,
-                delay,
-                behavior,
-            } => {
-                // Get overwrite policy.
-                let overwrite = match behavior {
-                    TimerBehavior::SetOnce => false,
-                    TimerBehavior::OverrideExisting => true,
-                };
+        let (local_proc_sender, local_user_receiver) = mpsc::channel(self.max_buffer_size);
+        let (local_user_sender, local_proc_receiver) = mpsc::channel(self.max_buffer_size);
 
-                // Set timer.
-                self.time_manager.set_timer(
-                    sender.clone(),
-                    process_name,
-                    timer_name,
-                    *delay,
-                    overwrite,
-                );
-            }
+        let io_process_wrapper = IOProcessWrapper {
+            wrapper: process_wrapper,
+            sender: local_user_sender,
+            receiver: local_user_receiver,
+        };
 
-            // Process timer cancelled action.
-            ProcessAction::TimerCancelled {
-                process_name,
-                timer_name,
-            } => {
-                // Cancel timer.
-                self.time_manager.cancel_timer(process_name, timer_name);
-            }
+        let address = Address {
+            host: self.host.clone(),
+            port: self.port,
+            process_name: name.clone(),
+        };
 
-            // Process request to stop the process.
-            ProcessAction::ProcessStopped {
-                process_name,
-                policy: _,
-            } => {
-                self.process_manager.stop_process(process_name)?;
-            }
+        let (to_proc_sender, from_proc_receiver) = mpsc::channel(self.max_buffer_size);
+
+        let proc_manager = ProcessManager::new(
+            address,
+            process_ref,
+            local_proc_sender,
+            local_proc_receiver,
+            self.to_system_sender.clone(),
+            from_proc_receiver,
+            self.network_sender.clone(),
+            self.max_buffer_size,
+        );
+
+        if self.process_senders.contains_key(&name) {
+            panic!("Trying to add existing process with name '{}'", name);
         }
 
-        Ok(())
+        self.process_senders.insert(name, to_proc_sender);
+
+        self.spawn(Box::pin(proc_manager.run()));
+
+        io_process_wrapper
     }
 
-    /// Returns [future][`core::future::Future`] which execution will lead to loop,
-    /// in which [`RealSystem`] will wait for incoming [events][`Event`] and handle them.
-    ///
-    /// Every [event][`Event`] will be handled by [process_manager][`RealSystem::process_manager`]
-    /// and produce few [actions][`ProcessAction`] which will be handled by [`RealSystem`]
-    /// and will lead to interaction with OS and appearing of new [events][`Event`],
-    /// which also need to be handled, and so on.
-    ///
-    /// The loop will be stopped when where are no communication channels[^note] with OS,
-    /// which can produce new events.
-    ///
-    /// This can be achieved only in case when all [user-processes][`Process`] are stopped by user.
-    ///
-    /// # Returns
-    ///
-    /// [future][`core::future::Future`], which execution leads to[^note1]:
-    ///
-    /// - Will return [`Err`] only is case of runtime panics, which must be possible only if there are some
-    ///     framework implementation errors. This will lead to the whole runtime will panic.
-    /// - In case of receiving [`Err`] from [user-processes][`Process`], or from OS interaction actor,
-    ///     error must be logged on the screen, but runtime still will continue to process events.
-    ///     If user wants to stop the runtime, [user-process][`Process`] need panic.
-    ///
-    /// [^note]: Essentially communication channels with OS are organized using only one [multi-channel][`tokio::sync::mpsc::channel`],
-    /// which will have one [receiver][`tokio::sync::mpsc::Receiver`] end and few [senders][`Sender`] ends. Receiver end will be holden by [`RealSystem`] and sender ends will be holden by OS interaction actors,
-    /// like [`NetworkManager`] and [`TimeManager`]. For example, every timer, produced by [`TimeManager`], will have one [sender end][`Sender`],
-    /// and [network listener][`NetworkManager`] also will hold one [sender end][`Sender`]. After timer fired, or listener stops,
-    /// [sender][`Sender`] will be dropped. After all [senders][`Sender`] are dropped, loop will be ended.
-    ///
-    ///
-    /// [^note1]: This behavior must be checked.
-    async fn work(&mut self) -> Result<(), String> {
-        // Create send and receive ends of channel.
-        let (event_sender, mut event_receiver) = mpsc::channel(self.event_buffer_size);
-
-        // Send system started event.
-        event_sender
-            .send(Event::SystemStarted {})
-            .await
-            .map_err(|e| e.to_string())?;
-
-        // Start listen for incoming connections.
-        self.network_manager
-            .start_listen(self.host.clone(), self.port, event_sender.clone())?;
-
-        // Move event_sender to sender option
-        let mut sender_option = Some(event_sender);
-
-        // Start event dispatching loop.
-        while let Some(event) = event_receiver.recv().await {
-            // Then there is a sender certainly.
-            let sender = sender_option.as_ref().expect("Incorrect implementation");
-
-            // Get process actions.
-            let actions = self.process_manager.handle_event(event)?;
-            self.handle_process_actions(&actions, sender)?;
-
-            // If there is no active processes, we can shutdown the system.
-            if self.process_manager.active_count() == 0 {
-                self.time_manager.cancel_all_timers();
-                self.network_manager.stop_listen();
-
-                // Drop common sender.
-                sender_option = None;
-            } // After that there should be no new events in the channel.
-        }
-
-        Ok(())
-    }
-
-    /// Runs the [system][`RealSystem`] using [asynchronous runtime][tokio::runtime::Runtime].
-    pub fn run(&mut self) -> Result<(), String> {
-        // Create runtime according to specified number of threads.
+    /// Run all spawned async activities and all processes.
+    /// Blocks until all processes are done.
+    pub fn run(mut self) {
         let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(self.max_threads)
+            .worker_threads(4)
+            .enable_time()
             .enable_io()
             .build()
             .expect("Can not create the runtime");
 
-        // Start runtime.
-        runtime.block_on(self.work())
+        // Run event loop and all spawned activities.
+        runtime.block_on(async move {
+            let working_processes =
+                AtomicU32::new(self.process_senders.len().try_into().unwrap());
+            // Spawn scheduled activities.
+            for shed in self.scheduled {
+                tokio::spawn(shed);
+            }
+
+            loop {
+                tokio::select! {
+                    Some(msg) = self.network_receiver.recv() => {
+                        let sender = self.process_senders.get(&msg.to.process_name);
+
+                        if let Some(sender) = sender {
+                            let _ = sender.send(FromSystemMessage::NetworkMessage(msg)).await;
+                        }
+                    },
+                    Some(msg) = self.from_process_receiver.recv() => {
+                        match msg {
+                            ToSystemMessage::ProcessStopped(proc_name) => {
+                                let sender = self.process_senders.remove(&proc_name);
+
+                                if let Some(sender) = sender {
+                                    let _ = sender
+                                     .send(FromSystemMessage::Suspend())
+                                     .await;
+
+                                    working_processes.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+
+                                    // Then all processes are stopped and we are done.
+                                    if working_processes.load(std::sync::atomic::Ordering::Relaxed) == 0 {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else => break // All channels are closed.
+                }
+            }
+        });
     }
 }

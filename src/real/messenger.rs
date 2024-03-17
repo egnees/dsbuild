@@ -3,16 +3,11 @@
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
-use async_trait::async_trait;
 use tokio::sync::mpsc::Sender;
 use tonic::transport::server::TcpIncoming;
 
-use super::defs::*;
-
-use super::messenger::AsyncMessenger;
-use crate::common::message::Message;
+use crate::common::message::{Message, RoutedMessage};
 use crate::common::process::Address;
-use crate::real::events::Event;
 
 pub mod message_passing {
     tonic::include_proto!("message_passing");
@@ -24,9 +19,30 @@ use message_passing::{SendMessageRequest, SendMessageResponse};
 
 use tonic::{transport::Server, Request, Response, Status};
 
+pub struct ProcessSendRequest {
+    /// Address of process, which sends request.
+    pub sender_address: Address,
+    /// Address of process, which will receive request.
+    pub receiver_address: Address,
+    /// Passed message.
+    pub message: Message,
+}
+
+/// Used to pass responses on [requests][`ProcessSendRequest`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct ProcessSendResponse {
+    /// Response message from receiver,
+    /// which indicates whether request was accepted or not.
+    ///
+    /// Remark: this protocol is not used for now,
+    /// because there is no way to talk process
+    /// if received message was successful delivered or not.
+    pub status: String,
+}
+
 #[derive(Debug)]
 pub struct MessagePassingService {
-    pub event_sender: Sender<Event>,
+    pub send_to: Sender<RoutedMessage>,
 }
 
 #[tonic::async_trait]
@@ -49,14 +65,14 @@ impl MessagePassing for MessagePassingService {
         let message = Message::new_raw(&req.message_tip, &req.message_data)
             .map_err(|e| Status::new(tonic::Code::Internal, e))?;
 
-        let event = Event::MessageReceived {
+        let msg = RoutedMessage {
             msg: message,
             from: sender_address,
-            to: receiver_address.process_name,
+            to: receiver_address,
         };
 
-        self.event_sender
-            .send(event)
+        self.send_to
+            .send(msg)
             .await
             .map_err(|e| Status::new(tonic::Code::Unavailable, e.to_string()))?;
 
@@ -71,9 +87,8 @@ impl MessagePassing for MessagePassingService {
 #[derive(Default)]
 pub struct GRpcMessenger {}
 
-#[async_trait]
-impl AsyncMessenger for GRpcMessenger {
-    async fn send(request: ProcessSendRequest) -> Result<ProcessSendResponse, String> {
+impl GRpcMessenger {
+    pub async fn send(request: ProcessSendRequest) -> Result<ProcessSendResponse, String> {
         let grpc_request = tonic::Request::new(SendMessageRequest {
             sender_host: request.sender_address.host.clone(),
             sender_port: u32::from(request.sender_address.port),
@@ -105,7 +120,11 @@ impl AsyncMessenger for GRpcMessenger {
         Ok(process_response)
     }
 
-    async fn listen(host: String, port: u16, send_to: Sender<Event>) -> Result<(), String> {
+    pub async fn listen(
+        host: String,
+        port: u16,
+        send_to: Sender<RoutedMessage>,
+    ) -> Result<(), String> {
         // Create ip address.
         let ip_addr =
             IpAddr::from_str(&host).map_err(|e| "Invalid host: ".to_owned() + &e.to_string())?;
@@ -119,9 +138,7 @@ impl AsyncMessenger for GRpcMessenger {
         })?;
 
         // Create rpc server.
-        let service = MessagePassingService {
-            event_sender: send_to,
-        };
+        let service = MessagePassingService { send_to };
         let server = MessagePassingServer::new(service);
 
         // Start the server.

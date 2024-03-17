@@ -1,6 +1,6 @@
 //! Definition of virtual mode context.
 
-use std::{cell::RefCell, future::Future, rc::Rc};
+use std::{cell::RefCell, future::Future, pin::Pin, sync::Arc};
 
 use crate::common::{message::Message, process::Address};
 use dslab_async_mp::context::Context as DSLabContext;
@@ -10,13 +10,13 @@ use super::node_manager::NodeManager;
 
 /// Represents context in virtual mode.
 /// Responsible for user-simulation interaction.
-/// Serves as a proxy between user and underlying [DSLab MP simulation](https://github.com/osukhoroslov/dslab/tree/main/crates/dslab-mp),
+/// Serves as a proxy between user and underlying
+/// [DSLab MP simulation](https://github.com/osukhoroslov/dslab/tree/main/crates/dslab-mp),
 /// uses corresponding [`DSLab MP context`][DSLabContext] methods.
 #[derive(Clone)]
 pub(crate) struct VirtualContext {
-    pub process_address: Address,
     pub dslab_ctx: DSLabContext,
-    pub node_manager: Rc<RefCell<NodeManager>>,
+    pub node_manager: Arc<RefCell<NodeManager>>,
 }
 
 impl VirtualContext {
@@ -58,4 +58,64 @@ impl VirtualContext {
     pub fn spawn(&self, future: impl Future<Output = ()>) {
         self.dslab_ctx.spawn(future);
     }
+
+    /// Async sleep for some time (sec.).
+    ///
+    /// Explicitly returns [`Send`] future,
+    /// besides future will not be shared between threads by design.
+    /// See [`SendFuture`] for more details.
+    pub fn sleep(&self, duration: f64) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+        let ctx = self.dslab_ctx.clone();
+        SendFuture::from_future(async move { ctx.sleep(duration).await })
+    }
+
+    /// Stop the process.
+    pub fn stop(self) {
+        // Does not need to do anything here.
+    }
 }
+
+/// [`VirtualContext`] wont be shared between threads,
+/// but Rust rules require it to be [`Send`] + [`Sync`],
+/// because it will be used inside of futures.
+/// This futures will not and can not be shared between threads,
+/// but Rust can not know it in compile time.
+unsafe impl Send for VirtualContext {}
+unsafe impl Sync for VirtualContext {}
+
+/// Represents future which formally satisfies [`Send`] requirement.
+/// [`SendFuture`] can not and will not be shared between threads,
+/// but Rust rules require it to be [`Send`].
+///
+/// As [`VirtualContext`] methods use not [`Send`] + [`Sync`] elements,
+/// futures which will use this methods will not satisfy [`Send`] trait,
+/// because of that user can not spawn such futures,
+/// although they will not be shared between threads.
+/// To make it possible, [`SendFuture`] exists.
+/// It formally implements [`Send`] trait.
+struct SendFuture {
+    future: Pin<Box<dyn Future<Output = ()>>>,
+}
+
+impl SendFuture {
+    fn from_future(future: impl Future<Output = ()> + 'static) -> Pin<Box<Self>> {
+        Box::pin(SendFuture {
+            future: Box::pin(future),
+        })
+    }
+}
+
+impl Future for SendFuture {
+    type Output = ();
+
+    fn poll(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        self.future.as_mut().poll(cx)
+    }
+}
+
+/// Formally implementation of [`Send`] trait,
+/// besides [`SendFuture`] will not be shared between threads.
+unsafe impl Send for SendFuture {}

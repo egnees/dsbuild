@@ -1,6 +1,6 @@
 //! Definition of the [`TimerSetter`] trait, which is used by [`super::time_manager::TimeManager`] to set timers.
 
-use crate::real::events::Event;
+use crate::real_old::events::Event;
 
 use super::defs::*;
 

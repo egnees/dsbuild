@@ -6,7 +6,6 @@ use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use crate::common::actions::ProcessAction;
 use crate::common::process::{Address, Process, ProcessState};
 
-use super::context::RealContextImpl;
 use super::events::Event;
 
 /// Process manager is responsible for managing [user processes][`Process`].
@@ -20,9 +19,7 @@ pub struct ProcessManager {
     /// Port of the system.
     port: u16,
     /// Holds mapping from process name to (process state, process implementation pointer) pair.
-    process_info: HashMap<String, (ProcessState, Arc<RwLock<dyn Process>>)>,
-    /// Number of active processes.
-    active_process: u32,
+    process_info: HashMap<String, Arc<RwLock<dyn Process>>>,
 }
 
 impl ProcessManager {
@@ -32,21 +29,7 @@ impl ProcessManager {
             host,
             port,
             process_info: HashMap::new(),
-            active_process: 0,
         }
-    }
-
-    /// Check if process state corresponds to active process.
-    fn is_active(state: ProcessState) -> bool {
-        state == ProcessState::Running
-    }
-
-    /// Returns number of active processes.
-    ///
-    /// This function is used by [`RealSystem`][`super::real_system::RealSystem`]
-    /// to stop interaction with OS when there are no active processes.
-    pub fn active_count(&self) -> u32 {
-        self.active_process
     }
 
     /// Assistant function for getting reference on process implementation by process name.
@@ -61,20 +44,6 @@ impl ProcessManager {
         } else {
             Err(format!(
                 "Can not get process with name {}",
-                process_name.to_owned()
-            ))
-        }
-    }
-
-    /// Assistant function for getting mutable reference on process state by process name.
-    fn get_state(&mut self, process_name: &str) -> Result<&mut ProcessState, String> {
-        if self.process_info.contains_key(process_name) {
-            let (state, _) = self.process_info.get_mut(process_name).unwrap();
-
-            Ok(state)
-        } else {
-            Err(format!(
-                "Can not get process with name {}: process is not present",
                 process_name.to_owned()
             ))
         }
@@ -167,10 +136,7 @@ impl ProcessManager {
                 process_name.as_str()
             ))
         } else {
-            let insert_result = self.process_info.insert(
-                process_name.clone(),
-                (ProcessState::Initialized, process_impl),
-            );
+            let insert_result = self.process_info.insert(process_name.clone(), process_impl);
             if insert_result.is_some() {
                 panic!(
                     "Can not add process: process with name {} is present, but must not",
@@ -180,24 +146,5 @@ impl ProcessManager {
 
             Ok(())
         }
-    }
-
-    /// Stop the process with the specified `process_name`.
-    pub fn stop_process(&mut self, process_name: &str) -> Result<(), String> {
-        let state = self.get_state(process_name)?;
-
-        if *state == ProcessState::Stopped {
-            return Ok(());
-        }
-
-        let old_state = *state;
-
-        *state = ProcessState::Stopped;
-
-        if Self::is_active(old_state) {
-            self.active_process -= 1;
-        }
-
-        Ok(())
     }
 }

@@ -37,7 +37,7 @@ pub enum ProcessState {
 ///
 /// To interact with system, process can use context object, which implements [`Context`] trait.
 /// It allows to send messages, set timers, etc.
-pub trait Process: DynClone {
+pub trait Process: DynClone + Send + Sync {
     /// Called when process starts interaction with system.
     fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String>;
 
@@ -124,7 +124,7 @@ impl<P: Process + 'static> IOProcessWrapper<P> {
 /// Represents [`process`][`crate::Process`] address, which is used in
 /// [`real system`][`crate::RealSystem`] and [`virtual system`][`crate::VirtualSystem`]
 ///  to route [`network messages`][crate::Message].
-#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq, serde::Deserialize, serde::Serialize)]
 pub struct Address {
     /// Specifies host,
     /// which is used to deliver messages

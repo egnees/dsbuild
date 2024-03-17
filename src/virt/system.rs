@@ -2,13 +2,12 @@
 
 use std::{
     cell::{RefCell, RefMut},
-    rc::Rc,
     sync::{Arc, RwLock},
 };
 
 use dslab_async_mp::{network::Network, node::Node, system::System as DSLabSimulation};
 
-use super::{node_manager::NodeManager, process_wrapper::VirtualProcessWrapper};
+use super::{node_manager::NodeManager, process::VirtualProcessWrapper};
 use crate::{
     common::process::{Process, ProcessWrapper},
     Message,
@@ -22,7 +21,7 @@ use crate::{
 /// framework for simulating network, time, etc.
 pub struct System {
     inner: DSLabSimulation,
-    node_manager: Rc<RefCell<NodeManager>>,
+    node_manager: Arc<RefCell<NodeManager>>,
 }
 
 impl System {
@@ -30,7 +29,7 @@ impl System {
     pub fn new(seed: u64) -> Self {
         Self {
             inner: DSLabSimulation::new(seed),
-            node_manager: Rc::new(RefCell::new(NodeManager::default())),
+            node_manager: Arc::new(RefCell::new(NodeManager::default())),
         }
     }
 
@@ -128,7 +127,7 @@ impl System {
         // Configure virtual process wrapper.
         let node_manager_ref = self.node_manager.clone();
         let virtual_proc_wrapper =
-            VirtualProcessWrapper::new(process_address, process_ref.clone(), node_manager_ref);
+            VirtualProcessWrapper::new(process_ref.clone(), node_manager_ref);
 
         // Configure wrapper to the dslab.
         let process_wrapper = ProcessWrapper { process_ref };
@@ -148,7 +147,7 @@ impl System {
     }
 
     /// Extracts and returns local messages, produced by the process.
-    pub fn read_local_messages(&self, proc: &str, node: &str) -> Vec<Message> {
+    pub fn read_local_messages(&mut self, proc: &str, node: &str) -> Vec<Message> {
         let full_process_name = self
             .node_manager
             .borrow()

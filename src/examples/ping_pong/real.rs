@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use crate::common::process::Address;
 use crate::examples::ping_pong::{pinger, ponger};
-use crate::{RealSystem, RealSystemConfig};
+use crate::{Config, System};
 
 /// Runs real system with specified number of ping-pong iterations.
 pub fn run_real(need_cycles: u32) {
@@ -29,11 +29,11 @@ pub fn run_real(need_cycles: u32) {
         let pinger = pinger::create_pinger(0.1, ponger_addr, need_cycles);
 
         // Create config, which will help to create system.
-        let config = RealSystemConfig::default("127.0.0.1".to_owned(), PINGER_PORT)
-            .expect("Can not create config");
+        let config =
+            Config::default("127.0.0.1".to_owned(), PINGER_PORT).expect("Can not create config");
 
         // Create system by config.
-        let mut system = RealSystem::new(config).expect("Can not create system");
+        let mut system = System::new(config).expect("Can not create system");
 
         // Add pinger to the system and get process wrapper.
         let pinger_wrapper = system
@@ -58,11 +58,11 @@ pub fn run_real(need_cycles: u32) {
         let ponger = ponger::create_ponger(3.0);
 
         // Create config, which will help to create system.
-        let config = RealSystemConfig::default("127.0.0.1".to_owned(), PONGER_PORT)
-            .expect("Can not create config");
+        let config =
+            Config::default("127.0.0.1".to_owned(), PONGER_PORT).expect("Can not create config");
 
         // Create system by config.
-        let mut system = RealSystem::new(config).expect("Can not create system");
+        let mut system = System::new(config).expect("Can not create system");
 
         // Add pinger to the system and get process wrapper.
         let ponger_wrapper = system

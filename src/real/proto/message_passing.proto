@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package message_passing;
+
+service MessagePassing {
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+}
+
+message SendMessageRequest {
+  string sender_host = 1;
+  uint32 sender_port = 2;
+  string sender_process = 3;
+
+  string receiver_host = 4;
+  uint32 receiver_port = 5;
+  string receiver_process = 6;
+
+  string message_tip = 7;
+  bytes message_data = 8;
+}
+
+message SendMessageResponse { string status = 1; }

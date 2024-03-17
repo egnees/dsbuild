@@ -12,6 +12,14 @@ pub struct Message {
     data: Vec<u8>,
 }
 
+/// Represents routed message.
+#[derive(Clone)]
+pub struct RoutedMessage {
+    pub msg: Message,
+    pub from: Address,
+    pub to: Address,
+}
+
 impl Message {
     /// Create a new message with specified tip and data, which will be copied inside of [`Message`].
     ///
@@ -79,6 +87,8 @@ impl Message {
 }
 
 use dslab_async_mp::message::Message as DSLabMessage;
+
+use crate::Address;
 
 impl From<DSLabMessage> for Message {
     fn from(msg: DSLabMessage) -> Self {

@@ -1,6 +1,6 @@
 //! Pinger executor.
 
-use dsbuild::{examples::ping_pong::pinger, Address, RealSystemConfig, RealSystem};
+use dsbuild::{examples::ping_pong::pinger, Address, Config, System};
 
 /// Accepts arguments from the command line.
 /// * listen_host
@@ -9,12 +9,17 @@ use dsbuild::{examples::ping_pong::pinger, Address, RealSystemConfig, RealSystem
 /// * ponger_port
 fn main() {
     // Init logging.
-    env_logger::Builder::new().filter_level(log::LevelFilter::Warn).init();
+    env_logger::Builder::new()
+        .filter_level(log::LevelFilter::Warn)
+        .init();
 
     // Parse command line arguments.
     let args = std::env::args().collect::<Vec<String>>();
     if args.len() < 5 {
-        println!("Usage: {} <listen_host> <listen_port> <ponger_host> <ponger_port>", args[0]);
+        println!(
+            "Usage: {} <listen_host> <listen_port> <ponger_host> <ponger_port>",
+            args[0]
+        );
         return;
     }
 
@@ -33,10 +38,10 @@ fn main() {
     let pinger = pinger::create_pinger(1.0, ponger_addr, 100);
 
     // Create config.
-    let config = RealSystemConfig::default(listen_host.to_owned(), listen_port).unwrap();
+    let config = Config::default(listen_host.to_owned(), listen_port).unwrap();
 
     // Create system with specified config.
-    let mut system = RealSystem::new(config).unwrap();
+    let mut system = System::new(config).unwrap();
 
     // Add pinger process to the system and get reference to it.
     let pinger_wrapper = system.add_process("PINGER", pinger).unwrap();

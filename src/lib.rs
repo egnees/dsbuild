@@ -11,23 +11,18 @@
 mod real;
 
 // Re-export public entities.
-pub use real::system::{RealSystem, RealSystemConfig};
+pub use real::system::System as RealSystem;
 
 mod virt;
 
 // Re-export public entities.
-pub use virt::system::System;
+pub use virt::system::System as VirtualSystem;
 
 mod common;
 
 // Re-export public entities.
 pub use common::{
+    context::Context,
     message::Message,
     process::{Address, Process, ProcessGuard, ProcessWrapper},
 };
-
-// Public module.
-pub mod process_lib;
-
-// Examples
-pub mod examples;

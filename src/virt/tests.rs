@@ -1,8 +1,4 @@
-use crate::{
-    common::process::Address,
-    examples::ping_pong::{pinger, ponger},
-    virt::system::System,
-};
+use crate::{common::process::Address, virt::system::System};
 
 #[test]
 fn test_ping_pong_works_in_simulation() {
@@ -65,9 +61,6 @@ fn test_ping_pong_works_in_simulation() {
     // Now pinger must try to send more messages,
     // but ponger is not started yet.
     sim.make_steps(2);
-
-    // Now start the ponger process.
-    sim.start(PONGER_NAME, PONGER_NODE);
 
     // Check ponger is started.
     assert!(ponger_wrapper.read().is_started());

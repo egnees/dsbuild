@@ -1,7 +1,6 @@
 //! Implementation of [`IsolatedProcess`].
 
 use crate::common::{
-    context::TContext,
     message::Message,
     process::{Address, Process},
 };

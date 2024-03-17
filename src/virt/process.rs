@@ -2,16 +2,12 @@
 
 use std::{
     cell::RefCell,
-    rc::Rc,
     sync::{Arc, RwLock},
 };
 
-use crate::{
-    common::{
-        context::Context,
-        process::{Address, Process, ProcessState},
-    },
-    Message,
+use crate::common::{
+    context::Context,
+    process::{Process, ProcessState},
 };
 
 use dslab_async_mp::{
@@ -25,21 +21,15 @@ use super::{context::VirtualContext, node_manager::NodeManager};
 /// which is to be passed to the [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html).
 #[derive(Clone)]
 pub struct VirtualProcessWrapper<P: Process + Clone + 'static> {
-    process_address: Address,
     user_process: Arc<RwLock<P>>,
     process_state: ProcessState,
-    node_manager: Rc<RefCell<NodeManager>>,
+    node_manager: Arc<RefCell<NodeManager>>,
 }
 
 impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
     /// Create new virtual process wrapper.
-    pub fn new(
-        process_address: Address,
-        process_impl: Arc<RwLock<P>>,
-        node_manager: Rc<RefCell<NodeManager>>,
-    ) -> Self {
+    pub fn new(process_impl: Arc<RwLock<P>>, node_manager: Arc<RefCell<NodeManager>>) -> Self {
         Self {
-            process_address,
             user_process: process_impl,
             process_state: ProcessState::Running,
             node_manager,
@@ -49,7 +39,6 @@ impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
     /// Create virtual context, which matches to the virtual process wrapper.
     fn create_context(&self, dslab_ctx: DSLabContext) -> VirtualContext {
         VirtualContext {
-            process_address: self.process_address.clone(),
             dslab_ctx,
             node_manager: self.node_manager.clone(),
         }
@@ -85,12 +74,13 @@ impl<P: Process + Clone + 'static> DSLabProcess for VirtualProcessWrapper<P> {
             .on_message(msg.into(), from_address, Context::new_virt(virt_ctx))
     }
 
-    fn on_local_message(&mut self, msg: Message, ctx: DSLabContext) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: DSLabMessage, ctx: DSLabContext) -> Result<(), String> {
         let virt_ctx = self.create_context(ctx);
 
         self.user_process
             .write()
             .expect("Can not write in process, probably datarace appeared")
+            .on_local_message(msg.into(), Context::new_virt(virt_ctx))
     }
 
     fn on_timer(&mut self, timer: String, ctx: DSLabContext) -> Result<(), String> {

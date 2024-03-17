@@ -1,26 +1,99 @@
-//! Definition of [`RealContext`].
+//! Definition of context-related objects.
 
-use crate::common::actions::ProcessAction;
-use crate::common::process::Address;
+use std::future::Future;
 
+use log::warn;
+
+use crate::{common::message::RoutedMessage, Address, Message};
+
+use super::{
+    network::NetworkRequest,
+    process::{Output, ToSystemMessage},
+};
+
+/// Represents context of system in the real mode.
 #[derive(Clone)]
-pub struct RealContextImpl {
-    process_address: Address,
-    actions: Vec<ProcessAction>,
+pub(crate) struct RealContext {
+    pub(crate) output: Output,
+    pub(crate) address: Address,
 }
 
-#[derive(Clone)]
-pub struct RealContext {}
+impl RealContext {
+    /// Send local message.
+    pub fn send_local(&self, message: Message) {
+        let sender = self.output.local.clone();
+        tokio::spawn(async move {
+            let result = sender.send(message).await;
 
-impl RealContextImpl {
-    pub fn new(process_address: Address) -> Self {
-        RealContextImpl {
-            process_address,
-            actions: Vec::default(),
-        }
+            if let Err(info) = result {
+                warn!("Can not send local message: {}", info);
+            }
+        });
     }
 
-    pub fn get_actions(&self) -> Vec<ProcessAction> {
-        self.actions.clone()
+    /// Set timer with specified name and delay.
+    /// If such timer already exists, delay will be override.
+    pub fn set_timer(&self, name: &str, delay: f64) {
+        self.output
+            .timer_mngr
+            .lock()
+            .unwrap()
+            .set_timer(name.to_owned(), delay, true);
+    }
+
+    /// Set timer with specified name and delay.
+    /// If such timer already exists, delay will not be override.
+    pub fn set_timer_once(&self, name: &str, delay: f64) {
+        self.output
+            .timer_mngr
+            .lock()
+            .unwrap()
+            .set_timer(name.to_owned(), delay, false);
+    }
+
+    /// Cancel timer with specified name.
+    pub fn cancel_timer(&self, name: &str) {
+        self.output.timer_mngr.lock().unwrap().cancel_timer(name);
+    }
+
+    /// Send network message.
+    pub fn send(&self, msg: Message, dst: Address) {
+        let msg = RoutedMessage {
+            msg,
+            from: self.address.clone(),
+            to: dst,
+        };
+        let sender = self.output.network.clone();
+        tokio::spawn(async move {
+            let result = sender.send(NetworkRequest::SendMessage(msg)).await;
+
+            if let Err(info) = result {
+                warn!("Can not send network message: {}", info);
+            }
+        });
+    }
+
+    /// Spawn asynchronous activity.
+    pub fn spawn<F>(&self, future: F)
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        tokio::spawn(future);
+    }
+
+    /// Sleep for some time (sec.).
+    pub async fn sleep(&self, duration: f64) {
+        tokio::time::sleep(tokio::time::Duration::from_secs_f64(duration)).await;
+    }
+
+    /// Stop the process.
+    pub fn stop(self) {
+        tokio::spawn(async move {
+            self.output
+                .system
+                .send(ToSystemMessage::ProcessStopped(self.address.process_name))
+                .await
+                .unwrap()
+        });
     }
 }

@@ -52,11 +52,4 @@ pub enum ProcessAction {
         /// Name of timer.
         timer_name: String,
     },
-    /// Specifies user request to stop the process.
-    ProcessStopped {
-        /// Address of process, requested to stop.
-        process_name: String,
-        /// Specifies policy on stopping process.
-        policy: StopPolicy,
-    },
 }
