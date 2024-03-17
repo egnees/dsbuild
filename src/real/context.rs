@@ -7,7 +7,7 @@ use log::warn;
 use crate::{common::message::RoutedMessage, Address, Message};
 
 use super::{
-    network::NetworkRequest,
+    network::{self, NetworkRequest},
     process::{Output, ToSystemMessage},
 };
 
@@ -71,6 +71,23 @@ impl RealContext {
                 warn!("Can not send network message: {}", info);
             }
         });
+    }
+
+    /// Send network message reliable.
+    /// It is guaranteed that message will be delivered exactly once and without corruption.
+    ///
+    /// # Returns
+    ///
+    /// - Error if message was not delivered.
+    /// - Ok if message was delivered
+    pub async fn send_reliable(&self, msg: Message, dst: Address) -> Result<(), String> {
+        let msg = RoutedMessage {
+            msg,
+            from: self.address.clone(),
+            to: dst,
+        };
+
+        network::send_message_reliable(msg).await
     }
 
     /// Spawn asynchronous activity.

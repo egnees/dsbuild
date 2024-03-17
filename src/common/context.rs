@@ -76,6 +76,14 @@ impl Context {
         }
     }
 
+    /// Send reliable message to specified address.
+    pub async fn send_reliable(&self, msg: Message, dst: Address) -> Result<(), String> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.send_reliable(msg, dst).await,
+            ContextVariant::Virtual(ctx) => ctx.send_reliable(msg, dst).await,
+        }
+    }
+
     /// Spawn asynchronous activity.
     pub fn spawn<F>(&self, future: F)
     where

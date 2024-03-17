@@ -33,10 +33,6 @@ pub struct ProcessSendRequest {
 pub struct ProcessSendResponse {
     /// Response message from receiver,
     /// which indicates whether request was accepted or not.
-    ///
-    /// Remark: this protocol is not used for now,
-    /// because there is no way to talk process
-    /// if received message was successful delivered or not.
     pub status: String,
 }
 
@@ -106,12 +102,12 @@ impl GRpcMessenger {
         let mut client =
             MessagePassingClient::connect(format!("http://{}:{}", receiver_host, receiver_port))
                 .await
-                .map_err(|e| "Can not connect to the receiver: ".to_owned() + &e.to_string())?;
+                .map_err(|e| "can not connect to the receiver: ".to_owned() + &e.to_string())?;
 
         let response = client
             .send_message(grpc_request)
             .await
-            .map_err(|e| "Can not send message to the receiver: ".to_owned() + &e.to_string())?;
+            .map_err(|e| "can not send message to the receiver: ".to_owned() + &e.to_string())?;
 
         let process_response = ProcessSendResponse {
             status: response.into_inner().status,

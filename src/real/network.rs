@@ -58,3 +58,22 @@ async fn send_message(msg: RoutedMessage) {
         );
     }
 }
+
+pub async fn send_message_reliable(msg: RoutedMessage) -> Result<(), String> {
+    let result = GRpcMessenger::send(ProcessSendRequest {
+        sender_address: msg.from.clone(),
+        receiver_address: msg.to.clone(),
+        message: msg.msg,
+    })
+    .await;
+
+    if let Ok(response) = result {
+        if response.status == "success" {
+            Ok(())
+        } else {
+            Err(response.status)
+        }
+    } else {
+        Err("can not send message".to_owned())
+    }
+}

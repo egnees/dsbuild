@@ -54,6 +54,33 @@ impl VirtualContext {
         }
     }
 
+    /// Send network message reliable.
+    /// It is guaranteed that message will be delivered exactly once and without corruption.
+    ///
+    /// # Returns
+    ///
+    /// - Error if message was not delivered.
+    /// - Ok if message was delivered
+    pub fn send_reliable(
+        &self,
+        msg: Message,
+        dst: Address,
+    ) -> Pin<Box<dyn Future<Output = Result<(), String>> + Send>> {
+        let ctx = self.dslab_ctx.clone();
+        let process_name = match self.node_manager.borrow().get_full_process_name(&dst) {
+            Ok(full_process_name) => Some(full_process_name),
+            Err(_) => None,
+        };
+
+        SendFuture::from_future(async move {
+            if let Some(process_name) = process_name {
+                ctx.send_reliable(msg.into(), process_name).await
+            } else {
+                Err(format!("Message not sent: bad dst address {:?}", dst))
+            }
+        })
+    }
+
     /// Spawn asynchronous activity.
     pub fn spawn(&self, future: impl Future<Output = ()>) {
         self.dslab_ctx.spawn(future);
@@ -93,20 +120,29 @@ unsafe impl Sync for VirtualContext {}
 /// although they will not be shared between threads.
 /// To make it possible, [`SendFuture`] exists.
 /// It formally implements [`Send`] trait.
-struct SendFuture {
-    future: Pin<Box<dyn Future<Output = ()>>>,
+struct SendFuture<T>
+where
+    T: Send,
+{
+    future: Pin<Box<dyn Future<Output = T>>>,
 }
 
-impl SendFuture {
-    fn from_future(future: impl Future<Output = ()> + 'static) -> Pin<Box<Self>> {
+impl<T> SendFuture<T>
+where
+    T: Send,
+{
+    fn from_future(future: impl Future<Output = T> + 'static) -> Pin<Box<Self>> {
         Box::pin(SendFuture {
             future: Box::pin(future),
         })
     }
 }
 
-impl Future for SendFuture {
-    type Output = ();
+impl<T> Future for SendFuture<T>
+where
+    T: Send,
+{
+    type Output = T;
 
     fn poll(
         mut self: Pin<&mut Self>,
@@ -118,4 +154,4 @@ impl Future for SendFuture {
 
 /// Formally implementation of [`Send`] trait,
 /// besides [`SendFuture`] will not be shared between threads.
-unsafe impl Send for SendFuture {}
+unsafe impl<T> Send for SendFuture<T> where T: Send {}
