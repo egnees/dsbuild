@@ -24,5 +24,5 @@ mod common;
 pub use common::{
     context::Context,
     message::Message,
-    process::{Address, Process, ProcessGuard, ProcessWrapper},
+    process::{Address, IOProcessWrapper, Process, ProcessGuard, ProcessWrapper},
 };

@@ -153,6 +153,11 @@ impl Address {
         }
     }
 
+    /// Creates new address instance from string slices.
+    pub fn new_ref(host: &str, port: u16, process_name: &str) -> Self {
+        Self::new(host.to_owned(), port, process_name.to_owned())
+    }
+
     /// Creates new node address instance with empty process name.
     pub(crate) fn new_node_address(host: String, port: u16) -> Self {
         Self::new(host, port, "".to_owned())
