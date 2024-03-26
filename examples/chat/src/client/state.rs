@@ -2,12 +2,10 @@
 
 use std::collections::VecDeque;
 
-use dsbuild::Message;
-
-use crate::server::messages::{ChatEvent, ServerMessage, ServerMessageKind};
+use crate::server::messages::{ServerMessage, ServerMessageKind};
 
 use super::{
-    io::{Info, InnerInfo},
+    io::Info,
     requests::{ClientRequest, ClientRequestKind},
 };
 
@@ -32,6 +30,7 @@ impl Default for WaitingFor {
 }
 
 /// Represents information which [`State`] returns to the [`Client`].
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StateUpdateResult {
     /// Request which client can send to the server.
     /// After one update of [`State`] client can send at most one message,
@@ -159,9 +158,9 @@ impl State {
                     }
                     ServerMessageKind::RequestResponse(got_request_id, request_result) => {
                         if *waiting_request_id != *got_request_id {
-                            StateUpdateResult::from_nothing()
+                            StateUpdateResult::from_nothing() // Ignore.
                         } else {
-                            self.on_request_responsed(
+                            self.on_request_responded(
                                 waiting_request_kind.clone(),
                                 request_result.clone(),
                             )
@@ -173,7 +172,7 @@ impl State {
     }
 
     /// Handle response on request for which state was waiting.
-    fn on_request_responsed(
+    fn on_request_responded(
         &mut self,
         request_kind: ClientRequestKind,
         request_result: Result<(), String>,
@@ -182,7 +181,11 @@ impl State {
 
         let mut update_result = match request_kind {
             ClientRequestKind::Auth => match request_result {
-                Ok(_) => StateUpdateResult::from_to_user_info("auth done".into()),
+                Ok(_) => {
+                    // This messages are not actual.
+                    self.drain_and_filter_pending_server_messages();
+                    StateUpdateResult::from_to_user_info("authentication done".into())
+                }
                 Err(info) => {
                     self.waiting_for = WaitingFor::AuthRequest;
                     StateUpdateResult::from_to_user_info(info.as_str().into())
@@ -254,12 +257,13 @@ impl State {
                             result.append(&mut events_info);
                         }
                     }
-                    _ => panic!("There can not be responses on requests in the pending messages."),
+                    _ => panic!("there can not be responses on requests in the pending messages"),
                 }
             }
 
             result
         } else {
+            self.pending_server_messages.clear();
             Vec::<Info>::new()
         }
     }

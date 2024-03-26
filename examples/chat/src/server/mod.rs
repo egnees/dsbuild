@@ -1,3 +1,8 @@
-pub mod io;
+pub mod chat;
 pub mod messages;
-pub mod process;
+pub mod server;
+pub mod state;
+pub mod user;
+
+#[cfg(test)]
+mod tests;

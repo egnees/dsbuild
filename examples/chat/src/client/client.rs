@@ -5,33 +5,30 @@ use dsbuild::{Address, Context, Message, Process};
 use crate::server::messages::{ServerMessage, ServerMessageKind};
 
 use super::{
-    requests::{ClientRequest, ClientRequestKind},
+    requests::{ClientRequestKind, RequestBuilder},
     state::{State, StateUpdateResult},
 };
 
 #[derive(Debug, Clone)]
-struct Client {
+pub struct Client {
     server_address: Address,
     self_address: Address,
-    name: String,
-    password: String,
     state_machine: State,
-    last_request_id: usize,
+    request_builder: RequestBuilder,
 }
 
 impl Client {
-    fn next_request_id(&mut self) -> usize {
-        self.last_request_id += 1;
-        self.last_request_id
-    }
-
-    fn make_client_request(&mut self, client_request_kind: ClientRequestKind) -> ClientRequest {
-        ClientRequest {
-            id: self.next_request_id(),
-            client: self.name.clone(),
-            password: self.password.clone(),
-            time: SystemTime::now(),
-            kind: client_request_kind,
+    pub fn new(
+        server_address: Address,
+        self_address: Address,
+        name: String,
+        password: String,
+    ) -> Self {
+        Self {
+            server_address,
+            self_address,
+            state_machine: State::default(),
+            request_builder: RequestBuilder::new(name, password),
         }
     }
 
@@ -79,14 +76,14 @@ impl Client {
 impl Process for Client {
     fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
         let request_kind = msg.get_data::<ClientRequestKind>().unwrap();
-        let request = self.make_client_request(request_kind);
+        let request = self.request_builder.build_with_kind(request_kind);
         let update_result = self.state_machine.apply_client_request(request);
         self.handle_state_update(update_result, ctx);
         Ok(())
     }
 
-    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
-        unreachable!("No timers in client.")
+    fn on_timer(&mut self, _: String, _: Context) -> Result<(), String> {
+        unreachable!("no timers in client")
     }
 
     fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {

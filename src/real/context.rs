@@ -22,13 +22,10 @@ impl RealContext {
     /// Send local message.
     pub fn send_local(&self, message: Message) {
         let sender = self.output.local.clone();
-        tokio::spawn(async move {
-            let result = sender.send(message).await;
-
-            if let Err(info) = result {
-                warn!("Can not send local message: {}", info);
-            }
-        });
+        let result = sender.try_send(message);
+        if let Err(info) = result {
+            warn!("can not send local message: {}", info);
+        }
     }
 
     /// Set timer with specified name and delay.
