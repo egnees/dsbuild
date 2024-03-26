@@ -1,6 +1,6 @@
 //! Definitions of methods for [`Client`] input and output interactions.
+use std::fmt;
 use std::time::SystemTime;
-use std::{fmt, time};
 
 use dsbuild::{IOProcessWrapper, Message};
 use serde::{Deserialize, Serialize};
@@ -9,14 +9,9 @@ use crate::server::messages::ChatEvent;
 
 use colored::Colorize;
 
-use chrono::DateTime;
-use chrono::Local;
+use chrono::{DateTime, Local};
 
-use super::{
-    client::Client,
-    parser::parse_request,
-    requests::{ClientRequest, ClientRequestKind},
-};
+use super::{client::Client, parser::parse_request, requests::ClientRequestKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InnerInfo {

@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::SystemTime,
-};
+use std::sync::{Arc, Mutex};
 
 use colored::Colorize;
 
@@ -10,8 +7,6 @@ use dsbuild::{Address, Context, Message, Process};
 use crate::{client::requests::ClientRequest, server::messages::ServerMessage};
 
 use super::state::{RoutedMessage, State};
-
-use chrono::{DateTime, Local};
 
 #[derive(Clone)]
 pub struct Server {
