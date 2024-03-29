@@ -7,37 +7,42 @@ fn main() {
         .init();
 
     let args = std::env::args().collect::<Vec<String>>();
-    if args.len() < 3 {
-        println!("Usage: {} <port> <name>", args[0]);
+    if args.len() < 5 {
+        println!(
+            "Usage: {} <server_ip> <server_port> <client_port> <name>",
+            args[0]
+        );
         return;
     }
 
-    let port = args[1].parse::<u16>().expect("Can not parse listen port");
+    let server_ip = &args[1];
+    let server_port = args[2].parse::<u16>().expect("Can not parse server port");
 
-    if port == 11085 {
-        println!("Can not start of server port: {}", port);
-        return;
-    }
-
-    let name = args[2].clone();
+    let client_port = args[3].parse::<u16>().expect("Can not parse listen port");
+    let client_name = &args[4];
 
     let server_address = Address {
-        host: "127.0.0.1".into(),
-        port: 11085,
+        host: server_ip.to_owned(),
+        port: server_port,
         process_name: "chat_server".into(),
     };
 
     let self_address = Address {
         host: "127.0.0.1".into(),
-        port,
-        process_name: name.clone(),
+        port: client_port,
+        process_name: client_name.clone(),
     };
 
-    let mut system = RealSystem::new(1024, "127.0.0.1", port);
+    let mut system = RealSystem::new(1024, "127.0.0.1", client_port);
 
     let io = system.add_process(
-        Client::new(server_address, self_address, name.clone(), "pass123".into()),
-        name.clone().into(),
+        Client::new(
+            server_address,
+            self_address,
+            client_name.clone(),
+            "pass123".into(),
+        ),
+        client_name.to_owned(),
     );
 
     system.spawn(start_io(io));
