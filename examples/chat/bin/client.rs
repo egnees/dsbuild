@@ -7,9 +7,9 @@ fn main() {
         .init();
 
     let args = std::env::args().collect::<Vec<String>>();
-    if args.len() < 5 {
+    if args.len() < 6 {
         println!(
-            "Usage: {} <server_ip> <server_port> <client_port> <name>",
+            "Usage: {} <server_ip> <server_port> <client_ip> <client_port> <name>",
             args[0]
         );
         return;
@@ -18,8 +18,9 @@ fn main() {
     let server_ip = &args[1];
     let server_port = args[2].parse::<u16>().expect("Can not parse server port");
 
-    let client_port = args[3].parse::<u16>().expect("Can not parse listen port");
-    let client_name = &args[4];
+    let client_ip = &args[3];
+    let client_port = args[4].parse::<u16>().expect("Can not parse listen port");
+    let client_name = &args[5];
 
     let server_address = Address {
         host: server_ip.to_owned(),
@@ -28,12 +29,12 @@ fn main() {
     };
 
     let self_address = Address {
-        host: "127.0.0.1".into(),
+        host: client_ip.to_owned(),
         port: client_port,
         process_name: client_name.clone(),
     };
 
-    let mut system = RealSystem::new(1024, "127.0.0.1", client_port);
+    let mut system = RealSystem::new(1024, client_ip, client_port);
 
     let io = system.add_process(
         Client::new(
