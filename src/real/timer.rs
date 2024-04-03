@@ -39,7 +39,8 @@ impl TimerManager {
 
     /// Cancel timer with specified name.
     pub fn cancel_timer(&mut self, name: &str) {
-        self.pending_timers
+        let _ = self
+            .pending_timers
             .remove(name)
             .map_or((), |task| task.abort());
     }
