@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["Context"]};
+window.SIDEBAR_ITEMS = {"enum":["ContextVariant"],"struct":["Context"]};

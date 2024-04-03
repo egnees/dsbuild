@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["common","examples","process_lib","real_mode","virtual_mode"],"struct":["Address","Message","ProcessGuard","ProcessWrapper","RealSystem","RealSystemConfig","VirtualSystem"],"trait":["Context","Process"]};
+window.SIDEBAR_ITEMS = {"mod":["common","real","virt"],"struct":["Address","Context","IOProcessWrapper","Message","ProcessGuard","ProcessWrapper","RealSystem","VirtualSystem"],"trait":["Process"]};

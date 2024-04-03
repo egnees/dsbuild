@@ -1,4 +1,5 @@
-var srcIndex = JSON.parse('{\
-"dsbuild":["",[["common",[],["actions.rs","context.rs","message.rs","mod.rs","process.rs"]],["examples",[["ping_pong",[],["mod.rs","pinger.rs","ponger.rs","real.rs","sim.rs"]]],["mod.rs"]],["process_lib",[],["isolated.rs","mod.rs","ping.rs","pong.rs"]],["real_mode",[["network",[],["defs.rs","grpc_messenger.rs","messenger.rs","mod.rs","network_manager.rs"]],["time",[],["basic_timer_setter.rs","defs.rs","mod.rs","time_manager.rs","timer_setter.rs"]]],["events.rs","mod.rs","process_manager.rs","real_context.rs","real_system.rs"]],["virtual_mode",[],["mod.rs","node_manager.rs","process_wrapper.rs","virtual_context.rs","virtual_system.rs"]]],["lib.rs"]]\
-}');
+var srcIndex = new Map(JSON.parse('[\
+["chat",["",[["client",[],["client.rs","io.rs","mod.rs","parser.rs","requests.rs","state.rs"]],["server",[],["chat.rs","messages.rs","mod.rs","server.rs","state.rs","user.rs"]]],["lib.rs"]]],\
+["dsbuild",["",[["common",[],["context.rs","message.rs","mod.rs","process.rs"]],["real",[],["context.rs","messenger.rs","mod.rs","network.rs","process.rs","system.rs","timer.rs"]],["virt",[],["context.rs","mod.rs","node.rs","process.rs","system.rs"]]],["lib.rs"]]]\
+]'));
 createSrcSidebar();

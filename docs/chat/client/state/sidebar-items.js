@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["WaitingFor"],"struct":["State","StateUpdateResult"]};

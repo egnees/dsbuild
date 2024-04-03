@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["dsbuild"];
+window.ALL_CRATES = ["chat","dsbuild"];

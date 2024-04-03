@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["NetworkRequest"],"fn":["handle","send_message","send_message_reliable"]};
