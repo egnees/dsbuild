@@ -4,10 +4,7 @@ use std::{
     collections::HashMap,
     future::Future,
     pin::Pin,
-    sync::{
-        atomic::{AtomicU32, AtomicUsize},
-        Arc, RwLock,
-    },
+    sync::{atomic::AtomicU32, Arc, RwLock},
 };
 
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -19,7 +16,7 @@ use crate::{
 
 use super::{
     network::{self, NetworkRequest},
-    process::{FromSystemMessage, ProcessManager, ToSystemMessage},
+    process::{FromSystemMessage, ProcessManager, ProcessManagerConfig, ToSystemMessage},
 };
 
 /// Represents real system.
@@ -97,16 +94,18 @@ impl System {
 
         let (to_proc_sender, from_proc_receiver) = mpsc::channel(self.max_buffer_size);
 
-        let proc_manager = ProcessManager::new(
+        let process_manager_config = ProcessManagerConfig {
             address,
-            process_ref,
-            local_proc_sender,
-            local_proc_receiver,
-            self.to_system_sender.clone(),
-            from_proc_receiver,
-            self.network_sender.clone(),
-            self.max_buffer_size,
-        );
+            process: process_ref,
+            local_sender: local_proc_sender,
+            local_receiver: local_proc_receiver,
+            system_sender: self.to_system_sender.clone(),
+            system_receiver: from_proc_receiver,
+            network_sender: self.network_sender.clone(),
+            max_buffer_size: self.max_buffer_size,
+        };
+
+        let proc_manager = ProcessManager::new(process_manager_config);
 
         if self.process_senders.contains_key(&name) {
             panic!("Trying to add existing process with name '{}'", name);

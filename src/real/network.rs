@@ -9,6 +9,7 @@ use super::messenger::{GRpcMessenger, ProcessSendRequest};
 
 pub enum NetworkRequest {
     SendMessage(RoutedMessage),
+    #[allow(dead_code)]
     Suspend(),
 }
 

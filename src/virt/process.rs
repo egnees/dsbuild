@@ -2,6 +2,7 @@
 
 use std::{
     cell::RefCell,
+    rc::Rc,
     sync::{Arc, RwLock},
 };
 
@@ -15,7 +16,7 @@ use dslab_async_mp::{
     process::Process as DSLabProcess,
 };
 
-use super::{context::VirtualContext, node_manager::NodeManager};
+use super::{context::VirtualContext, node::NodeManager};
 
 /// Represents virtual process wrapper,
 /// which is to be passed to the [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html).
@@ -23,12 +24,12 @@ use super::{context::VirtualContext, node_manager::NodeManager};
 pub struct VirtualProcessWrapper<P: Process + Clone + 'static> {
     user_process: Arc<RwLock<P>>,
     process_state: ProcessState,
-    node_manager: Arc<RefCell<NodeManager>>,
+    node_manager: Rc<RefCell<NodeManager>>,
 }
 
 impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
     /// Create new virtual process wrapper.
-    pub fn new(process_impl: Arc<RwLock<P>>, node_manager: Arc<RefCell<NodeManager>>) -> Self {
+    pub fn new(process_impl: Arc<RwLock<P>>, node_manager: Rc<RefCell<NodeManager>>) -> Self {
         Self {
             user_process: process_impl,
             process_state: ProcessState::Running,

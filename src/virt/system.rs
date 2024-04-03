@@ -2,12 +2,13 @@
 
 use std::{
     cell::{RefCell, RefMut},
+    rc::Rc,
     sync::{Arc, RwLock},
 };
 
 use dslab_async_mp::{network::Network, node::Node, system::System as DSLabSimulation};
 
-use super::{node_manager::NodeManager, process::VirtualProcessWrapper};
+use super::{node::NodeManager, process::VirtualProcessWrapper};
 use crate::{
     common::process::{Process, ProcessWrapper},
     Message,
@@ -21,7 +22,7 @@ use crate::{
 /// framework for simulating network, time, etc.
 pub struct System {
     inner: DSLabSimulation,
-    node_manager: Arc<RefCell<NodeManager>>,
+    node_manager: Rc<RefCell<NodeManager>>,
 }
 
 impl System {
@@ -29,7 +30,7 @@ impl System {
     pub fn new(seed: u64) -> Self {
         Self {
             inner: DSLabSimulation::new(seed),
-            node_manager: Arc::new(RefCell::new(NodeManager::default())),
+            node_manager: Rc::new(RefCell::new(NodeManager::default())),
         }
     }
 
@@ -82,7 +83,8 @@ impl System {
     /// Returns a mutable reference to the node.
     ///
     /// Can not make method public because
-    /// process names on dslab nodes are not the same as in the framework.  
+    /// process names on dslab nodes are not the same as in the framework.
+    #[allow(dead_code)]
     fn get_mut_node(&self, name: &str) -> Option<RefMut<Node>> {
         self.inner.get_mut_node(name)
     }

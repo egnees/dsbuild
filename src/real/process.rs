@@ -51,37 +51,39 @@ pub(crate) struct Output {
     pub timer_mngr: Arc<Mutex<TimerManager>>,
 }
 
+pub(crate) struct ProcessManagerConfig {
+    pub address: Address,
+    pub process: Arc<RwLock<dyn Process>>,
+    pub local_sender: Sender<Message>,
+    pub local_receiver: Receiver<Message>,
+    pub system_sender: Sender<ToSystemMessage>,
+    pub system_receiver: Receiver<FromSystemMessage>,
+    pub network_sender: Sender<NetworkRequest>,
+    pub max_buffer_size: usize,
+}
+
 impl ProcessManager {
     /// Create new process manager.
-    pub fn new(
-        address: Address,
-        process: Arc<RwLock<dyn Process>>,
-        local_sender: Sender<Message>,
-        local_receiver: Receiver<Message>,
-        system_sender: Sender<ToSystemMessage>,
-        system_receiver: Receiver<FromSystemMessage>,
-        network_sender: Sender<NetworkRequest>,
-        max_buffer_size: usize,
-    ) -> Self {
-        let (timer_sender, timers_receiver) = channel(max_buffer_size);
+    pub fn new(config: ProcessManagerConfig) -> Self {
+        let (timer_sender, timers_receiver) = channel(config.max_buffer_size);
 
         let timer_manager = TimerManager::new(timer_sender);
         let timer_manager_ref = Arc::new(Mutex::new(timer_manager));
 
         let output = Output {
-            local: local_sender,
-            network: network_sender,
-            system: system_sender,
+            local: config.local_sender,
+            network: config.network_sender,
+            system: config.system_sender,
             timer_mngr: timer_manager_ref,
         };
 
         Self {
-            local_receiver,
-            system_receiver,
+            local_receiver: config.local_receiver,
+            system_receiver: config.system_receiver,
             timers_receiver,
             output,
-            address,
-            process,
+            address: config.address,
+            process: config.process,
         }
     }
 

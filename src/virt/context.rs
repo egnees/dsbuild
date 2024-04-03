@@ -1,12 +1,12 @@
 //! Definition of virtual mode context.
 
-use std::{cell::RefCell, future::Future, pin::Pin, sync::Arc};
+use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 use crate::common::{message::Message, process::Address};
 use dslab_async_mp::context::Context as DSLabContext;
 use log::warn;
 
-use super::node_manager::NodeManager;
+use super::node::NodeManager;
 
 /// Represents context in virtual mode.
 /// Responsible for user-simulation interaction.
@@ -16,7 +16,7 @@ use super::node_manager::NodeManager;
 #[derive(Clone)]
 pub(crate) struct VirtualContext {
     pub dslab_ctx: DSLabContext,
-    pub node_manager: Arc<RefCell<NodeManager>>,
+    pub node_manager: Rc<RefCell<NodeManager>>,
 }
 
 impl VirtualContext {

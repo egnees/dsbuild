@@ -37,12 +37,15 @@ impl TimerManager {
         self.pending_timers.insert(name_clone, handler);
     }
 
+    /// Cancel timer with specified name.
     pub fn cancel_timer(&mut self, name: &str) {
         self.pending_timers
             .remove(name)
             .map_or((), |task| task.abort());
     }
 
+    #[allow(dead_code)]
+    /// Cancel all pending timers.
     pub fn cancel_all_timers(&mut self) {
         for task in self.pending_timers.values_mut() {
             task.abort();
