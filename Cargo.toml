@@ -34,19 +34,3 @@ path = "src/lib.rs"
 
 [workspace]
 members = ["examples/*", "."]
-
-# [[bin]]
-# name = "ping-pong-real"
-# path = "bin/ping_pong_real.rs"
-
-# [[bin]]
-# name = "ping-pong-sim"
-# path = "bin/ping_pong_sim.rs"
-
-# [[bin]]
-# name = "pinger"
-# path = "bin/pinger.rs"
-
-# [[bin]]
-# name = "ponger"
-# path = "bin/ponger.rs"
