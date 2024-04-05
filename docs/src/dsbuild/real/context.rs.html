@@ -113,6 +113,30 @@
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of context-related objects.
 
 </span><span class="kw">use </span>std::future::Future;
@@ -200,6 +224,30 @@
         };
 
         network::send_message_reliable(msg).<span class="kw">await
+    </span>}
+
+    <span class="doccomment">/// Send network message reliable.
+    /// If message will not be delivered in specified timeout,
+    /// error will be returned.
+    /// It is guaranteed that message will be delivered exactly once and without corruption.
+    ///
+    /// # Returns
+    ///
+    /// - Error if message was not delivered in specified timeout.
+    /// - Ok if message was delivered
+    </span><span class="kw">pub async fn </span>send_reliable_timeout(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        msg: Message,
+        dst: Address,
+        timeout: f64,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
+        <span class="kw">let </span>msg = RoutedMessage {
+            msg,
+            from: <span class="self">self</span>.address.clone(),
+            to: dst,
+        };
+
+        network::send_message_reliable_timeout(msg, timeout).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Spawn asynchronous activity.

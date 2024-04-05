@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["NetworkRequest"],"fn":["handle","send_message","send_message_reliable"]};
+window.SIDEBAR_ITEMS = {"enum":["NetworkRequest"],"fn":["handle","send_message","send_message_reliable","send_message_reliable_timeout"]};
