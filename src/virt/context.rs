@@ -66,17 +66,48 @@ impl VirtualContext {
         msg: Message,
         dst: Address,
     ) -> Pin<Box<dyn Future<Output = Result<(), String>> + Send>> {
-        let ctx = self.dslab_ctx.clone();
         let process_name = match self.node_manager.borrow().get_full_process_name(&dst) {
             Ok(full_process_name) => Some(full_process_name),
             Err(_) => None,
         };
+
+        let ctx = self.dslab_ctx.clone();
 
         SendFuture::from_future(async move {
             if let Some(process_name) = process_name {
                 ctx.send_reliable(msg.into(), process_name).await
             } else {
                 Err(format!("Message not sent: bad dst address {:?}", dst))
+            }
+        })
+    }
+
+    /// Send network message reliable with specified timeout.
+    /// It is guaranteed that message will be delivered exactly once and without corruption.
+    ///
+    /// # Returns
+    ///
+    /// - Error if message was not delivered with specified timeout.
+    /// - Ok if message was delivered
+    pub fn send_reliable_timeout(
+        &self,
+        msg: Message,
+        dst: Address,
+        timeout: f64,
+    ) -> Pin<Box<dyn Future<Output = Result<(), String>> + Send>> {
+        let process_name = match self.node_manager.borrow().get_full_process_name(&dst) {
+            Ok(full_process_name) => Some(full_process_name),
+            Err(_) => None,
+        };
+
+        let ctx = self.dslab_ctx.clone();
+
+        SendFuture::from_future(async move {
+            if let Some(process_name) = process_name {
+                ctx.send_reliable_timeout(msg.into(), process_name, timeout)
+                    .await
+            } else {
+                Err(format!("message not sent: bad dst address {:?}", dst))
             }
         })
     }

@@ -25,3 +25,7 @@ path = "bin/server.rs"
 [[bin]]
 name = "client"
 path = "bin/client.rs"
+
+[[tests]]
+name = "tests"
+path = "tests/sim_tests.rs"

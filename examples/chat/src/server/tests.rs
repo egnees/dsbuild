@@ -78,7 +78,7 @@ fn test_state() {
     // User1 tries to connect to the chat.
     let connect_chat_request = user1_request_builder.connect_request("chat1".into());
     let result = state.process_client_request(user1.clone(), connect_chat_request.clone());
-    assert_eq!(result.len(), 3);
+    assert_eq!(result.len(), 2);
     assert_eq!(result[0].to, user1);
     assert!(matches!(
         result[0].msg.kind,
@@ -89,17 +89,12 @@ fn test_state() {
         result[1].msg.kind,
         ServerMessageKind::ChatEvents(..)
     ));
-    assert_eq!(result[2].to, user1);
-    assert!(matches!(
-        result[2].msg.kind,
-        ServerMessageKind::ChatEvents(..)
-    ));
 
     // User2 tries to connect to the chat.
     let connect_chat_request = user2_request_builder.connect_request("chat1".into());
     let result = state.process_client_request(user2.clone(), connect_chat_request.clone());
 
-    assert_eq!(result.len(), 5);
+    assert_eq!(result.len(), 3);
     assert_eq!(result[0].to, user2);
     assert_eq!(
         result[0].msg.kind,

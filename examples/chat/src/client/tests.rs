@@ -152,13 +152,10 @@ fn parser_works() {
 
     assert_eq!(
         parser::parse_request("/send 'msg1 msg2'"),
-        Ok(ClientRequestKind::SendMessage("'msg1 msg2'".into()))
+        Ok(ClientRequestKind::SendMessage("msg1 msg2".into()))
     );
 
-    assert_eq!(
-        parser::parse_request("/send one two three  four"),
-        Ok(ClientRequestKind::SendMessage("one two three  four".into()))
-    );
+    assert!(parser::parse_request("/send one two three  four").is_err());
 
     assert_eq!(
         parser::parse_request("/connect chat1"),

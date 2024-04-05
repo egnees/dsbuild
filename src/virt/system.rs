@@ -202,6 +202,24 @@ impl System {
         self.inner.step_until_no_events()
     }
 
+    /// Steps through the DSLabSimulation until there are no local messages.
+    pub fn step_until_local_message(
+        &mut self,
+        proc: &str,
+        node: &str,
+    ) -> Result<Vec<Message>, String> {
+        let full_process_name = self
+            .node_manager
+            .borrow()
+            .construct_full_process_name(proc, node)
+            .unwrap();
+
+        self.inner
+            .step_until_local_message(&full_process_name)
+            .map_err(|str| str.to_owned())
+            .map(|v| v.into_iter().map(|m| m.into()).collect())
+    }
+
     /// Perform `steps` steps through the DSLabSimulation.
     pub fn make_steps(&mut self, steps: u32) {
         for _ in 0..steps {

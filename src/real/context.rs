@@ -87,6 +87,30 @@ impl RealContext {
         network::send_message_reliable(msg).await
     }
 
+    /// Send network message reliable.
+    /// If message will not be delivered in specified timeout,
+    /// error will be returned.
+    /// It is guaranteed that message will be delivered exactly once and without corruption.
+    ///
+    /// # Returns
+    ///
+    /// - Error if message was not delivered in specified timeout.
+    /// - Ok if message was delivered
+    pub async fn send_reliable_timeout(
+        &self,
+        msg: Message,
+        dst: Address,
+        timeout: f64,
+    ) -> Result<(), String> {
+        let msg = RoutedMessage {
+            msg,
+            from: self.address.clone(),
+            to: dst,
+        };
+
+        network::send_message_reliable_timeout(msg, timeout).await
+    }
+
     /// Spawn asynchronous activity.
     pub fn spawn<F>(&self, future: F)
     where

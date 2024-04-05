@@ -84,6 +84,21 @@ impl Context {
         }
     }
 
+    /// Send reliable message to specified address.
+    /// If message will not be delivered in specified timeout,
+    /// error will be returned.
+    pub async fn send_reliable_timeout(
+        &self,
+        msg: Message,
+        dst: Address,
+        timeout: f64,
+    ) -> Result<(), String> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.send_reliable_timeout(msg, dst, timeout).await,
+            ContextVariant::Virtual(ctx) => ctx.send_reliable_timeout(msg, dst, timeout).await,
+        }
+    }
+
     /// Spawn asynchronous activity.
     pub fn spawn<F>(&self, future: F)
     where

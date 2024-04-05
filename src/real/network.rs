@@ -78,3 +78,10 @@ pub async fn send_message_reliable(msg: RoutedMessage) -> Result<(), String> {
         Err("can not send message".to_owned())
     }
 }
+
+pub async fn send_message_reliable_timeout(msg: RoutedMessage, timeout: f64) -> Result<(), String> {
+    tokio::select! {
+        _ = tokio::time::sleep(tokio::time::Duration::from_secs_f64(timeout)) => Err("time is out".to_owned()),
+        send_result = send_message_reliable(msg) => send_result
+    }
+}
