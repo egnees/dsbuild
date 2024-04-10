@@ -204,3 +204,106 @@ fn no_faults_2_users() {
 
     assert_eq!(first_history, second_history);
 }
+
+#[test]
+fn no_faults_10_users() {
+    let mut sys = VirtualSystem::new(12345);
+
+    sys.network().set_corrupt_rate(0.0);
+    sys.network().set_delays(1.0, 3.0);
+    sys.network().set_drop_rate(0.8);
+
+    // Add server
+    let server: &'static str = "server";
+    let server_addr = Address {
+        host: server.into(),
+        port: 1000,
+        process_name: server.into(),
+    };
+    sys.add_node(server, &server_addr.host, server_addr.port);
+    sys.network().connect_node(server);
+    sys.add_process(
+        &server_addr.process_name,
+        Server::new(server.into()),
+        server,
+    );
+
+    // Add clients
+    let clients: Vec<String> = (1..=10)
+        .into_iter()
+        .map(|id| format!("client_{}", id))
+        .collect();
+
+    for client in clients.as_slice().into_iter() {
+        let client_addr = Address {
+            host: client.clone(),
+            port: 1000,
+            process_name: client.clone(),
+        };
+        sys.add_node(
+            &client_addr.process_name,
+            &client_addr.host,
+            client_addr.port,
+        );
+        sys.network().connect_node(&client_addr.process_name);
+        sys.add_process(
+            &client_addr.process_name,
+            Client::new(
+                server_addr.clone(),
+                client_addr.clone(),
+                client_addr.process_name.clone(),
+                "pass123".into(),
+            ),
+            &client_addr.process_name,
+        );
+    }
+
+    // Clients auth.
+    for client in clients.as_slice().into_iter() {
+        sys.send_local_message(client, client, ClientRequestKind::Auth.into());
+    }
+    sys.step_until_no_events();
+
+    // First client creates chat.
+    let chat: &'static str = "chat";
+    sys.send_local_message(
+        &clients[0],
+        &clients[0],
+        ClientRequestKind::Create(chat.into()).into(),
+    );
+    sys.step_until_no_events();
+
+    // All clients connect to created chat.
+    for client in clients.as_slice().into_iter() {
+        sys.send_local_message(
+            client,
+            client,
+            ClientRequestKind::Connect(chat.into()).into(),
+        );
+    }
+    sys.step_until_no_events();
+
+    // All clients will send random messages.
+    let iters = 100;
+    for iter in 0..iters {
+        for client in clients.as_slice().into_iter() {
+            sys.send_local_message(
+                client,
+                client,
+                ClientRequestKind::SendMessage(format!("msg_{}_{}", client, iter)).into(),
+            );
+        }
+
+        sys.make_steps(25);
+    }
+
+    sys.step_until_no_events();
+
+    let ref_history = sys.read_local_messages(&clients[0], &clients[0]);
+    assert!(ref_history.len() >= iters * clients.len());
+
+    for client in clients.as_slice().into_iter().skip(1) {
+        let history = sys.read_local_messages(client, client);
+        assert_eq!(history, ref_history);
+    }
+}

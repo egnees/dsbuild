@@ -4,7 +4,6 @@ use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 use crate::common::{message::Message, process::Address};
 use dslab_async_mp::context::Context as DSLabContext;
-use log::warn;
 
 use super::node::NodeManager;
 
@@ -49,7 +48,7 @@ impl VirtualContext {
                 self.dslab_ctx.send(msg.into(), full_process_name);
             }
             Err(err) => {
-                warn!("Message not sent: {}", err);
+                log::warn!("Message not sent: {}", err);
             }
         }
     }
