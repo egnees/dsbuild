@@ -6,7 +6,8 @@ use crate::client::requests::{ClientRequest, ClientRequestKind};
 
 use super::{
     chat::Chat,
-    messages::{ChatEvent, ServerMessage, ServerMessageBuilder},
+    chat_event::ChatEvent,
+    messages::{ServerMessage, ServerMessageBuilder},
     user::User,
 };
 

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::messages::{ChatEvent, ChatEventKind};
+use super::chat_event::{ChatEvent, ChatEventKind};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Chat {
@@ -23,7 +23,8 @@ impl Chat {
     }
 
     fn make_chat_event(&mut self, user: String, kind: ChatEventKind) -> ChatEvent {
-        let event = ChatEvent::new_with_kind(self.name.clone(), user, kind);
+        let seq = self.history.len();
+        let event = ChatEvent::new_with_kind(self.name.clone(), user, kind, seq);
         self.history.push(event.clone());
         event
     }

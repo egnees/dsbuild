@@ -2,124 +2,14 @@ use core::fmt;
 ///! Definition of messages which can be produces by server.
 use std::time::SystemTime;
 
-use chrono::DateTime;
-use chrono::Local;
-use colored::Colorize;
-
+use chrono::{DateTime, Local};
 use dsbuild::Message;
 use serde::{Deserialize, Serialize};
 
+use super::chat_event::ChatEvent;
+
 /// Represents response from server to client request.
 pub type RequestResponse = Result<(), String>;
-
-/// Represents event in the chat.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-pub enum ChatEventKind {
-    SentMessage(String), // Client sent message,
-    Connected(),         // Client connected to server,
-    Disconnected(),      // Client disconnected from server,
-    Created(),           // Client created chat.
-}
-
-/// Represents chat event born by request of some client.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ChatEvent {
-    chat: String,
-    client: String,
-    time: SystemTime,
-    kind: ChatEventKind,
-}
-
-impl fmt::Display for ChatEvent {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dt: DateTime<Local> = self.time.clone().into();
-
-        match &self.kind {
-            ChatEventKind::SentMessage(msg) => write!(
-                f,
-                "[{}]\t{} {} {}: {}",
-                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.client.bold().green(),
-                "->".green(),
-                self.chat.bold().green(),
-                msg.italic()
-            ),
-            ChatEventKind::Connected() => {
-                write!(
-                    f,
-                    "[{}]\t{} {} {}",
-                    dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                    self.client.bold().green(),
-                    "connected to".green(),
-                    self.chat.bold().green()
-                )
-            }
-            ChatEventKind::Disconnected() => write!(
-                f,
-                "[{}]\t{} {} {}",
-                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.client.bold().green(),
-                "disconnected from".green(),
-                self.chat.bold().green()
-            ),
-            ChatEventKind::Created() => write!(
-                f,
-                "[{}]\t{} {} {}",
-                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.client.bold().green(),
-                "created".green(),
-                self.chat.bold().green()
-            ),
-        }
-    }
-}
-
-impl ChatEvent {
-    pub fn message_sent(chat: String, client: String, msg: String) -> Self {
-        Self {
-            chat,
-            client,
-            time: SystemTime::now(),
-            kind: ChatEventKind::SentMessage(msg),
-        }
-    }
-
-    pub fn client_connected(chat: String, client: String) -> Self {
-        Self {
-            chat,
-            client,
-            time: SystemTime::now(),
-            kind: ChatEventKind::Connected(),
-        }
-    }
-
-    pub fn client_disconnected(chat: String, client: String) -> Self {
-        Self {
-            chat,
-            client,
-            time: SystemTime::now(),
-            kind: ChatEventKind::Disconnected(),
-        }
-    }
-
-    pub fn chat_created(client: String, chat: String) -> Self {
-        Self {
-            chat,
-            client,
-            time: SystemTime::now(),
-            kind: ChatEventKind::Created(),
-        }
-    }
-
-    pub fn new_with_kind(chat: String, client: String, kind: ChatEventKind) -> Self {
-        Self {
-            chat,
-            client,
-            time: SystemTime::now(),
-            kind,
-        }
-    }
-}
 
 /// Represents messages from server to the client.
 ///

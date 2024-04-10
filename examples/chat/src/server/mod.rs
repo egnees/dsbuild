@@ -1,4 +1,5 @@
 pub mod chat;
+pub mod chat_event;
 pub mod messages;
 pub mod server;
 pub mod state;

@@ -98,7 +98,7 @@ impl VirtualContext {
         let process_name = self.node_manager.borrow().get_full_process_name(&dst);
 
         let closure = {
-            let mut ctx = self.dslab_ctx.clone();
+            let ctx = self.dslab_ctx.clone();
             async move {
                 if let Ok(process_name) = process_name {
                     ctx.send_reliable_timeout(msg.into(), process_name, timeout)
