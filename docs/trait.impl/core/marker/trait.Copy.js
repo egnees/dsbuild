@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"dsbuild":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.77.1/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"dsbuild/common/process/enum.ProcessState.html\" title=\"enum dsbuild::common::process::ProcessState\">ProcessState</a>"]]
+"dsbuild":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.77.2/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"dsbuild/common/process/enum.ProcessState.html\" title=\"enum dsbuild::common::process::ProcessState\">ProcessState</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
