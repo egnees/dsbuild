@@ -40,7 +40,7 @@ impl Server {
         state: Arc<Mutex<State>>,
         ctx: Context,
     ) -> Vec<RoutedMessage> {
-        println!(
+        log::info!(
             "{} {} {}",
             &msg.get_data::<ServerMessage>().unwrap(),
             "->".green().bold(),
@@ -68,8 +68,6 @@ impl Process for Server {
 
     fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
         let client_request = msg.get_data::<ClientRequest>().unwrap();
-
-        println!("{}", client_request);
 
         let routed_messages = self
             .state

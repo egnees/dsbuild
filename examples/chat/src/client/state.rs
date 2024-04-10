@@ -2,12 +2,10 @@
 
 use std::collections::VecDeque;
 
-use crate::server::{
-    chat_event::ChatEvent,
-    messages::{ServerMessage, ServerMessageKind},
-};
+use crate::server::messages::{ServerMessage, ServerMessageKind};
 
 use super::{
+    chat::Chat,
     io::Info,
     requests::{ClientRequest, ClientRequestKind},
 };
@@ -91,7 +89,7 @@ impl StateUpdateResult {
 /// Represents state of client.
 #[derive(Default, Debug, Clone)]
 pub struct State {
-    chat: Option<String>,
+    chat: Option<Chat>,
     waiting_for: WaitingFor,
     pending_client_requests: VecDeque<ClientRequest>,
     pending_server_messages: Vec<ServerMessage>,
@@ -129,7 +127,7 @@ impl State {
     ///
     /// # Returns
     ///
-    /// Info about state which can be shown to the user in the returned state.
+    /// Info about state which can be shown to the user.
     pub fn apply_server_msg(&mut self, msg: ServerMessage) -> StateUpdateResult {
         match &self.waiting_for {
             WaitingFor::AuthRequest => StateUpdateResult::from_nothing(), // outdated server message
@@ -137,12 +135,14 @@ impl State {
                 match msg.kind {
                     ServerMessageKind::RequestResponse(_, _) => StateUpdateResult::from_nothing(), // outdated response
                     ServerMessageKind::ChatEvents(chat, events) => {
-                        match &self.chat {
+                        match &mut self.chat {
                             Some(current_chat) => {
-                                if *current_chat == chat {
-                                    let events_info =
-                                        events.into_iter().map(|event| event.into()).collect();
-
+                                if current_chat.name() == chat {
+                                    let events_info = current_chat
+                                        .process_events(events)
+                                        .into_iter()
+                                        .map(|event| event.into())
+                                        .collect();
                                     StateUpdateResult::from_to_user_info_vec(events_info)
                                 } else {
                                     StateUpdateResult::from_nothing() // outdated chat events
@@ -210,7 +210,7 @@ impl State {
             },
             ClientRequestKind::Connect(connected_chat) => match request_result {
                 Ok(_) => {
-                    self.chat = Some(connected_chat);
+                    self.chat = Some(Chat::new(connected_chat));
                     StateUpdateResult::from_to_user_info_vec(
                         self.drain_and_filter_pending_server_messages(),
                     )
@@ -245,7 +245,7 @@ impl State {
     }
 
     fn drain_and_filter_pending_server_messages(&mut self) -> Vec<Info> {
-        if let Some(chat) = &self.chat {
+        if let Some(current_chat) = &mut self.chat {
             let mut result = Vec::new();
 
             let drain = self.pending_server_messages.drain(..);
@@ -253,9 +253,12 @@ impl State {
             for message in drain {
                 match message.kind {
                     ServerMessageKind::ChatEvents(destination_chat, events) => {
-                        if *chat == destination_chat {
-                            let mut events_info =
-                                events.into_iter().map(|event| event.into()).collect();
+                        if current_chat.name() == destination_chat {
+                            let mut events_info = current_chat
+                                .process_events(events)
+                                .into_iter()
+                                .map(|event| event.into())
+                                .collect();
 
                             result.append(&mut events_info);
                         }
