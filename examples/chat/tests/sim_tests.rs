@@ -70,11 +70,17 @@ fn works_no_faults() {
     sys.send_local_message("client1", "client1_node", ClientRequestKind::Auth.into());
 
     // Send auth request, get auth response.
-    sys.read_local_messages("client1", "client1_node");
+    let msg = sys
+        .step_until_local_message("client1", "client1_node")
+        .unwrap();
+    assert_eq!(msg.len(), 1);
 
     // Auth client2.
     sys.send_local_message("client2", "client2_node", ClientRequestKind::Auth.into());
-    sys.read_local_messages("client2", "client2_node");
+    let msg = sys
+        .step_until_local_message("client2", "client2_node")
+        .unwrap();
+    assert_eq!(msg.len(), 1);
 
     // Client1 creates chat.
     sys.send_local_message(
@@ -84,7 +90,7 @@ fn works_no_faults() {
     );
 
     // Step until chat will be created.
-    sys.make_steps(100);
+    sys.step_until_no_events();
 
     // Client2 connects to chat.
     sys.send_local_message(
@@ -101,7 +107,7 @@ fn works_no_faults() {
     );
 
     // Step until messages will be delivered.
-    sys.make_steps(100);
+    sys.step_until_no_events();
 
     // The same chat events must be sent to the clients.
     let client1_events: Vec<_> = sys

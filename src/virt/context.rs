@@ -95,21 +95,21 @@ impl VirtualContext {
         dst: Address,
         timeout: f64,
     ) -> Pin<Box<dyn Future<Output = Result<(), String>> + Send>> {
-        let process_name = match self.node_manager.borrow().get_full_process_name(&dst) {
-            Ok(full_process_name) => Some(full_process_name),
-            Err(_) => None,
+        let process_name = self.node_manager.borrow().get_full_process_name(&dst);
+
+        let closure = {
+            let mut ctx = self.dslab_ctx.clone();
+            async move {
+                if let Ok(process_name) = process_name {
+                    ctx.send_reliable_timeout(msg.into(), process_name, timeout)
+                        .await
+                } else {
+                    Err(format!("Message not sent: bad dst address {:?}", dst))
+                }
+            }
         };
 
-        let ctx = self.dslab_ctx.clone();
-
-        SendFuture::from_future(async move {
-            if let Some(process_name) = process_name {
-                ctx.send_reliable_timeout(msg.into(), process_name, timeout)
-                    .await
-            } else {
-                Err(format!("message not sent: bad dst address {:?}", dst))
-            }
-        })
+        SendFuture::from_future(closure)
     }
 
     /// Spawn asynchronous activity.
