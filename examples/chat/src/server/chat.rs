@@ -23,7 +23,8 @@ impl Chat {
     }
 
     fn make_chat_event(&mut self, user: String, kind: ChatEventKind) -> ChatEvent {
-        let event = ChatEvent::new_with_kind(self.name.clone(), user, kind);
+        let seq = self.history.len();
+        let event = ChatEvent::new_with_kind(self.name.clone(), user, kind, seq);
         self.history.push(event.clone());
         event
     }

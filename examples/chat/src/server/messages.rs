@@ -28,6 +28,7 @@ pub struct ChatEvent {
     client: String,
     time: SystemTime,
     kind: ChatEventKind,
+    seq: usize,
 }
 
 impl fmt::Display for ChatEvent {
@@ -75,48 +76,53 @@ impl fmt::Display for ChatEvent {
 }
 
 impl ChatEvent {
-    pub fn message_sent(chat: String, client: String, msg: String) -> Self {
+    pub fn message_sent(chat: String, client: String, msg: String, seq: usize) -> Self {
         Self {
             chat,
             client,
             time: SystemTime::now(),
             kind: ChatEventKind::SentMessage(msg),
+            seq,
         }
     }
 
-    pub fn client_connected(chat: String, client: String) -> Self {
+    pub fn client_connected(chat: String, client: String, seq: usize) -> Self {
         Self {
             chat,
             client,
             time: SystemTime::now(),
             kind: ChatEventKind::Connected(),
+            seq,
         }
     }
 
-    pub fn client_disconnected(chat: String, client: String) -> Self {
+    pub fn client_disconnected(chat: String, client: String, seq: usize) -> Self {
         Self {
             chat,
             client,
             time: SystemTime::now(),
             kind: ChatEventKind::Disconnected(),
+            seq,
         }
     }
 
-    pub fn chat_created(client: String, chat: String) -> Self {
+    pub fn chat_created(client: String, chat: String, seq: usize) -> Self {
         Self {
             chat,
             client,
             time: SystemTime::now(),
             kind: ChatEventKind::Created(),
+            seq,
         }
     }
 
-    pub fn new_with_kind(chat: String, client: String, kind: ChatEventKind) -> Self {
+    pub fn new_with_kind(chat: String, client: String, kind: ChatEventKind, seq: usize) -> Self {
         Self {
             chat,
             client,
             time: SystemTime::now(),
             kind,
+            seq,
         }
     }
 }

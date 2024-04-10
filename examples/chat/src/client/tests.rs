@@ -38,6 +38,7 @@ fn state_works() {
         "chat1".to_owned(),
         "Ivan".to_owned(),
         "Hello".to_owned(),
+        0,
     ));
     let update_result = state.apply_server_msg(chat_message);
     assert_eq!(update_result.to_server, None);
@@ -68,6 +69,7 @@ fn state_works() {
         "chat1".to_owned(),
         "Ivan".to_owned(),
         "Hello".to_owned(),
+        0,
     ));
     let update_result = state.apply_server_msg(chat_message);
     assert_eq!(update_result.to_server, None);
@@ -78,6 +80,7 @@ fn state_works() {
         "chat2".to_owned(),
         "Ivan".to_owned(),
         "Hello".to_owned(),
+        0,
     ));
     let update_result = state.apply_server_msg(chat_message);
     assert_eq!(update_result.to_server, None);
@@ -95,6 +98,7 @@ fn state_works() {
         "chat1".to_owned(),
         "Ivan".to_owned(),
         "Hello".to_owned(),
+        1,
     ));
     let update_result = state.apply_server_msg(chat_message);
     assert_eq!(update_result.to_server, None);
@@ -102,7 +106,7 @@ fn state_works() {
 
     // Now disconnect request is ignored by server,
     // which leads to pending messages appear,
-    // but before this message must be disconnect message from server.
+    // but disconnect response must be before this messages.
     let disconnect_response =
         server_msg_builder.new_bad_response(disconnect_request_id, "disconnect ignored".into());
     let update_result = state.apply_server_msg(disconnect_response);
@@ -112,7 +116,7 @@ fn state_works() {
     assert!(matches!(update_result.to_user[1], Info::ChatEvent(..)));
 
     // Now client send two messages to the chat.
-    // One of them must be pending before the response on the first one is returned.
+    // One of them must be pending while the response on the first one is returned.
     let send_msg_request = request_builder.send_message_request("message".to_owned());
     let send_msg_request_id = send_msg_request.id;
     let update_result = state.apply_client_request(send_msg_request.clone());
