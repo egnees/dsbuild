@@ -65,9 +65,10 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
-<span class="kw">use </span><span class="kw">super</span>::messages::{ChatEvent, ChatEventKind};
+<span class="kw">use </span><span class="kw">super</span>::chat_event::{ChatEvent, ChatEventKind};
 
 <span class="attr">#[derive(Debug, Clone, Eq, PartialEq)]
 </span><span class="kw">pub struct </span>Chat {
@@ -90,7 +91,8 @@
     }
 
     <span class="kw">fn </span>make_chat_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user: String, kind: ChatEventKind) -&gt; ChatEvent {
-        <span class="kw">let </span>event = ChatEvent::new_with_kind(<span class="self">self</span>.name.clone(), user, kind);
+        <span class="kw">let </span>seq = <span class="self">self</span>.history.len();
+        <span class="kw">let </span>event = ChatEvent::new_with_kind(<span class="self">self</span>.name.clone(), user, kind, seq);
         <span class="self">self</span>.history.push(event.clone());
         event
     }

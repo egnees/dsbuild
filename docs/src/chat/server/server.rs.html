@@ -84,8 +84,6 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Mutex};
 
 <span class="kw">use </span>colored::Colorize;
@@ -128,7 +126,7 @@
         state: Arc&lt;Mutex&lt;State&gt;&gt;,
         ctx: Context,
     ) -&gt; Vec&lt;RoutedMessage&gt; {
-        <span class="macro">println!</span>(
+        <span class="macro">log::info!</span>(
             <span class="string">"{} {} {}"</span>,
             <span class="kw-2">&amp;</span>msg.get_data::&lt;ServerMessage&gt;().unwrap(),
             <span class="string">"-&gt;"</span>.green().bold(),
@@ -156,8 +154,6 @@
 
     <span class="kw">fn </span>on_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, from: Address, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="kw">let </span>client_request = msg.get_data::&lt;ClientRequest&gt;().unwrap();
-
-        <span class="macro">println!</span>(<span class="string">"{}"</span>, client_request);
 
         <span class="kw">let </span>routed_messages = <span class="self">self
             </span>.state

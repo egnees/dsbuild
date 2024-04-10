@@ -270,6 +270,12 @@
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of possible client states and related logic.
 
 </span><span class="kw">use </span>std::collections::VecDeque;
@@ -277,6 +283,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::server::messages::{ServerMessage, ServerMessageKind};
 
 <span class="kw">use super</span>::{
+    chat::Chat,
     io::Info,
     requests::{ClientRequest, ClientRequestKind},
 };
@@ -360,7 +367,7 @@
 <span class="doccomment">/// Represents state of client.
 </span><span class="attr">#[derive(Default, Debug, Clone)]
 </span><span class="kw">pub struct </span>State {
-    chat: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    chat: <span class="prelude-ty">Option</span>&lt;Chat&gt;,
     waiting_for: WaitingFor,
     pending_client_requests: VecDeque&lt;ClientRequest&gt;,
     pending_server_messages: Vec&lt;ServerMessage&gt;,
@@ -398,7 +405,7 @@
     ///
     /// # Returns
     ///
-    /// Info about state which can be shown to the user in the returned state.
+    /// Info about state which can be shown to the user.
     </span><span class="kw">pub fn </span>apply_server_msg(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: ServerMessage) -&gt; StateUpdateResult {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.waiting_for {
             WaitingFor::AuthRequest =&gt; StateUpdateResult::from_nothing(), <span class="comment">// outdated server message
@@ -406,12 +413,14 @@
                 <span class="kw">match </span>msg.kind {
                     ServerMessageKind::RequestResponse(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; StateUpdateResult::from_nothing(), <span class="comment">// outdated response
                     </span>ServerMessageKind::ChatEvents(chat, events) =&gt; {
-                        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.chat {
+                        <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.chat {
                             <span class="prelude-val">Some</span>(current_chat) =&gt; {
-                                <span class="kw">if </span><span class="kw-2">*</span>current_chat == chat {
-                                    <span class="kw">let </span>events_info =
-                                        events.into_iter().map(|event| event.into()).collect();
-
+                                <span class="kw">if </span>current_chat.name() == chat {
+                                    <span class="kw">let </span>events_info = current_chat
+                                        .process_events(events)
+                                        .into_iter()
+                                        .map(|event| event.into())
+                                        .collect();
                                     StateUpdateResult::from_to_user_info_vec(events_info)
                                 } <span class="kw">else </span>{
                                     StateUpdateResult::from_nothing() <span class="comment">// outdated chat events
@@ -479,7 +488,7 @@
             },
             ClientRequestKind::Connect(connected_chat) =&gt; <span class="kw">match </span>request_result {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="self">self</span>.chat = <span class="prelude-val">Some</span>(connected_chat);
+                    <span class="self">self</span>.chat = <span class="prelude-val">Some</span>(Chat::new(connected_chat));
                     StateUpdateResult::from_to_user_info_vec(
                         <span class="self">self</span>.drain_and_filter_pending_server_messages(),
                     )
@@ -514,7 +523,7 @@
     }
 
     <span class="kw">fn </span>drain_and_filter_pending_server_messages(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Vec&lt;Info&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(chat) = <span class="kw-2">&amp;</span><span class="self">self</span>.chat {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(current_chat) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.chat {
             <span class="kw">let </span><span class="kw-2">mut </span>result = Vec::new();
 
             <span class="kw">let </span>drain = <span class="self">self</span>.pending_server_messages.drain(..);
@@ -522,9 +531,12 @@
             <span class="kw">for </span>message <span class="kw">in </span>drain {
                 <span class="kw">match </span>message.kind {
                     ServerMessageKind::ChatEvents(destination_chat, events) =&gt; {
-                        <span class="kw">if </span><span class="kw-2">*</span>chat == destination_chat {
-                            <span class="kw">let </span><span class="kw-2">mut </span>events_info =
-                                events.into_iter().map(|event| event.into()).collect();
+                        <span class="kw">if </span>current_chat.name() == destination_chat {
+                            <span class="kw">let </span><span class="kw-2">mut </span>events_info = current_chat
+                                .process_events(events)
+                                .into_iter()
+                                .map(|event| event.into())
+                                .collect();
 
                             result.append(<span class="kw-2">&amp;mut </span>events_info);
                         }

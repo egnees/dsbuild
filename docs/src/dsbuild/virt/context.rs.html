@@ -288,7 +288,7 @@
         <span class="kw">let </span>process_name = <span class="self">self</span>.node_manager.borrow().get_full_process_name(<span class="kw-2">&amp;</span>dst);
 
         <span class="kw">let </span>closure = {
-            <span class="kw">let </span><span class="kw-2">mut </span>ctx = <span class="self">self</span>.dslab_ctx.clone();
+            <span class="kw">let </span>ctx = <span class="self">self</span>.dslab_ctx.clone();
             <span class="kw">async move </span>{
                 <span class="kw">if let </span><span class="prelude-val">Ok</span>(process_name) = process_name {
                     ctx.send_reliable_timeout(msg.into(), process_name, timeout)
