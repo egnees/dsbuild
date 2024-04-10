@@ -2,7 +2,10 @@
 
 use std::collections::VecDeque;
 
-use crate::server::messages::{ServerMessage, ServerMessageKind};
+use crate::server::{
+    chat_event::ChatEvent,
+    messages::{ServerMessage, ServerMessageKind},
+};
 
 use super::{
     io::Info,

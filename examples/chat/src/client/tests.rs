@@ -4,7 +4,7 @@ use crate::{
         requests::RequestBuilder,
         state::{State, StateUpdateResult},
     },
-    server::messages::{ChatEvent, ServerMessageBuilder},
+    server::{chat_event::ChatEvent, messages::ServerMessageBuilder},
 };
 
 use super::{parser, requests::ClientRequestKind};

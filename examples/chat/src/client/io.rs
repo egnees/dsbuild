@@ -5,7 +5,7 @@ use std::time::SystemTime;
 use dsbuild::{IOProcessWrapper, Message};
 use serde::{Deserialize, Serialize};
 
-use crate::server::messages::ChatEvent;
+use crate::server::chat_event::ChatEvent;
 
 use colored::Colorize;
 

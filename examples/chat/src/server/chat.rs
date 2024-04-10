@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::messages::{ChatEvent, ChatEventKind};
+use super::chat_event::{ChatEvent, ChatEventKind};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Chat {
