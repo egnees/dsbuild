@@ -34,7 +34,7 @@ fn main() {
         process_name: client_name.clone(),
     };
 
-    let mut system = RealSystem::new(1024, client_ip, client_port);
+    let mut system = RealSystem::new(1024, client_ip, client_port, "storage_path".into());
 
     let io = system.add_process(
         Client::new(
