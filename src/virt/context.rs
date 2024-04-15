@@ -134,7 +134,7 @@ impl VirtualContext {
 
     /// Delete file with specified name.
     pub fn delete_file(&self, name: &'static str) -> Sf<Result<(), DeleteFileError>> {
-        let ctx = self.dslab_ctx.clone();
+        let mut ctx = self.dslab_ctx.clone();
         SendFuture::from_future(async move { ctx.delete_file(name).await })
     }
 
@@ -153,7 +153,7 @@ impl VirtualContext {
             );
         }
 
-        let ctx = self.dslab_ctx.clone();
+        let mut ctx = self.dslab_ctx.clone();
         SendFuture::from_future(async move { ctx.read(file, offset, buf).await })
     }
 
