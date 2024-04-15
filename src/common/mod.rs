@@ -3,6 +3,7 @@
 
 pub mod context;
 pub mod process;
+pub mod storage;
 
 pub mod message;
 
