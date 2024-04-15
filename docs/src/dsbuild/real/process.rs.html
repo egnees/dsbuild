@@ -159,6 +159,11 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of process management objects.
 
 </span><span class="kw">use </span>std::sync::{Arc, Mutex, RwLock};
@@ -200,6 +205,8 @@
     </span>address: Address,
     <span class="doccomment">/// Process implementation, provided by user.
     </span>process: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Process&gt;&gt;,
+    <span class="doccomment">/// Storage mount path.
+    </span>storage_mount: String,
 }
 
 <span class="doccomment">/// Responsible for process communication with outside.
@@ -221,6 +228,7 @@
     <span class="kw">pub </span>system_receiver: Receiver&lt;FromSystemMessage&gt;,
     <span class="kw">pub </span>network_sender: Sender&lt;NetworkRequest&gt;,
     <span class="kw">pub </span>max_buffer_size: usize,
+    <span class="kw">pub </span>storage_mount: String,
 }
 
 <span class="kw">impl </span>ProcessManager {
@@ -245,6 +253,7 @@
             output,
             address: config.address,
             process: config.process,
+            storage_mount: config.storage_mount,
         }
     }
 
@@ -269,6 +278,7 @@
         <span class="kw">let </span>real = RealContext {
             output: <span class="self">self</span>.output.clone(),
             address: <span class="self">self</span>.address.clone(),
+            storage_mount: <span class="self">self</span>.storage_mount.clone(),
         };
         Context::new_real(real)
     }

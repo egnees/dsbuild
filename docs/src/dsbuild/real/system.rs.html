@@ -174,6 +174,9 @@
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of real system.
 
 </span><span class="kw">use </span>std::{
@@ -206,11 +209,12 @@
     max_buffer_size: usize,
     host: String,
     port: u16,
+    storage_mount: String,
 }
 
 <span class="kw">impl </span>System {
     <span class="doccomment">/// Create new system with specified size of buffers, host and port.
-    </span><span class="kw">pub fn </span>new(max_buffer_size: usize, host: <span class="kw-2">&amp;</span>str, port: u16) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(max_buffer_size: usize, host: <span class="kw-2">&amp;</span>str, port: u16, storage_mount: String) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>(messages_sender, network_receiver) = mpsc::channel(max_buffer_size);
 
         <span class="kw">let </span>(network_sender, messages_receiver) = mpsc::channel(max_buffer_size);
@@ -230,6 +234,7 @@
             max_buffer_size,
             host: host.to_owned(),
             port,
+            storage_mount,
         };
 
         system.spawn(Box::pin(network_handler));
@@ -279,6 +284,7 @@
             system_receiver: from_proc_receiver,
             network_sender: <span class="self">self</span>.network_sender.clone(),
             max_buffer_size: <span class="self">self</span>.max_buffer_size,
+            storage_mount: <span class="self">self</span>.storage_mount.clone(),
         };
 
         <span class="kw">let </span>proc_manager = ProcessManager::new(process_manager_config);

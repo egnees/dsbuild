@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["SendFuture","VirtualContext"]};
+window.SIDEBAR_ITEMS = {"struct":["SendFuture","VirtualContext"],"type":["Sf"]};
