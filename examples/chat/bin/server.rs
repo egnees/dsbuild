@@ -15,7 +15,7 @@ fn main() {
     let listen_host = &args[1];
     let listen_port = args[2].parse::<u16>().expect("Can not parse listen port");
 
-    let mut system = RealSystem::new(1024, listen_host, listen_port);
+    let mut system = RealSystem::new(1024, listen_host, listen_port, "storage_path".into());
 
     system.add_process(Server::new("SERVER".into()), "chat_server".into());
 

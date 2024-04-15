@@ -39,6 +39,8 @@ pub(crate) struct ProcessManager {
     address: Address,
     /// Process implementation, provided by user.
     process: Arc<RwLock<dyn Process>>,
+    /// Storage mount path.
+    storage_mount: String,
 }
 
 /// Responsible for process communication with outside.
@@ -60,6 +62,7 @@ pub(crate) struct ProcessManagerConfig {
     pub system_receiver: Receiver<FromSystemMessage>,
     pub network_sender: Sender<NetworkRequest>,
     pub max_buffer_size: usize,
+    pub storage_mount: String,
 }
 
 impl ProcessManager {
@@ -84,6 +87,7 @@ impl ProcessManager {
             output,
             address: config.address,
             process: config.process,
+            storage_mount: config.storage_mount,
         }
     }
 
@@ -108,6 +112,7 @@ impl ProcessManager {
         let real = RealContext {
             output: self.output.clone(),
             address: self.address.clone(),
+            storage_mount: self.storage_mount.clone(),
         };
         Context::new_real(real)
     }

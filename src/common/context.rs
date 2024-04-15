@@ -2,10 +2,16 @@
 
 use std::future::Future;
 
+use dslab_async_mp::storage::MAX_BUFFER_SIZE;
+
 use crate::real::context::RealContext;
 use crate::virt::context::VirtualContext;
 
-use super::{message::Message, process::Address};
+use super::{
+    message::Message,
+    process::Address,
+    storage::{CreateFileError, DeleteFileError, ReadError, WriteError},
+};
 
 /// Represents enum of two context variants - real and virtual.
 #[derive(Clone)]
@@ -123,6 +129,59 @@ impl Context {
         match self.context_variant {
             ContextVariant::Real(ctx) => ctx.stop(),
             ContextVariant::Virtual(ctx) => ctx.stop(),
+        }
+    }
+
+    /// Create file.
+    pub async fn create_file(&self, name: &'static str) -> Result<(), CreateFileError> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.create_file(name).await,
+            ContextVariant::Virtual(ctx) => ctx.create_file(name).await,
+        }
+    }
+
+    /// Delete file.
+    pub async fn delete_file(&self, name: &'static str) -> Result<(), DeleteFileError> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.delete_file(name).await,
+            ContextVariant::Virtual(ctx) => ctx.delete_file(name).await,
+        }
+    }
+
+    /// Read file from specified offset into specified buffer.
+    ///
+    /// # Returns
+    ///
+    /// The number of bytes read.
+    ///
+    /// # Panics
+    ///    
+    /// In case buf size exceeds [`MAX_BUFFER_SIZE`].
+    pub async fn read(
+        &self,
+        file: &'static str,
+        offset: usize,
+        buf: &'static mut [u8],
+    ) -> Result<usize, ReadError> {
+        if buf.len() > MAX_BUFFER_SIZE {
+            panic!(
+                "buf size exceeds max buffer size: {} exceeds {}",
+                buf.len(),
+                MAX_BUFFER_SIZE
+            );
+        }
+
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.read(file, offset, buf).await,
+            ContextVariant::Virtual(ctx) => ctx.read(file, offset, buf).await,
+        }
+    }
+
+    /// Append data to file.
+    pub async fn append(&self, name: &'static str, data: &'static [u8]) -> Result<(), WriteError> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.append(name, data).await,
+            ContextVariant::Virtual(ctx) => ctx.append(name, data).await,
         }
     }
 }
