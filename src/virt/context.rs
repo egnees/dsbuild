@@ -5,7 +5,7 @@ use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 use crate::common::{
     message::Message,
     process::Address,
-    storage::{CreateFileError, DeleteFileError, ReadError, WriteError, MAX_BUFFER_SIZE},
+    storage::{CreateFileError, ReadError, WriteError, MAX_BUFFER_SIZE},
 };
 use dslab_async_mp::context::Context as DSLabContext;
 
@@ -130,12 +130,6 @@ impl VirtualContext {
     pub fn create_file(&self, name: &'static str) -> Sf<Result<(), CreateFileError>> {
         let ctx = self.dslab_ctx.clone();
         SendFuture::from_future(async move { ctx.create_file(name).await })
-    }
-
-    /// Delete file with specified name.
-    pub fn delete_file(&self, name: &'static str) -> Sf<Result<(), DeleteFileError>> {
-        let ctx = self.dslab_ctx.clone();
-        SendFuture::from_future(async move { ctx.delete_file(name).await })
     }
 
     /// Read file with specified name.
