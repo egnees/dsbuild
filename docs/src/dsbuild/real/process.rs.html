@@ -164,6 +164,8 @@
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of process management objects.
 
 </span><span class="kw">use </span>std::sync::{Arc, Mutex, RwLock};
@@ -176,7 +178,9 @@
     Address, Message, Process,
 };
 
-<span class="kw">use super</span>::{context::RealContext, network::NetworkRequest, timer::TimerManager};
+<span class="kw">use super</span>::{
+    context::RealContext, network::NetworkRequest, storage::FileManager, timer::TimerManager,
+};
 
 <span class="doccomment">/// All messages which can be received from system.
 </span><span class="kw">pub enum </span>FromSystemMessage {
@@ -206,7 +210,7 @@
     <span class="doccomment">/// Process implementation, provided by user.
     </span>process: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Process&gt;&gt;,
     <span class="doccomment">/// Storage mount path.
-    </span>storage_mount: String,
+    </span>file_manager: Arc&lt;Mutex&lt;FileManager&gt;&gt;,
 }
 
 <span class="doccomment">/// Responsible for process communication with outside.
@@ -228,7 +232,7 @@
     <span class="kw">pub </span>system_receiver: Receiver&lt;FromSystemMessage&gt;,
     <span class="kw">pub </span>network_sender: Sender&lt;NetworkRequest&gt;,
     <span class="kw">pub </span>max_buffer_size: usize,
-    <span class="kw">pub </span>storage_mount: String,
+    <span class="kw">pub </span>file_manager: Arc&lt;Mutex&lt;FileManager&gt;&gt;,
 }
 
 <span class="kw">impl </span>ProcessManager {
@@ -253,7 +257,7 @@
             output,
             address: config.address,
             process: config.process,
-            storage_mount: config.storage_mount,
+            file_manager: config.file_manager,
         }
     }
 
@@ -278,7 +282,7 @@
         <span class="kw">let </span>real = RealContext {
             output: <span class="self">self</span>.output.clone(),
             address: <span class="self">self</span>.address.clone(),
-            storage_mount: <span class="self">self</span>.storage_mount.clone(),
+            file_manager: <span class="self">self</span>.file_manager.clone(),
         };
         Context::new_real(real)
     }

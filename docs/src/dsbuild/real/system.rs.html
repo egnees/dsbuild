@@ -177,13 +177,14 @@
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of real system.
 
 </span><span class="kw">use </span>std::{
     collections::HashMap,
     future::Future,
     pin::Pin,
-    sync::{atomic::AtomicU32, Arc, RwLock},
+    sync::{atomic::AtomicU32, Arc, Mutex, RwLock},
 };
 
 <span class="kw">use </span>tokio::sync::mpsc::{<span class="self">self</span>, Receiver, Sender};
@@ -196,6 +197,7 @@
 <span class="kw">use super</span>::{
     network::{<span class="self">self</span>, NetworkRequest},
     process::{FromSystemMessage, ProcessManager, ProcessManagerConfig, ToSystemMessage},
+    storage::FileManager,
 };
 
 <span class="doccomment">/// Represents real system.
@@ -209,7 +211,7 @@
     max_buffer_size: usize,
     host: String,
     port: u16,
-    storage_mount: String,
+    file_manager: Arc&lt;Mutex&lt;FileManager&gt;&gt;,
 }
 
 <span class="kw">impl </span>System {
@@ -234,7 +236,7 @@
             max_buffer_size,
             host: host.to_owned(),
             port,
-            storage_mount,
+            file_manager: Arc::new(Mutex::new(FileManager::new(storage_mount))),
         };
 
         system.spawn(Box::pin(network_handler));
@@ -284,7 +286,7 @@
             system_receiver: from_proc_receiver,
             network_sender: <span class="self">self</span>.network_sender.clone(),
             max_buffer_size: <span class="self">self</span>.max_buffer_size,
-            storage_mount: <span class="self">self</span>.storage_mount.clone(),
+            file_manager: <span class="self">self</span>.file_manager.clone(),
         };
 
         <span class="kw">let </span>proc_manager = ProcessManager::new(process_manager_config);

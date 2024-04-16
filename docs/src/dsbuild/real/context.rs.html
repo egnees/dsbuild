@@ -218,17 +218,50 @@
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of context-related objects.
 
-</span><span class="kw">use </span>std::{future::Future, io::SeekFrom};
+</span><span class="kw">use </span>std::{
+    future::Future,
+    io::SeekFrom,
+    sync::{Arc, Mutex},
+};
 
 <span class="kw">use </span>async_std::io::{prelude::SeekExt, ReadExt, WriteExt};
-<span class="kw">use </span>log::warn;
 
 <span class="kw">use crate</span>::{
     common::{
         message::RoutedMessage,
-        storage::{CreateFileError, DeleteFileError, ReadError, WriteError, MAX_BUFFER_SIZE},
+        storage::{CreateFileError, ReadError, WriteError, MAX_BUFFER_SIZE},
     },
     Address, Message,
 };
@@ -238,6 +271,7 @@
 <span class="kw">use super</span>::{
     network::{<span class="self">self</span>, NetworkRequest},
     process::{Output, ToSystemMessage},
+    storage::FileManager,
 };
 
 <span class="doccomment">/// Represents context of system in the real mode.
@@ -245,7 +279,7 @@
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>RealContext {
     <span class="kw">pub</span>(<span class="kw">crate</span>) output: Output,
     <span class="kw">pub</span>(<span class="kw">crate</span>) address: Address,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) storage_mount: String,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) file_manager: Arc&lt;Mutex&lt;FileManager&gt;&gt;,
 }
 
 <span class="kw">impl </span>RealContext {
@@ -254,7 +288,7 @@
         <span class="kw">let </span>sender = <span class="self">self</span>.output.local.clone();
         <span class="kw">let </span>result = sender.try_send(message);
         <span class="kw">if let </span><span class="prelude-val">Err</span>(info) = result {
-            <span class="macro">warn!</span>(<span class="string">"can not send local message: {}"</span>, info);
+            <span class="macro">log::warn!</span>(<span class="string">"can not send local message: {}"</span>, info);
         }
     }
 
@@ -295,7 +329,7 @@
             <span class="kw">let </span>result = sender.send(NetworkRequest::SendMessage(msg)).<span class="kw">await</span>;
 
             <span class="kw">if let </span><span class="prelude-val">Err</span>(info) = result {
-                <span class="macro">warn!</span>(<span class="string">"Can not send network message: {}"</span>, info);
+                <span class="macro">log::warn!</span>(<span class="string">"Can not send network message: {}"</span>, info);
             }
         });
     }
@@ -383,7 +417,19 @@
             );
         }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>file = async_std::fs::File::open(<span class="self">self</span>.storage_mount.clone() + <span class="string">"/" </span>+ file)
+        <span class="kw">let </span>file_lock = <span class="self">self
+            </span>.file_manager
+            .lock()
+            .unwrap()
+            .get_file_lock(file)
+            .ok_or(ReadError::FileNotFound)<span class="question-mark">?</span>;
+
+        <span class="comment">// Exclusive lock on the file will be dropped when file will be read.
+        </span><span class="kw">let </span>_file_guard = file_lock.lock().<span class="kw">await</span>;
+
+        <span class="kw">let </span>mount_dir = <span class="self">self</span>.file_manager.lock().unwrap().get_mount_dir().to_owned();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>file = async_std::fs::File::open(mount_dir + <span class="string">"/" </span>+ file)
             .<span class="kw">await
             </span>.map_err(|e| <span class="kw">match </span>e.kind() {
                 ErrorKind::NotFound =&gt; ReadError::FileNotFound,
@@ -399,7 +445,19 @@
 
     <span class="doccomment">/// Append data to file.
     </span><span class="kw">pub async fn </span>append(<span class="kw-2">&amp;</span><span class="self">self</span>, file: <span class="kw-2">&amp;</span>str, data: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;(), WriteError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>file = async_std::fs::File::open(<span class="self">self</span>.storage_mount.clone() + <span class="string">"/" </span>+ file)
+        <span class="kw">let </span>file_lock = <span class="self">self
+            </span>.file_manager
+            .lock()
+            .unwrap()
+            .get_file_lock(file)
+            .ok_or(WriteError::FileNotFound)<span class="question-mark">?</span>;
+
+        <span class="comment">// Exclusive lock on the file will be dropped when work with file will be done.
+        </span><span class="kw">let </span>_file_guard = file_lock.lock().<span class="kw">await</span>;
+
+        <span class="kw">let </span>mount_dir = <span class="self">self</span>.file_manager.lock().unwrap().get_mount_dir().to_owned();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>file = async_std::fs::File::open(mount_dir + <span class="string">"/" </span>+ file)
             .<span class="kw">await
             </span>.map_err(|e| <span class="kw">match </span>e.kind() {
                 ErrorKind::NotFound =&gt; WriteError::FileNotFound,
@@ -417,23 +475,25 @@
 
     <span class="doccomment">/// Create file with specified name.
     </span><span class="kw">pub async fn </span>create_file(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(), CreateFileError&gt; {
-        async_std::fs::File::create(<span class="self">self</span>.storage_mount.to_owned() + <span class="string">"/" </span>+ name)
+        <span class="kw">let </span>lock = <span class="self">self
+            </span>.file_manager
+            .lock()
+            .unwrap()
+            .register_file(name.to_owned())
+            .ok_or(CreateFileError::FileAlreadyExists)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>_guard = lock.lock().<span class="kw">await</span>;
+
+        <span class="kw">let </span>mount_dir = <span class="self">self</span>.file_manager.lock().unwrap().get_mount_dir().to_owned();
+
+        <span class="comment">// In case creation fails, then disk is unavailable and future working is UB.
+        </span>async_std::fs::File::create(mount_dir + <span class="string">"/" </span>+ name)
             .<span class="kw">await
             </span>.map_err(|e| <span class="kw">match </span>e.kind() {
                 ErrorKind::AlreadyExists =&gt; CreateFileError::FileAlreadyExists,
                 <span class="kw">_ </span>=&gt; CreateFileError::Unavailable,
             })
             .map(|<span class="kw">_</span>| ())
-    }
-
-    <span class="doccomment">/// Delete file with specified name.
-    </span><span class="kw">pub async fn </span>delete_file(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(), DeleteFileError&gt; {
-        async_std::fs::remove_file(<span class="self">self</span>.storage_mount.to_owned() + <span class="string">"/" </span>+ name)
-            .<span class="kw">await
-            </span>.map_err(|e| <span class="kw">match </span>e.kind() {
-                ErrorKind::NotFound =&gt; DeleteFileError::FileNotFound,
-                <span class="kw">_ </span>=&gt; DeleteFileError::Unavailable,
-            })
     }
 }
 </code></pre></div></section></main></body></html>

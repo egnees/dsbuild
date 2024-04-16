@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_BUFFER_SIZE"],"type":["CreateFileError","DeleteFileError","ReadError","WriteError"]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_BUFFER_SIZE"],"type":["CreateFileError","ReadError","WriteError"]};
