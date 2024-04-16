@@ -1,16 +1,15 @@
 //! Definitions for working with storage.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::Arc,
+};
 
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 
 /// Represents type for file lock.
 /// Can be used to get [`FileGuard`].
 pub type FileLock = Arc<Mutex<()>>;
-
-/// Represents type for guard on file.
-/// Owning it guarantees exclusive access to file.
-pub type FileGuard<'a> = MutexGuard<'a, ()>;
 
 /// Represents thread-unsafe file manager.
 pub struct FileManager {
@@ -35,18 +34,18 @@ impl FileManager {
     /// Register file with specified name.
     /// Returns [`Some`] if file was not present.
     pub fn register_file(&mut self, name: String) -> Option<FileLock> {
-        if self.locks.contains_key(&name) {
-            None
-        } else {
+        if let Entry::Vacant(e) = self.locks.entry(name) {
             let lock = Arc::new(Mutex::new(()));
-            self.locks.insert(name, lock.clone());
+            e.insert(lock.clone());
             Some(lock)
+        } else {
+            None
         }
     }
 
     /// Returns guard on file, which guarantees file will be locked until guard wont be dropped.
     /// In such file no presents, returns error.
     pub fn get_file_lock(&mut self, name: &str) -> Option<FileLock> {
-        self.locks.get(name).map(|lock| lock.clone())
+        self.locks.get(name).cloned()
     }
 }

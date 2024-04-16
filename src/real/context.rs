@@ -177,14 +177,14 @@ impl RealContext {
         // Exclusive lock on the file will be dropped when file will be read.
         let _file_guard = file_lock.lock().await;
 
-        let mut file = async_std::fs::File::open(
-            self.file_manager.lock().unwrap().get_mount_dir().to_owned() + "/" + file,
-        )
-        .await
-        .map_err(|e| match e.kind() {
-            ErrorKind::NotFound => ReadError::FileNotFound,
-            _ => ReadError::Unavailable,
-        })?;
+        let mount_dir = self.file_manager.lock().unwrap().get_mount_dir().to_owned();
+
+        let mut file = async_std::fs::File::open(mount_dir + "/" + file)
+            .await
+            .map_err(|e| match e.kind() {
+                ErrorKind::NotFound => ReadError::FileNotFound,
+                _ => ReadError::Unavailable,
+            })?;
 
         file.seek(SeekFrom::Start(offset.try_into().unwrap()))
             .await
@@ -205,14 +205,14 @@ impl RealContext {
         // Exclusive lock on the file will be dropped when work with file will be done.
         let _file_guard = file_lock.lock().await;
 
-        let mut file = async_std::fs::File::open(
-            self.file_manager.lock().unwrap().get_mount_dir().to_owned() + "/" + file,
-        )
-        .await
-        .map_err(|e| match e.kind() {
-            ErrorKind::NotFound => WriteError::FileNotFound,
-            _ => WriteError::Unavailable,
-        })?;
+        let mount_dir = self.file_manager.lock().unwrap().get_mount_dir().to_owned();
+
+        let mut file = async_std::fs::File::open(mount_dir + "/" + file)
+            .await
+            .map_err(|e| match e.kind() {
+                ErrorKind::NotFound => WriteError::FileNotFound,
+                _ => WriteError::Unavailable,
+            })?;
 
         file.seek(SeekFrom::End(0))
             .await
@@ -234,15 +234,15 @@ impl RealContext {
 
         let _guard = lock.lock().await;
 
+        let mount_dir = self.file_manager.lock().unwrap().get_mount_dir().to_owned();
+
         // In case creation fails, then disk is unavailable and future working is UB.
-        async_std::fs::File::create(
-            self.file_manager.lock().unwrap().get_mount_dir().to_owned() + "/" + name,
-        )
-        .await
-        .map_err(|e| match e.kind() {
-            ErrorKind::AlreadyExists => CreateFileError::FileAlreadyExists,
-            _ => CreateFileError::Unavailable,
-        })
-        .map(|_| ())
+        async_std::fs::File::create(mount_dir + "/" + name)
+            .await
+            .map_err(|e| match e.kind() {
+                ErrorKind::AlreadyExists => CreateFileError::FileAlreadyExists,
+                _ => CreateFileError::Unavailable,
+            })
+            .map(|_| ())
     }
 }
