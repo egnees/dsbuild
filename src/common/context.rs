@@ -10,7 +10,7 @@ use crate::virt::context::VirtualContext;
 use super::{
     message::Message,
     process::Address,
-    storage::{CreateFileError, DeleteFileError, ReadError, WriteError},
+    storage::{CreateFileError, ReadError, WriteError},
 };
 
 /// Represents enum of two context variants - real and virtual.
@@ -137,14 +137,6 @@ impl Context {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.create_file(name).await,
             ContextVariant::Virtual(ctx) => ctx.create_file(name).await,
-        }
-    }
-
-    /// Delete file.
-    pub async fn delete_file(&self, name: &'static str) -> Result<(), DeleteFileError> {
-        match &self.context_variant {
-            ContextVariant::Real(ctx) => ctx.delete_file(name).await,
-            ContextVariant::Virtual(ctx) => ctx.delete_file(name).await,
         }
     }
 

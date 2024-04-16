@@ -10,7 +10,9 @@ use crate::{
     Address, Message, Process,
 };
 
-use super::{context::RealContext, network::NetworkRequest, timer::TimerManager};
+use super::{
+    context::RealContext, network::NetworkRequest, storage::FileManager, timer::TimerManager,
+};
 
 /// All messages which can be received from system.
 pub enum FromSystemMessage {
@@ -40,7 +42,7 @@ pub(crate) struct ProcessManager {
     /// Process implementation, provided by user.
     process: Arc<RwLock<dyn Process>>,
     /// Storage mount path.
-    storage_mount: String,
+    file_manager: Arc<Mutex<FileManager>>,
 }
 
 /// Responsible for process communication with outside.
@@ -62,7 +64,7 @@ pub(crate) struct ProcessManagerConfig {
     pub system_receiver: Receiver<FromSystemMessage>,
     pub network_sender: Sender<NetworkRequest>,
     pub max_buffer_size: usize,
-    pub storage_mount: String,
+    pub file_manager: Arc<Mutex<FileManager>>,
 }
 
 impl ProcessManager {
@@ -87,7 +89,7 @@ impl ProcessManager {
             output,
             address: config.address,
             process: config.process,
-            storage_mount: config.storage_mount,
+            file_manager: config.file_manager,
         }
     }
 
@@ -112,7 +114,7 @@ impl ProcessManager {
         let real = RealContext {
             output: self.output.clone(),
             address: self.address.clone(),
-            storage_mount: self.storage_mount.clone(),
+            file_manager: self.file_manager.clone(),
         };
         Context::new_real(real)
     }
