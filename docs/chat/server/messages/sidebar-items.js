@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ServerMessageKind"],"struct":["ServerMessage","ServerMessageBuilder"],"type":["RequestResponse"]};
+window.SIDEBAR_ITEMS = {"enum":["ServerMessage"],"struct":["DirectedServerMessage"],"type":["RequestResponse"]};

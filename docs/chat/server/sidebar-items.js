@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["chat","chat_event","messages","server","state","user"]};
+window.SIDEBAR_ITEMS = {"mod":["event","messages","process","state","util"]};

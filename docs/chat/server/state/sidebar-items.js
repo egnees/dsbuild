@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RoutedMessage","State"]};
+window.SIDEBAR_ITEMS = {"struct":["ServerState"],"type":["ServerStateLock"]};
