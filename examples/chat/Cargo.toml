@@ -22,14 +22,10 @@ rand_seeder = "0.2.3"
 name = "chat"
 path = "src/lib.rs"
 
-# [[bin]]
-# name = "server"
-# path = "bin/server.rs"
+[[bin]]
+name = "server"
+path = "bin/server.rs"
 
-# [[bin]]
-# name = "client"
-# path = "bin/client.rs"
-
-# [[tests]]
-# name = "tests"
-# path = "tests/sim_tests.rs"
+[[bin]]
+name = "client"
+path = "bin/client.rs"

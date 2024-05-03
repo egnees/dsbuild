@@ -2,14 +2,10 @@ use chat::{start_io, Client};
 use dsbuild::{Address, RealSystem};
 
 fn main() {
-    env_logger::Builder::new()
-        .filter_level(log::LevelFilter::Info)
-        .init();
-
     let args = std::env::args().collect::<Vec<String>>();
-    if args.len() < 6 {
+    if args.len() < 7 {
         println!(
-            "Usage: {} <server_ip> <server_port> <client_ip> <client_port> <name>",
+            "Usage: {} <server_host> <server_port> <client_host> <client_port> <name>",
             args[0]
         );
         return;
@@ -25,7 +21,7 @@ fn main() {
     let server_address = Address {
         host: server_ip.to_owned(),
         port: server_port,
-        process_name: "chat_server".into(),
+        process_name: "server".to_string(),
     };
 
     let self_address = Address {
@@ -34,7 +30,7 @@ fn main() {
         process_name: client_name.clone(),
     };
 
-    let mut system = RealSystem::new(1024, client_ip, client_port, "storage_path".into());
+    let mut system = RealSystem::new(1024, client_ip, client_port, "/tmp".to_string());
 
     let io = system.add_process(
         Client::new(
