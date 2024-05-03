@@ -1,15 +1,23 @@
 //! Definition of virtual mode context.
 
-use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
+use std::{cell::RefCell, future::Future, rc::Rc};
 
-use crate::common::{
-    message::Message,
-    process::Address,
-    storage::{CreateFileError, ReadError, WriteError, MAX_BUFFER_SIZE},
+use crate::{
+    common::{
+        file::File,
+        message::Message,
+        network::{SendError, SendResult},
+        process::Address,
+    },
+    storage::StorageResult,
 };
-use dslab_async_mp::context::Context as DSLabContext;
+use dslab_async_mp::process::context::Context as DSLabContext;
 
-use super::node::NodeManager;
+use super::{
+    file::FileWrapper,
+    node::NodeManager,
+    send_future::{SendFuture, Sf},
+};
 
 /// Represents context in virtual mode.
 /// Responsible for user-simulation interaction.
@@ -49,35 +57,12 @@ impl VirtualContext {
     pub fn send(&self, msg: Message, dst: Address) {
         match self.node_manager.borrow().get_full_process_name(&dst) {
             Ok(full_process_name) => {
-                self.dslab_ctx.send(msg.into(), full_process_name);
+                self.dslab_ctx.send(msg.into(), &full_process_name);
             }
             Err(err) => {
                 log::warn!("Message not sent: {}", err);
             }
         }
-    }
-
-    /// Send network message reliable.
-    /// It is guaranteed that message will be delivered exactly once and without corruption.
-    ///
-    /// # Returns
-    ///
-    /// - Error if message was not delivered.
-    /// - Ok if message was delivered
-    pub fn send_reliable(&self, msg: Message, dst: Address) -> Sf<Result<(), String>> {
-        let process_name = match self.node_manager.borrow().get_full_process_name(&dst) {
-            Ok(full_process_name) => Some(full_process_name),
-            Err(_) => None,
-        };
-
-        let ctx = self.dslab_ctx.clone();
-        SendFuture::from_future(async move {
-            if let Some(process_name) = process_name {
-                ctx.send_reliable(msg.into(), process_name).await
-            } else {
-                Err(format!("Message not sent: bad dst address {:?}", dst))
-            }
-        })
     }
 
     /// Send network message reliable with specified timeout.
@@ -87,21 +72,15 @@ impl VirtualContext {
     ///
     /// - Error if message was not delivered with specified timeout.
     /// - Ok if message was delivered
-    pub fn send_reliable_timeout(
-        &self,
-        msg: Message,
-        dst: Address,
-        timeout: f64,
-    ) -> Sf<Result<(), String>> {
+    pub fn send_with_ack(&self, msg: Message, dst: Address, timeout: f64) -> Sf<SendResult<()>> {
         let process_name = self.node_manager.borrow().get_full_process_name(&dst);
 
         let ctx = self.dslab_ctx.clone();
         SendFuture::from_future(async move {
             if let Ok(process_name) = process_name {
-                ctx.send_reliable_timeout(msg.into(), process_name, timeout)
-                    .await
+                ctx.send_with_ack(msg.into(), &process_name, timeout).await
             } else {
-                Err(format!("Message not sent: bad dst address {:?}", dst))
+                Err(SendError::NotSent)
             }
         })
     }
@@ -111,50 +90,34 @@ impl VirtualContext {
         self.dslab_ctx.spawn(future)
     }
 
-    /// Async sleep for some time (sec.).
-    ///
-    /// Explicitly returns [`Send`] future,
-    /// besides future will not be shared between threads by design.
-    /// See [`SendFuture`] for more details.
-    pub fn sleep(&self, duration: f64) -> Sf<()> {
-        let ctx = self.dslab_ctx.clone();
-        SendFuture::from_future(async move { ctx.sleep(duration).await })
-    }
-
     /// Stop the process.
     pub fn stop(self) {
         // Does not need to do anything here.
     }
 
     /// Create file with specified name.
-    pub fn create_file(&self, name: &'static str) -> Sf<Result<(), CreateFileError>> {
-        let ctx = self.dslab_ctx.clone();
-        SendFuture::from_future(async move { ctx.create_file(name).await })
+    pub fn create_file<'a>(&'a self, name: &'a str) -> Sf<'a, StorageResult<File>> {
+        let future = async move {
+            self.dslab_ctx
+                .create_file(name)
+                .map(|file| File::SimulationFile(FileWrapper { file }))
+        };
+
+        SendFuture::from_future(future)
     }
 
-    /// Read file with specified name.
-    pub fn read(
-        &self,
-        file: &'static str,
-        offset: usize,
-        buf: &'static mut [u8],
-    ) -> Sf<Result<usize, ReadError>> {
-        if buf.len() > MAX_BUFFER_SIZE {
-            panic!(
-                "size of buffer exceeds max size: {} exceeds {}",
-                buf.len(),
-                MAX_BUFFER_SIZE
-            );
-        }
-
-        let ctx = self.dslab_ctx.clone();
-        SendFuture::from_future(async move { ctx.read(file, offset, buf).await })
+    /// Check if file exists.
+    pub fn file_exists<'a>(&'a self, name: &'a str) -> Sf<'a, StorageResult<bool>> {
+        SendFuture::from_future(async move { self.dslab_ctx.file_exists(name) })
     }
 
-    /// Append data to file with specified name.
-    pub fn append(&self, name: &'static str, data: &'static [u8]) -> Sf<Result<(), WriteError>> {
-        let ctx = self.dslab_ctx.clone();
-        SendFuture::from_future(async move { ctx.append(name, data).await })
+    /// Open file.
+    pub fn open_file<'a>(&'a self, name: &'a str) -> Sf<'a, StorageResult<File>> {
+        SendFuture::from_future(async move {
+            self.dslab_ctx
+                .open_file(name)
+                .map(|file| File::SimulationFile(FileWrapper { file }))
+        })
     }
 }
 
@@ -165,52 +128,3 @@ impl VirtualContext {
 /// but Rust can not know it in compile time.
 unsafe impl Send for VirtualContext {}
 unsafe impl Sync for VirtualContext {}
-
-/// Represents future which formally satisfies [`Send`] requirement.
-/// [`SendFuture`] can not and will not be shared between threads,
-/// but Rust rules require it to be [`Send`].
-///
-/// As [`VirtualContext`] methods use not [`Send`] + [`Sync`] elements,
-/// futures which will use this methods will not satisfy [`Send`] trait,
-/// because of that user can not spawn such futures,
-/// although they will not be shared between threads.
-/// To make it possible, [`SendFuture`] exists.
-/// It formally implements [`Send`] trait.
-struct SendFuture<T>
-where
-    T: Send,
-{
-    future: Pin<Box<dyn Future<Output = T>>>,
-}
-
-impl<T> SendFuture<T>
-where
-    T: Send,
-{
-    fn from_future(future: impl Future<Output = T> + 'static) -> Pin<Box<Self>> {
-        Box::pin(SendFuture {
-            future: Box::pin(future),
-        })
-    }
-}
-
-impl<T> Future for SendFuture<T>
-where
-    T: Send,
-{
-    type Output = T;
-
-    fn poll(
-        mut self: Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Self::Output> {
-        self.future.as_mut().poll(cx)
-    }
-}
-
-/// Formally implementation of [`Send`] trait,
-/// besides [`SendFuture`] will not be shared between threads.
-unsafe impl<T> Send for SendFuture<T> where T: Send {}
-
-/// Represents alias on [`Send`] future.
-pub type Sf<T> = Pin<Box<dyn Future<Output = T> + Send>>;

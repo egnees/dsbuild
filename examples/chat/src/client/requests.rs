@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 /// Represents request from client to server.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct ClientRequest {
-    pub id: usize,
+    pub id: u64,
     pub client: String,
     pub password: String,
     pub time: SystemTime,
@@ -36,7 +36,6 @@ impl fmt::Display for ClientRequest {
 /// Represents types of the client request.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum ClientRequestKind {
-    Auth,                // Register client with specified name.
     SendMessage(String), // Send message with specified content in the currently connected chat.
     Create(String),      // Create chat with specified name.
     Connect(String),     // Connect to chat with specified name.
@@ -46,7 +45,6 @@ pub enum ClientRequestKind {
 impl fmt::Display for ClientRequestKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ClientRequestKind::Auth => write!(f, "{}", "auth request".italic()),
             ClientRequestKind::SendMessage(msg) => write!(f, "{}", msg.italic()),
             ClientRequestKind::Create(chat) => {
                 write!(
@@ -86,7 +84,7 @@ impl From<ClientRequestKind> for Message {
 /// Allows to build requests comfortable.
 #[derive(Debug, Clone)]
 pub struct RequestBuilder {
-    id: usize,
+    id: u64,
     client: String,
     password: String,
 }
@@ -98,10 +96,6 @@ impl RequestBuilder {
             client,
             password,
         }
-    }
-
-    pub fn auth_request(&mut self) -> ClientRequest {
-        self.build_with_kind(ClientRequestKind::Auth)
     }
 
     pub fn send_message_request(&mut self, message: String) -> ClientRequest {
@@ -120,7 +114,7 @@ impl RequestBuilder {
         self.build_with_kind(ClientRequestKind::Disconnect)
     }
 
-    fn next_id(&mut self) -> usize {
+    fn next_id(&mut self) -> u64 {
         self.id += 1;
         self.id
     }

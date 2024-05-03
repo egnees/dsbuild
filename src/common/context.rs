@@ -2,16 +2,13 @@
 
 use std::future::Future;
 
-use dslab_async_mp::storage::MAX_BUFFER_SIZE;
+use dslab_async_mp::network::result::SendResult;
 
-use crate::real::context::RealContext;
 use crate::virt::context::VirtualContext;
+use crate::{real::context::RealContext, storage::StorageResult};
 
-use super::{
-    message::Message,
-    process::Address,
-    storage::{CreateFileError, ReadError, WriteError},
-};
+use super::file::File;
+use super::{message::Message, process::Address};
 
 /// Represents enum of two context variants - real and virtual.
 #[derive(Clone)]
@@ -83,25 +80,12 @@ impl Context {
     }
 
     /// Send reliable message to specified address.
-    pub async fn send_reliable(&self, msg: Message, dst: Address) -> Result<(), String> {
-        match &self.context_variant {
-            ContextVariant::Real(ctx) => ctx.send_reliable(msg, dst).await,
-            ContextVariant::Virtual(ctx) => ctx.send_reliable(msg, dst).await,
-        }
-    }
-
-    /// Send reliable message to specified address.
     /// If message will not be delivered in specified timeout,
     /// error will be returned.
-    pub async fn send_reliable_timeout(
-        &self,
-        msg: Message,
-        dst: Address,
-        timeout: f64,
-    ) -> Result<(), String> {
+    pub async fn send_with_ack(&self, msg: Message, dst: Address, timeout: f64) -> SendResult<()> {
         match &self.context_variant {
-            ContextVariant::Real(ctx) => ctx.send_reliable_timeout(msg, dst, timeout).await,
-            ContextVariant::Virtual(ctx) => ctx.send_reliable_timeout(msg, dst, timeout).await,
+            ContextVariant::Real(ctx) => ctx.send_with_ack(msg, dst, timeout).await,
+            ContextVariant::Virtual(ctx) => ctx.send_with_ack(msg, dst, timeout).await,
         }
     }
 
@@ -116,14 +100,6 @@ impl Context {
         }
     }
 
-    /// Async sleep for some time (sec.).
-    pub async fn sleep(&self, duration: f64) {
-        match &self.context_variant {
-            ContextVariant::Real(ctx) => ctx.sleep(duration).await,
-            ContextVariant::Virtual(ctx) => ctx.sleep(duration).await,
-        }
-    }
-
     /// Stop the process.
     pub fn stop(self) {
         match self.context_variant {
@@ -133,47 +109,26 @@ impl Context {
     }
 
     /// Create file.
-    pub async fn create_file(&self, name: &'static str) -> Result<(), CreateFileError> {
+    pub async fn create_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.create_file(name).await,
             ContextVariant::Virtual(ctx) => ctx.create_file(name).await,
         }
     }
 
-    /// Read file from specified offset into specified buffer.
-    ///
-    /// # Returns
-    ///
-    /// The number of bytes read.
-    ///
-    /// # Panics
-    ///    
-    /// In case buf size exceeds [`MAX_BUFFER_SIZE`].
-    pub async fn read(
-        &self,
-        file: &'static str,
-        offset: usize,
-        buf: &'static mut [u8],
-    ) -> Result<usize, ReadError> {
-        if buf.len() > MAX_BUFFER_SIZE {
-            panic!(
-                "buf size exceeds max buffer size: {} exceeds {}",
-                buf.len(),
-                MAX_BUFFER_SIZE
-            );
-        }
-
+    /// Check if file exists.
+    pub async fn file_exists<'a>(&'a self, name: &'a str) -> StorageResult<bool> {
         match &self.context_variant {
-            ContextVariant::Real(ctx) => ctx.read(file, offset, buf).await,
-            ContextVariant::Virtual(ctx) => ctx.read(file, offset, buf).await,
+            ContextVariant::Real(ctx) => ctx.file_exists(name).await,
+            ContextVariant::Virtual(ctx) => ctx.file_exists(name).await,
         }
     }
 
-    /// Append data to file.
-    pub async fn append(&self, name: &'static str, data: &'static [u8]) -> Result<(), WriteError> {
+    /// Open file with specified name.
+    pub async fn open_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
         match &self.context_variant {
-            ContextVariant::Real(ctx) => ctx.append(name, data).await,
-            ContextVariant::Virtual(ctx) => ctx.append(name, data).await,
+            ContextVariant::Real(ctx) => ctx.open_file(name).await,
+            ContextVariant::Virtual(ctx) => ctx.open_file(name).await,
         }
     }
 }

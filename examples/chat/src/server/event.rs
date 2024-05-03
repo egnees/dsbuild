@@ -21,10 +21,10 @@ pub enum ChatEventKind {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChatEvent {
     pub chat: String,
-    pub client: String,
+    pub user: String,
     pub time: SystemTime,
     pub kind: ChatEventKind,
-    pub seq: usize,
+    pub seq: u64,
 }
 
 /// It makes sense to compare two chat events only in context of common chat.
@@ -47,50 +47,50 @@ impl PartialOrd for ChatEvent {
 }
 
 impl ChatEvent {
-    pub fn message_sent(chat: String, client: String, msg: String, seq: usize) -> Self {
+    pub fn message_sent(chat: String, client: String, msg: String, seq: u64) -> Self {
         Self {
             chat,
-            client,
+            user: client,
             time: SystemTime::now(),
             kind: ChatEventKind::SentMessage(msg),
             seq,
         }
     }
 
-    pub fn client_connected(chat: String, client: String, seq: usize) -> Self {
+    pub fn client_connected(chat: String, client: String, seq: u64) -> Self {
         Self {
             chat,
-            client,
+            user: client,
             time: SystemTime::now(),
             kind: ChatEventKind::Connected(),
             seq,
         }
     }
 
-    pub fn client_disconnected(chat: String, client: String, seq: usize) -> Self {
+    pub fn client_disconnected(chat: String, client: String, seq: u64) -> Self {
         Self {
             chat,
-            client,
+            user: client,
             time: SystemTime::now(),
             kind: ChatEventKind::Disconnected(),
             seq,
         }
     }
 
-    pub fn chat_created(client: String, chat: String, seq: usize) -> Self {
+    pub fn chat_created(client: String, chat: String, seq: u64) -> Self {
         Self {
             chat,
-            client,
+            user: client,
             time: SystemTime::now(),
             kind: ChatEventKind::Created(),
             seq,
         }
     }
 
-    pub fn new_with_kind(chat: String, client: String, kind: ChatEventKind, seq: usize) -> Self {
+    pub fn new_with_kind(chat: String, client: String, kind: ChatEventKind, seq: u64) -> Self {
         Self {
             chat,
-            client,
+            user: client,
             time: SystemTime::now(),
             kind,
             seq,
@@ -107,7 +107,7 @@ impl fmt::Display for ChatEvent {
                 f,
                 "[{}]\t{} {} {}: {}",
                 dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.client.bold().green(),
+                self.user.bold().green(),
                 "->".green(),
                 self.chat.bold().green(),
                 msg.italic()
@@ -117,7 +117,7 @@ impl fmt::Display for ChatEvent {
                     f,
                     "[{}]\t{} {} {}",
                     dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                    self.client.bold().green(),
+                    self.user.bold().green(),
                     "connected to".green(),
                     self.chat.bold().green()
                 )
@@ -126,7 +126,7 @@ impl fmt::Display for ChatEvent {
                 f,
                 "[{}]\t{} {} {}",
                 dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.client.bold().green(),
+                self.user.bold().green(),
                 "disconnected from".green(),
                 self.chat.bold().green()
             ),
@@ -134,7 +134,7 @@ impl fmt::Display for ChatEvent {
                 f,
                 "[{}]\t{} {} {}",
                 dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.client.bold().green(),
+                self.user.bold().green(),
                 "created".green(),
                 self.chat.bold().green()
             ),

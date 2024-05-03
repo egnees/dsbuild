@@ -1,8 +1,6 @@
-use std::time::SystemTime;
-
 use dsbuild::{Address, Context, Message, Process};
 
-use crate::server::messages::{ServerMessage, ServerMessageKind};
+use crate::server::messages::ServerMessage;
 
 use super::{
     requests::{ClientRequestKind, RequestBuilder},
@@ -43,15 +41,15 @@ impl Client {
 
             ctx.clone().spawn(async move {
                 let request_id = to_server.id;
-                let server_name = server.process_name.clone();
 
-                let send_result = ctx.send_reliable(to_server.into(), server.clone()).await;
+                let send_result = ctx
+                    .send_with_ack(to_server.into(), server.clone(), 5.0)
+                    .await;
 
-                if let Err(info) = send_result {
+                if let Err(err) = send_result {
                     let msg = Self::emit_server_response_error(
                         request_id,
-                        server_name,
-                        format!("can not send request on server: {}", info),
+                        format!("can not send request on server: {:?}", err),
                     );
 
                     ctx.send(msg.into(), self_address);
@@ -60,16 +58,8 @@ impl Client {
         }
     }
 
-    fn emit_server_response_error(
-        request_id: usize,
-        server: String,
-        error: String,
-    ) -> ServerMessage {
-        ServerMessage {
-            server,
-            time: SystemTime::now(),
-            kind: ServerMessageKind::RequestResponse(request_id, Err(error)),
-        }
+    fn emit_server_response_error(request_id: u64, error: String) -> ServerMessage {
+        ServerMessage::RequestResponse(request_id, Err(error))
     }
 }
 

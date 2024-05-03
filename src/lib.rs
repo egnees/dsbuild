@@ -19,6 +19,7 @@ mod virt;
 pub use virt::system::System as VirtualSystem;
 
 mod common;
+pub use common::storage;
 
 // Re-export public entities.
 pub use common::{

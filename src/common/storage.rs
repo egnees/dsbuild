@@ -1,5 +1,7 @@
-pub type WriteError = dslab_async_mp::storage::WriteError;
-pub type ReadError = dslab_async_mp::storage::ReadError;
-pub type CreateFileError = dslab_async_mp::storage::CreateFileError;
+//! Definition of storage errors.
 
-pub const MAX_BUFFER_SIZE: usize = dslab_async_mp::storage::MAX_BUFFER_SIZE;
+/// Represents errors which appears when working with storage.
+pub type StorageError = dslab_async_mp::storage::result::StorageError;
+
+/// Represents result for operations with storage.
+pub type StorageResult<T> = Result<T, StorageError>;

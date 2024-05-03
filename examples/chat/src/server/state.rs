@@ -1,271 +1,240 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
-use dsbuild::Address;
+use dsbuild::{storage::StorageError, Address, Context};
+use tokio::sync::Mutex;
 
 use crate::client::requests::{ClientRequest, ClientRequestKind};
 
 use super::{
-    chat::Chat,
-    chat_event::ChatEvent,
-    messages::{ServerMessage, ServerMessageBuilder},
-    user::User,
+    event::{ChatEvent, ChatEventKind},
+    messages::ServerMessage,
+    util::{auth_user, calc_events_in_chat, send_ack, send_err, transfer_chat_history},
 };
 
-pub struct State {
-    chats: HashMap<String, Chat>,
-    auth_users: HashMap<String, User>,
-    msg_builder: ServerMessageBuilder,
+#[derive(Default)]
+pub struct ServerState {
+    chat_seq_nums: HashMap<String, u64>,
+    chat_users: HashMap<String, Vec<Address>>,
+    user_chat: HashMap<String, String>,
 }
 
-#[derive(Clone, Debug)]
-pub struct RoutedMessage {
-    pub to: Address,
-    pub msg: ServerMessage,
-}
+pub type ServerStateLock = Arc<Mutex<ServerState>>;
 
-impl State {
-    pub fn new(server: String) -> Self {
-        Self {
-            chats: HashMap::new(),
-            auth_users: HashMap::new(),
-            msg_builder: ServerMessageBuilder::new(server),
-        }
-    }
-
-    pub fn get_user_by_address(&self, address: Address) -> Option<String> {
-        for (name, user) in self.auth_users.clone() {
-            if user.address() == address {
-                return Some(name);
-            }
-        }
-
-        None
-    }
-
-    pub fn remove_auth_for_user(&mut self, address: Address) -> Vec<RoutedMessage> {
-        let user_name = self.get_user_by_address(address.clone());
-        if user_name.is_none() {
-            return Vec::new();
-        }
-
-        let user_name = user_name.unwrap();
-        let user = self.auth_users.get(user_name.as_str()).unwrap();
-        let user_name = user.name().to_owned();
-        let user_password = user.password().to_owned();
-
-        let messages = if user.is_connected_to_chat() {
-            self.disconnect_user(&address, user_name.as_str(), user_password.as_str())
-                .unwrap()
-        } else {
-            Vec::new()
-        };
-
-        self.auth_users.remove(user_name.as_str()).unwrap();
-
-        messages
-    }
-
-    pub fn process_client_request(
+impl ServerState {
+    pub async fn handle_user_request(
         &mut self,
         from: Address,
+        ctx: Context,
         request: ClientRequest,
-    ) -> Vec<RoutedMessage> {
-        let user = request.client.as_str();
-        let password = request.password.as_str();
-        let address = &from;
+    ) {
+        let auth_result = auth_user(ctx.clone(), request.client.clone(), request.password).await;
+        if !auth_result {
+            send_err(ctx, request.id, from, "authentication failed".to_owned());
+            return;
+        }
 
-        let result = match &request.kind {
-            ClientRequestKind::Auth => self.auth_user(address, user, password),
+        let result = match request.kind {
             ClientRequestKind::SendMessage(msg) => {
-                self.user_send_message_in_chat(address, user, password, msg.clone())
+                self.send_message_to_chat(request.client, msg, ctx.clone())
+                    .await
             }
-            ClientRequestKind::Create(chat_name) => {
-                self.user_create_chat(address, user, password, chat_name.clone())
+            ClientRequestKind::Create(chat) => {
+                self.create_chat(chat, request.client, from.clone(), ctx.clone())
+                    .await
             }
-            ClientRequestKind::Connect(chat_name) => {
-                self.connect_user_to_chat(chat_name.as_str(), address, user, password)
+            ClientRequestKind::Connect(chat) => {
+                self.connect_to_chat(chat, request.client, from.clone(), ctx.clone())
+                    .await
             }
-            ClientRequestKind::Disconnect => self.disconnect_user(address, user, password),
+            ClientRequestKind::Disconnect => {
+                self.disconnect_from_chat(request.client, from.clone(), ctx.clone())
+                    .await
+            }
         };
 
         match result {
-            Ok(mut messages) => {
-                let ret = self.msg_builder.new_good_response(request.id);
-                let mut ret_messages = vec![RoutedMessage { to: from, msg: ret }];
-                ret_messages.append(&mut messages);
-                ret_messages
-            }
-            Err(info) => {
-                let ret = self.msg_builder.new_bad_response(request.id, info);
-                let ret_messages = vec![RoutedMessage { to: from, msg: ret }];
-                ret_messages
-            }
+            Ok(_) => send_ack(ctx, request.id, from),
+            Err(info) => send_err(ctx, request.id, from, info),
         }
     }
 
-    fn auth_user(
+    async fn send_message_to_chat(
         &mut self,
-        address: &Address,
-        user: &str,
-        password: &str,
-    ) -> Result<Vec<RoutedMessage>, String> {
-        if !self.auth_users.contains_key(user) {
-            self.auth_users.insert(
-                user.to_owned(),
-                User::new(address.clone(), user.to_owned(), password.to_owned()),
-            );
+        client: String,
+        msg: String,
+        ctx: Context,
+    ) -> Result<(), String> {
+        if msg.len() > 4096 {
+            return Err("message too long".to_owned());
+        }
 
-            Ok(Vec::new())
+        let chat = self
+            .user_chat
+            .get(&client)
+            .ok_or("not connected to chat".to_owned())?
+            .to_string();
+        let event = self
+            .append_event_to_chat(
+                chat.clone(),
+                client,
+                ChatEventKind::SentMessage(msg),
+                ctx.clone(),
+            )
+            .await?;
+        self.broadcast_chat_event(chat, event, ctx);
+        Ok(())
+    }
+
+    async fn create_chat(
+        &mut self,
+        chat: String,
+        client: String,
+        _client_addr: Address,
+        ctx: Context,
+    ) -> Result<(), String> {
+        if chat.len() > 4096 {
+            return Err("chat name too long".to_owned());
+        }
+
+        if !self.user_chat.get(&client).is_none() {
+            return Err("already connected to chat".to_owned());
+        }
+        let file_name = format!("{}.chat", chat);
+        let chat_exists = ctx.file_exists(&file_name).await.unwrap();
+        if chat_exists {
+            Err("chat already exists".to_owned())
         } else {
-            self.verify_user(address, user, password)
-                .map(|_| Vec::new())
+            ctx.create_file(&file_name).await.unwrap();
+            self.chat_users.insert(chat.clone(), Vec::new());
+            let event = self
+                .append_event_to_chat(
+                    chat.clone(),
+                    client.clone(),
+                    ChatEventKind::Created(),
+                    ctx.clone(),
+                )
+                .await
+                .unwrap();
+            self.broadcast_chat_event(chat, event, ctx);
+            Ok(())
         }
     }
 
-    fn verify_user(&self, address: &Address, user: &str, password: &str) -> Result<(), String> {
-        if !self.auth_users.contains_key(user) {
-            Err("auth error".into())
+    async fn connect_to_chat(
+        &mut self,
+        chat: String,
+        client: String,
+        client_addr: Address,
+        ctx: Context,
+    ) -> Result<(), String> {
+        if let Some(_) = self.user_chat.get(&client) {
+            Err("user already connected to chat".to_owned())
         } else {
-            let verify = self
-                .auth_users
-                .get(user)
-                .unwrap()
-                .verify(address, user, password);
+            let event = self
+                .append_event_to_chat(
+                    chat.clone(),
+                    client.clone(),
+                    ChatEventKind::Connected(),
+                    ctx.clone(),
+                )
+                .await?;
+            self.connect_user_to_chat(chat.clone(), client_addr.clone(), client);
+            transfer_chat_history(ctx.clone(), client_addr, chat.clone()).await;
+            self.broadcast_chat_event(chat, event, ctx);
+            Ok(())
+        }
+    }
 
-            if verify {
-                Ok(())
-            } else {
-                Err("incorrect credentials or untrusted address".into())
+    async fn disconnect_from_chat(
+        &mut self,
+        client: String,
+        client_addr: Address,
+        ctx: Context,
+    ) -> Result<(), String> {
+        let chat = self
+            .user_chat
+            .get(&client)
+            .map(|s| s.to_string())
+            .ok_or("user does not connected to the chat".to_owned())?;
+        self.disconnect_user_from_chat(chat.to_string(), client_addr, client.clone());
+        let event = self
+            .append_event_to_chat(
+                chat.clone(),
+                client,
+                ChatEventKind::Disconnected(),
+                ctx.clone(),
+            )
+            .await?;
+        self.broadcast_chat_event(chat, event, ctx);
+        Ok(())
+    }
+
+    async fn append_event_to_chat(
+        &mut self,
+        chat: String,
+        author: String,
+        event: ChatEventKind,
+        ctx: Context,
+    ) -> Result<ChatEvent, String> {
+        let file_name = format!("{}.chat", chat);
+        let mut file = ctx.open_file(&file_name).await.map_err(|e| match e {
+            StorageError::NotFound => "chat not found".to_string(),
+            _ => panic!("storage unavailable"),
+        })?;
+        let seq_num = *self
+            .chat_seq_nums
+            .get(&chat)
+            .unwrap_or(&calc_events_in_chat(ctx.clone(), chat.clone()).await);
+        self.chat_seq_nums.insert(chat.clone(), seq_num + 1);
+        let event = ChatEvent {
+            chat,
+            user: author,
+            time: SystemTime::now(),
+            kind: event,
+            seq: seq_num,
+        };
+        let event_data = serde_json::to_string(&event).unwrap() + "\n";
+        let event_data_bytes = event_data.as_bytes();
+        let mut offset = 0;
+        loop {
+            let appended = file
+                .append(&event_data_bytes[offset as usize..])
+                .await
+                .unwrap();
+            if appended == 0 {
+                break;
             }
+            offset += appended;
         }
+
+        Ok(event)
     }
 
-    fn disconnect_user(
-        &mut self,
-        address: &Address,
-        user: &str,
-        password: &str,
-    ) -> Result<Vec<RoutedMessage>, String> {
-        self.verify_user(address, user, password)?;
-        let user = self.auth_users.get_mut(user).unwrap();
-        if !user.is_connected_to_chat() {
-            Err("not connected to chat".into())
-        } else {
-            let chat = user.connected_chat().unwrap().to_owned();
-            user.disconnect_from_chat();
-
-            let chat = self.chats.get_mut(chat.as_str()).unwrap();
-            let connected_users = chat.connected_users();
-            let event = chat.disconnect_user(user.name().into());
-
-            let messages = self.prepare_event_broadcast(connected_users, event);
-
-            Ok(messages)
-        }
+    fn connect_user_to_chat(&mut self, chat: String, user_addr: Address, user: String) {
+        self.chat_users
+            .entry(chat.clone())
+            .or_insert(Vec::new())
+            .push(user_addr);
+        assert!(self.user_chat.insert(user, chat).is_none());
     }
 
-    fn connect_user_to_chat(
-        &mut self,
-        chat: &str,
-        address: &Address,
-        user: &str,
-        password: &str,
-    ) -> Result<Vec<RoutedMessage>, String> {
-        self.verify_user(address, user, password)?;
-
-        let user = self.auth_users.get_mut(user).unwrap();
-        if user.is_connected_to_chat() {
-            Err("user already connected to chat".into())
-        } else {
-            let chat = self.chats.get_mut(chat);
-            if chat.is_none() {
-                Err("chat not found".into())
-            } else {
-                let chat = chat.unwrap();
-                user.connect_to_chat(chat.name().into());
-
-                let user_name = user.name().to_owned().clone();
-                let user_address = self.auth_users.get(user_name.as_str()).unwrap().address();
-
-                let previously_connected_users = chat.connected_users();
-
-                let (event, history) = chat.connect_user(user_name.into());
-
-                let history_message = self
-                    .msg_builder
-                    .new_chat_events(chat.name().into(), history);
-
-                let history_message = RoutedMessage {
-                    to: user_address,
-                    msg: history_message,
-                };
-
-                let mut messages = self.prepare_event_broadcast(previously_connected_users, event);
-                messages.push(history_message);
-                Ok(messages)
-            }
-        }
+    fn disconnect_user_from_chat(&mut self, chat: String, user_addr: Address, user: String) {
+        self.chat_users
+            .get_mut(&chat)
+            .unwrap()
+            .retain(|addr| *addr != user_addr);
+        self.user_chat.remove(&user).unwrap();
     }
 
-    fn user_send_message_in_chat(
-        &mut self,
-        address: &Address,
-        user: &str,
-        password: &str,
-        message: String,
-    ) -> Result<Vec<RoutedMessage>, String> {
-        self.verify_user(address, user, password)?;
-        let user = self.auth_users.get_mut(user).unwrap();
-        if !user.is_connected_to_chat() {
-            Err("not connected to chat".into())
-        } else {
-            let chat = user.connected_chat().unwrap();
-
-            let chat = self.chats.get_mut(chat).unwrap();
-
-            let chat_event = chat.send_message(user.name().to_owned(), message);
-            let chat_users = chat.connected_users();
-            let messages = self.prepare_event_broadcast(chat_users, chat_event);
-
-            Ok(messages)
+    fn broadcast_chat_event(&self, chat: String, event: ChatEvent, ctx: Context) {
+        let users = self.chat_users.get(&chat).unwrap();
+        for user in users {
+            let msg = ServerMessage::ChatEvent(chat.clone(), event.clone()).into();
+            let to = user.clone();
+            let ctx_clone = ctx.clone();
+            ctx.clone().spawn(async move {
+                let _ = ctx_clone.send_with_ack(msg, to, 5.0).await;
+            });
         }
-    }
-
-    fn user_create_chat(
-        &mut self,
-        address: &Address,
-        user: &str,
-        password: &str,
-        chat_name: String,
-    ) -> Result<Vec<RoutedMessage>, String> {
-        self.verify_user(address, user, password)?;
-
-        let user = self.auth_users.get_mut(user).unwrap();
-
-        if user.is_connected_to_chat() {
-            Err("user is connected to chat".into())
-        } else {
-            if self.chats.contains_key(chat_name.as_str()) {
-                Err(format!("chat with name {:?} already exists", chat_name))
-            } else {
-                let user_name = user.name().to_owned();
-                let (chat, _) = Chat::new(chat_name.clone(), user_name.clone());
-                self.chats.insert(chat_name.clone(), chat);
-                Ok(Vec::new())
-            }
-        }
-    }
-
-    fn prepare_event_broadcast(&self, users: Vec<String>, event: ChatEvent) -> Vec<RoutedMessage> {
-        users
-            .into_iter()
-            .map(|user| {
-                let addr = self.auth_users.get(user.as_str()).unwrap().address();
-                RoutedMessage {
-                    to: addr,
-                    msg: self.msg_builder.new_chat_event(event.clone()),
-                }
-            })
-            .collect()
     }
 }

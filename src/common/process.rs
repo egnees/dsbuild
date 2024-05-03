@@ -5,7 +5,6 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard},
 };
 
-use dyn_clone::DynClone;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::common::{context::Context, message::Message};
@@ -37,7 +36,7 @@ pub enum ProcessState {
 ///
 /// To interact with system, process can use context object, which implements [`Context`] trait.
 /// It allows to send messages, set timers, etc.
-pub trait Process: DynClone + Send + Sync {
+pub trait Process: Send + Sync {
     /// Called when process starts interaction with system.
     fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String>;
 

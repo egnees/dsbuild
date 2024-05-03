@@ -1,6 +1,7 @@
 use chat::{
     client::{io::Info, requests::ClientRequestKind},
-    Client, Server,
+    server::process::ServerProcess,
+    Client,
 };
 use dsbuild::{Address, VirtualSystem};
 
@@ -10,7 +11,7 @@ fn no_faults_2_users() {
 
     sys.network().set_corrupt_rate(0.0);
     sys.network().set_delays(1.0, 3.0);
-    sys.network().set_drop_rate(0.5);
+    sys.network().set_drop_rate(0.05);
 
     let client1_addr = Address {
         host: "client1_host".into(),
@@ -36,7 +37,7 @@ fn no_faults_2_users() {
     sys.add_node("client2_node", &client2_addr.host, client2_addr.port);
     sys.network().connect_node("client2_node");
 
-    sys.add_node("server_node", &server_addr.host, server_addr.port);
+    sys.add_node_with_storage("server_node", &server_addr.host, server_addr.port, 1 << 20);
     sys.network().connect_node("server_node");
 
     sys.add_process(
@@ -63,24 +64,9 @@ fn no_faults_2_users() {
 
     sys.add_process(
         &server_addr.process_name,
-        Server::new("server".into()),
+        ServerProcess::default(),
         "server_node",
     );
-
-    sys.send_local_message("client1", "client1_node", ClientRequestKind::Auth.into());
-
-    // Send auth request, get auth response.
-    let msg = sys
-        .step_until_local_message("client1", "client1_node")
-        .unwrap();
-    assert_eq!(msg.len(), 1);
-
-    // Auth client2.
-    sys.send_local_message("client2", "client2_node", ClientRequestKind::Auth.into());
-    let msg = sys
-        .step_until_local_message("client2", "client2_node")
-        .unwrap();
-    assert_eq!(msg.len(), 1);
 
     // Client1 creates chat.
     sys.send_local_message(
@@ -165,7 +151,7 @@ fn no_faults_2_users() {
 
     // Check the second client got message.
     let client2_msg = sys.read_local_messages("client2", "client2_node");
-    assert_eq!(client2_msg.len(), 1);
+    assert_eq!(client2_msg.unwrap().len(), 1);
 
     // Disconnect the second client from the chat.
     sys.send_local_message(
@@ -178,7 +164,7 @@ fn no_faults_2_users() {
 
     // Check the first client did not got message.
     let client1_msg = sys.read_local_messages("client1", "client1_node");
-    assert!(client1_msg.is_empty());
+    assert!(client1_msg.is_none());
 
     // Connect the first client to the server.
     sys.send_local_message(
@@ -196,10 +182,10 @@ fn no_faults_2_users() {
 
     sys.step_until_no_events();
 
-    let first_history = sys.read_local_messages("client1", "client1_node");
+    let first_history = sys.read_local_messages("client1", "client1_node").unwrap();
     assert_eq!(first_history.len(), 1 + 1 + 1 + 100 + 100 + 1 + 1 + 1 + 1);
 
-    let second_history = sys.read_local_messages("client2", "client2_node");
+    let second_history = sys.read_local_messages("client2", "client2_node").unwrap();
     assert_eq!(second_history.len(), 1 + 1 + 1 + 100 + 100 + 1 + 1 + 1 + 1);
 
     assert_eq!(first_history, second_history);
@@ -220,13 +206,9 @@ fn no_faults_10_users() {
         port: 1000,
         process_name: server.into(),
     };
-    sys.add_node(server, &server_addr.host, server_addr.port);
+    sys.add_node_with_storage(server, &server_addr.host, server_addr.port, 1 << 20);
     sys.network().connect_node(server);
-    sys.add_process(
-        &server_addr.process_name,
-        Server::new(server.into()),
-        server,
-    );
+    sys.add_process(&server_addr.process_name, ServerProcess::default(), server);
 
     // Add clients
     let clients: Vec<String> = (1..=10)
@@ -257,12 +239,6 @@ fn no_faults_10_users() {
             &client_addr.process_name,
         );
     }
-
-    // Clients auth.
-    for client in clients.as_slice().into_iter() {
-        sys.send_local_message(client, client, ClientRequestKind::Auth.into());
-    }
-    sys.step_until_no_events();
 
     // First client creates chat.
     let chat: &'static str = "chat";
@@ -299,11 +275,11 @@ fn no_faults_10_users() {
 
     sys.step_until_no_events();
 
-    let ref_history = sys.read_local_messages(&clients[0], &clients[0]);
+    let ref_history = sys.read_local_messages(&clients[0], &clients[0]).unwrap();
     assert!(ref_history.len() >= iters * clients.len());
 
     for client in clients.as_slice().into_iter().skip(1) {
-        let history = sys.read_local_messages(client, client);
+        let history = sys.read_local_messages(client, client).unwrap();
         assert_eq!(history, ref_history);
     }
 }

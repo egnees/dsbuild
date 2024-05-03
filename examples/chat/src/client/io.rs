@@ -5,13 +5,13 @@ use std::time::SystemTime;
 use dsbuild::{IOProcessWrapper, Message};
 use serde::{Deserialize, Serialize};
 
-use crate::server::chat_event::ChatEvent;
-
 use colored::Colorize;
 
 use chrono::{DateTime, Local};
 
-use super::{client::Client, parser::parse_request, requests::ClientRequestKind};
+use crate::server::event::ChatEvent;
+
+use super::{client::Client, parser::parse_request};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InnerInfo {
@@ -78,25 +78,10 @@ impl From<Message> for Info {
         value.get_data::<Info>().unwrap()
     }
 }
-
-fn log_auth_request() {
-    let dt: DateTime<Local> = SystemTime::now().into();
-    println!(
-        "[{}]\t{}",
-        dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-        "Authentication...".underline().bold().blue()
-    );
-}
-
 /// Start client io-activity.
 pub async fn start_io(wrapper: IOProcessWrapper<Client>) {
     let sender = wrapper.sender;
     let mut receiver = wrapper.receiver;
-
-    log_auth_request();
-
-    // Auth.
-    sender.send(ClientRequestKind::Auth.into()).await.unwrap();
 
     let stdio = async_std::io::stdin();
 

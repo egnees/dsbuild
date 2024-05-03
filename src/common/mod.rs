@@ -2,6 +2,8 @@
 //! which are used by [`real`][`crate::RealSystem`] and [`virtual`][`crate::VirtualSystem`] systems.
 
 pub mod context;
+pub mod file;
+pub mod network;
 pub mod process;
 pub mod storage;
 

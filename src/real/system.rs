@@ -4,7 +4,7 @@ use std::{
     collections::HashMap,
     future::Future,
     pin::Pin,
-    sync::{atomic::AtomicU32, Arc, Mutex, RwLock},
+    sync::{atomic::AtomicU32, Arc, RwLock},
 };
 
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -17,7 +17,6 @@ use crate::{
 use super::{
     network::{self, NetworkRequest},
     process::{FromSystemMessage, ProcessManager, ProcessManagerConfig, ToSystemMessage},
-    storage::FileManager,
 };
 
 /// Represents real system.
@@ -31,7 +30,7 @@ pub struct System {
     max_buffer_size: usize,
     host: String,
     port: u16,
-    file_manager: Arc<Mutex<FileManager>>,
+    mount_dir: String,
 }
 
 impl System {
@@ -56,7 +55,7 @@ impl System {
             max_buffer_size,
             host: host.to_owned(),
             port,
-            file_manager: Arc::new(Mutex::new(FileManager::new(storage_mount))),
+            mount_dir: storage_mount,
         };
 
         system.spawn(Box::pin(network_handler));
@@ -106,7 +105,7 @@ impl System {
             system_receiver: from_proc_receiver,
             network_sender: self.network_sender.clone(),
             max_buffer_size: self.max_buffer_size,
-            file_manager: self.file_manager.clone(),
+            mount_dir: self.mount_dir.clone(),
         };
 
         let proc_manager = ProcessManager::new(process_manager_config);

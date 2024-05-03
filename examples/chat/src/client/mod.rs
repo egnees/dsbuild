@@ -6,4 +6,4 @@ pub mod requests;
 pub mod state;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;

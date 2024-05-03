@@ -6,28 +6,27 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use crate::common::{
-    context::Context,
-    process::{Process, ProcessState},
+use dslab_async_mp::{
+    network::message::Message as DSLabMessage,
+    process::{context::Context as DSLabContext, process::Process as DSLabProcess},
 };
 
-use dslab_async_mp::{
-    context::Context as DSLabContext, message::Message as DSLabMessage,
-    process::Process as DSLabProcess,
+use crate::{
+    common::process::{Process, ProcessState},
+    Context,
 };
 
 use super::{context::VirtualContext, node::NodeManager};
 
 /// Represents virtual process wrapper,
 /// which is to be passed to the [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html).
-#[derive(Clone)]
-pub struct VirtualProcessWrapper<P: Process + Clone + 'static> {
+pub struct VirtualProcessWrapper<P: Process + 'static> {
     user_process: Arc<RwLock<P>>,
     process_state: ProcessState,
     node_manager: Rc<RefCell<NodeManager>>,
 }
 
-impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
+impl<P: Process + 'static> VirtualProcessWrapper<P> {
     /// Create new virtual process wrapper.
     pub fn new(process_impl: Arc<RwLock<P>>, node_manager: Rc<RefCell<NodeManager>>) -> Self {
         Self {
@@ -47,7 +46,7 @@ impl<P: Process + Clone + 'static> VirtualProcessWrapper<P> {
 }
 
 /// Implementation of [`DSLab MP`](https://osukhoroslov.github.io/dslab_mp/index.html) process trait.
-impl<P: Process + Clone + 'static> DSLabProcess for VirtualProcessWrapper<P> {
+impl<P: Process + 'static> DSLabProcess for VirtualProcessWrapper<P> {
     fn on_message(
         &mut self,
         msg: DSLabMessage,

@@ -6,7 +6,9 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use dslab_async_mp::{network::Network, node::Node, system::System as DSLabSimulation};
+use dslab_async_mp::{
+    network::model::Network, node::component::Node, system::System as DSLabSimulation,
+};
 
 use super::{node::NodeManager, process::VirtualProcessWrapper};
 use crate::{
@@ -51,16 +53,33 @@ impl System {
     /// - In case node with such `name` already exists.
     /// - In case `name` is empty or contains `/` character.
     pub fn add_node(&mut self, name: &str, host: &str, port: u16) {
+        self.add_node_with_storage(name, host, port, 0);
+    }
+
+    /// Adds a node with specified storage capacity to the DSLabSimulation.
+    /// Note that node names must be unique and does not contain `/` symbol.
+    ///
+    /// # Panics
+    ///
+    /// - In case node with such `name` already exists.
+    /// - In case `name` is empty or contains `/` character.
+    pub fn add_node_with_storage(
+        &mut self,
+        name: &str,
+        host: &str,
+        port: u16,
+        storage_capacity: usize,
+    ) {
         // Add node to the node manager.
         self.node_manager
             .borrow_mut()
             .add_node(name.to_owned(), host.to_owned(), port)
             .unwrap();
 
-        self.inner.add_node(name);
+        self.inner.add_node_with_storage(name, storage_capacity);
     }
 
-    /// Crashes the specified node.
+    /// Crashes the specified node and its storage.
     ///
     /// All pending events created by the node will be discarded.
     /// The undelivered messages sent by the node will be dropped.
@@ -70,6 +89,7 @@ impl System {
     /// with processes after the crash (i.e. examine event log).
     pub fn crash_node(&mut self, node_name: &str) {
         self.inner.crash_node(node_name);
+        self.node_manager.borrow_mut().clear_node(node_name);
     }
 
     /// Recovers the previously crashed node.
@@ -78,6 +98,17 @@ impl System {
     /// The delivery of events to the node is enabled.
     pub fn recover_node(&mut self, node_name: &str) {
         self.inner.recover_node(node_name);
+    }
+
+    /// Shutdowns the specified node with saving storage.
+    pub fn shutdown_node(&mut self, node_name: &str) {
+        self.inner.shutdown_node(node_name);
+        self.node_manager.borrow_mut().clear_node(node_name);
+    }
+
+    /// Reruns previously shut node.
+    pub fn rerun_node(&mut self, node_name: &str) {
+        self.inner.rerun_node(node_name);
     }
 
     /// Returns a mutable reference to the node.
@@ -103,7 +134,7 @@ impl System {
     /// - If node with such name `node_name` does not exists.
     /// - If process with such `process name` is already exists on the node with `node_name`.
     /// - If process name or node name is empty or contains `/` symbol.
-    pub fn add_process<P: Process + Clone + 'static>(
+    pub fn add_process<P: Process + 'static>(
         &mut self,
         process_name: &str,
         process: P,
@@ -149,7 +180,7 @@ impl System {
     }
 
     /// Extracts and returns local messages, produced by the process.
-    pub fn read_local_messages(&mut self, proc: &str, node: &str) -> Vec<Message> {
+    pub fn read_local_messages(&mut self, proc: &str, node: &str) -> Option<Vec<Message>> {
         let full_process_name = self
             .node_manager
             .borrow()
@@ -158,9 +189,7 @@ impl System {
 
         self.inner
             .read_local_messages(&full_process_name)
-            .into_iter()
-            .map(|msg| msg.into())
-            .collect()
+            .map(|messages| messages.into_iter().map(|msg| msg.into()).collect())
     }
 
     /// Send local message to the process.

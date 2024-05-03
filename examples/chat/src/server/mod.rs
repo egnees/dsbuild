@@ -1,9 +1,11 @@
-pub mod chat;
-pub mod chat_event;
+// pub mod chat;
+// pub mod process;
+// pub mod user;
+pub mod event;
 pub mod messages;
-pub mod server;
+pub mod process;
 pub mod state;
-pub mod user;
+pub mod util;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;

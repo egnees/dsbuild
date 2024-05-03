@@ -106,6 +106,11 @@ impl NodeManager {
         }
     }
 
+    /// Removed all processes from the node.
+    pub fn clear_node(&mut self, node_name: &str) {
+        self.node_processes.get_mut(node_name).unwrap().clear();
+    }
+
     /// Map process by it's address into the view `node_name/process_name`,
     /// in which process can be added to the [`dslab_mp`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)).
     ///

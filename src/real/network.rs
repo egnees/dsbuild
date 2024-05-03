@@ -3,7 +3,10 @@
 use log::{info, warn};
 use tokio::sync::mpsc::{Receiver, Sender};
 
-use crate::common::message::RoutedMessage;
+use crate::common::{
+    message::RoutedMessage,
+    network::{SendError, SendResult},
+};
 
 use super::messenger::{GRpcMessenger, ProcessSendRequest};
 
@@ -60,7 +63,7 @@ async fn send_message(msg: RoutedMessage) {
     }
 }
 
-pub async fn send_message_reliable(msg: RoutedMessage) -> Result<(), String> {
+pub async fn send_message_with_ack(msg: RoutedMessage) -> SendResult<()> {
     let result = GRpcMessenger::send(ProcessSendRequest {
         sender_address: msg.from.clone(),
         receiver_address: msg.to.clone(),
@@ -72,16 +75,16 @@ pub async fn send_message_reliable(msg: RoutedMessage) -> Result<(), String> {
         if response.status == "success" {
             Ok(())
         } else {
-            Err(response.status)
+            Err(SendError::NotSent)
         }
     } else {
-        Err("can not send message".to_owned())
+        Err(SendError::NotSent)
     }
 }
 
-pub async fn send_message_reliable_timeout(msg: RoutedMessage, timeout: f64) -> Result<(), String> {
+pub async fn send_message_with_ack_timeout(msg: RoutedMessage, timeout: f64) -> SendResult<()> {
     tokio::select! {
-        _ = tokio::time::sleep(tokio::time::Duration::from_secs_f64(timeout)) => Err("time is out".to_owned()),
-        send_result = send_message_reliable(msg) => send_result
+        _ = tokio::time::sleep(tokio::time::Duration::from_secs_f64(timeout)) => Err(SendError::Timeout),
+        send_result = send_message_with_ack(msg) => send_result
     }
 }

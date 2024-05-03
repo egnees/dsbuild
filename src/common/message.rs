@@ -86,7 +86,7 @@ impl Message {
     }
 }
 
-use dslab_async_mp::message::Message as DSLabMessage;
+use dslab_async_mp::network::message::Message as DSLabMessage;
 
 use crate::Address;
 
@@ -103,9 +103,7 @@ impl From<Message> for DSLabMessage {
     fn from(msg: Message) -> Self {
         DSLabMessage {
             tip: msg.tip.clone(),
-            data: std::str::from_utf8(msg.data.as_slice())
-                .expect("Can not cast Message data to str")
-                .to_string(),
+            data: String::from_utf8_lossy(msg.data.as_slice()).to_string(),
         }
     }
 }

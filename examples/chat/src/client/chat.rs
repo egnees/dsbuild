@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::server::chat_event::ChatEvent;
+use crate::server::event::ChatEvent;
 
 /// Abstraction on chat.
 /// Prevents chat events reordering by tracking event sequence numbers.
@@ -10,7 +10,7 @@ use crate::server::chat_event::ChatEvent;
 pub struct Chat {
     name: String,
     /// Sequence number of next chat event.
-    seq: usize,
+    seq: u64,
     /// Sorted by sequence number.
     pending_events: BTreeSet<ChatEvent>,
 }

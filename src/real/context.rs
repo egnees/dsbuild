@@ -1,18 +1,11 @@
 //! Definition of context-related objects.
 
-use std::{
-    future::Future,
-    io::SeekFrom,
-    sync::{Arc, Mutex},
-};
+use std::future::Future;
 
-use async_std::io::{prelude::SeekExt, ReadExt, WriteExt};
+use dslab_async_mp::storage::result::{StorageError, StorageResult};
 
 use crate::{
-    common::{
-        message::RoutedMessage,
-        storage::{CreateFileError, ReadError, WriteError, MAX_BUFFER_SIZE},
-    },
+    common::{file::File, message::RoutedMessage, network::SendResult},
     Address, Message,
 };
 
@@ -21,7 +14,6 @@ use std::io::ErrorKind;
 use super::{
     network::{self, NetworkRequest},
     process::{Output, ToSystemMessage},
-    storage::FileManager,
 };
 
 /// Represents context of system in the real mode.
@@ -29,7 +21,7 @@ use super::{
 pub(crate) struct RealContext {
     pub(crate) output: Output,
     pub(crate) address: Address,
-    pub(crate) file_manager: Arc<Mutex<FileManager>>,
+    pub(crate) mount_dir: String,
 }
 
 impl RealContext {
@@ -91,38 +83,14 @@ impl RealContext {
     ///
     /// - Error if message was not delivered.
     /// - Ok if message was delivered
-    pub async fn send_reliable(&self, msg: Message, dst: Address) -> Result<(), String> {
+    pub async fn send_with_ack(&self, msg: Message, dst: Address, timeout: f64) -> SendResult<()> {
         let msg = RoutedMessage {
             msg,
             from: self.address.clone(),
             to: dst,
         };
 
-        network::send_message_reliable(msg).await
-    }
-
-    /// Send network message reliable.
-    /// If message will not be delivered in specified timeout,
-    /// error will be returned.
-    /// It is guaranteed that message will be delivered exactly once and without corruption.
-    ///
-    /// # Returns
-    ///
-    /// - Error if message was not delivered in specified timeout.
-    /// - Ok if message was delivered
-    pub async fn send_reliable_timeout(
-        &self,
-        msg: Message,
-        dst: Address,
-        timeout: f64,
-    ) -> Result<(), String> {
-        let msg = RoutedMessage {
-            msg,
-            from: self.address.clone(),
-            to: dst,
-        };
-
-        network::send_message_reliable_timeout(msg, timeout).await
+        network::send_message_with_ack_timeout(msg, timeout).await
     }
 
     /// Spawn asynchronous activity.
@@ -131,11 +99,6 @@ impl RealContext {
         F: Future<Output = ()> + Send + 'static,
     {
         tokio::spawn(future);
-    }
-
-    /// Sleep for some time (sec.).
-    pub async fn sleep(&self, duration: f64) {
-        tokio::time::sleep(tokio::time::Duration::from_secs_f64(duration)).await;
     }
 
     /// Stop the process.
@@ -149,100 +112,41 @@ impl RealContext {
         });
     }
 
-    /// Read file from the specified offset into the specified buffer.
-    ///
-    /// # Returns
-    /// The number of read bytes.
-    pub async fn read(
-        &self,
-        file: &str,
-        offset: usize,
-        buf: &mut [u8],
-    ) -> Result<usize, ReadError> {
-        if buf.len() > MAX_BUFFER_SIZE {
-            panic!(
-                "size of buffer exceeds max size: {} exceeds {}",
-                buf.len(),
-                MAX_BUFFER_SIZE
-            );
+    /// Check if file exists.
+    pub async fn file_exists(&self, name: &str) -> StorageResult<bool> {
+        let mount_dir = self.mount_dir.clone();
+        match async_std::fs::File::open(mount_dir + "/" + name).await {
+            Ok(_) => Ok(true),
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => Ok(false),
+                _ => Err(StorageError::Unavailable),
+            },
         }
-
-        let file_lock = self
-            .file_manager
-            .lock()
-            .unwrap()
-            .get_file_lock(file)
-            .ok_or(ReadError::FileNotFound)?;
-
-        // Exclusive lock on the file will be dropped when file will be read.
-        let _file_guard = file_lock.lock().await;
-
-        let mount_dir = self.file_manager.lock().unwrap().get_mount_dir().to_owned();
-
-        let mut file = async_std::fs::File::open(mount_dir + "/" + file)
-            .await
-            .map_err(|e| match e.kind() {
-                ErrorKind::NotFound => ReadError::FileNotFound,
-                _ => ReadError::Unavailable,
-            })?;
-
-        file.seek(SeekFrom::Start(offset.try_into().unwrap()))
-            .await
-            .map_err(|_| ReadError::Unavailable)?;
-
-        file.read(buf).await.map_err(|_| ReadError::Unavailable)
-    }
-
-    /// Append data to file.
-    pub async fn append(&self, file: &str, data: &'static [u8]) -> Result<(), WriteError> {
-        let file_lock = self
-            .file_manager
-            .lock()
-            .unwrap()
-            .get_file_lock(file)
-            .ok_or(WriteError::FileNotFound)?;
-
-        // Exclusive lock on the file will be dropped when work with file will be done.
-        let _file_guard = file_lock.lock().await;
-
-        let mount_dir = self.file_manager.lock().unwrap().get_mount_dir().to_owned();
-
-        let mut file = async_std::fs::File::open(mount_dir + "/" + file)
-            .await
-            .map_err(|e| match e.kind() {
-                ErrorKind::NotFound => WriteError::FileNotFound,
-                _ => WriteError::Unavailable,
-            })?;
-
-        file.seek(SeekFrom::End(0))
-            .await
-            .map_err(|_| WriteError::Unavailable)?;
-
-        file.write_all(data)
-            .await
-            .map_err(|_| WriteError::OutOfMemory)
     }
 
     /// Create file with specified name.
-    pub async fn create_file(&self, name: &'static str) -> Result<(), CreateFileError> {
-        let lock = self
-            .file_manager
-            .lock()
-            .unwrap()
-            .register_file(name.to_owned())
-            .ok_or(CreateFileError::FileAlreadyExists)?;
+    pub async fn create_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
+        let mount_dir = self.mount_dir.clone();
 
-        let _guard = lock.lock().await;
-
-        let mount_dir = self.file_manager.lock().unwrap().get_mount_dir().to_owned();
-
-        // In case creation fails, then disk is unavailable and future working is UB.
         async_std::fs::File::create(mount_dir + "/" + name)
             .await
             .map_err(|e| match e.kind() {
-                ErrorKind::AlreadyExists => CreateFileError::FileAlreadyExists,
-                _ => CreateFileError::Unavailable,
+                ErrorKind::AlreadyExists => StorageError::AlreadyExists,
+                _ => StorageError::Unavailable,
             })
-            .map(|_| ())
+            .map(|file| File::RealFile(file))
+    }
+
+    /// Open file with specified name.
+    pub async fn open_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
+        let mount_dir = self.mount_dir.clone();
+
+        async_std::fs::File::open(mount_dir + "/" + name)
+            .await
+            .map_err(|error| match error.kind() {
+                ErrorKind::NotFound => StorageError::NotFound,
+                _ => StorageError::Unavailable,
+            })
+            .map(|file| File::RealFile(file))
     }
 }

@@ -2,7 +2,7 @@
 
 use std::collections::VecDeque;
 
-use crate::server::messages::{ServerMessage, ServerMessageKind};
+use crate::server::messages::ServerMessage;
 
 use super::{
     chat::Chat,
@@ -13,20 +13,18 @@ use super::{
 /// Represents possible states of client.
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum WaitingFor {
-    /// Wait for auth request from user.
-    AuthRequest,
     /// Corresponds to state,
     /// when client listens for the user requests or server messages.
     ClientRequestOrServerMessage,
     /// Corresponds to state,
     /// when client waits for the response of previous request.
     /// Id of request is specified.
-    ServerResponse(usize, ClientRequestKind),
+    ServerResponse(u64, ClientRequestKind),
 }
 
 impl Default for WaitingFor {
     fn default() -> Self {
-        Self::AuthRequest
+        Self::ClientRequestOrServerMessage
     }
 }
 
@@ -104,14 +102,6 @@ impl State {
     /// * Err(Option(info)) means it can not be send now (and may be sent after), with optional error message.
     pub fn apply_client_request(&mut self, request: ClientRequest) -> StateUpdateResult {
         match self.waiting_for {
-            WaitingFor::AuthRequest => match &request.kind {
-                ClientRequestKind::Auth => {
-                    self.waiting_for =
-                        WaitingFor::ServerResponse(request.id, ClientRequestKind::Auth);
-                    StateUpdateResult::from_to_server_request(request)
-                }
-                _ => StateUpdateResult::from_to_user_info("not authorized".into()),
-            },
             WaitingFor::ClientRequestOrServerMessage => {
                 self.waiting_for = WaitingFor::ServerResponse(request.id, request.kind.clone());
                 StateUpdateResult::from_to_server_request(request)
@@ -130,16 +120,15 @@ impl State {
     /// Info about state which can be shown to the user.
     pub fn apply_server_msg(&mut self, msg: ServerMessage) -> StateUpdateResult {
         match &self.waiting_for {
-            WaitingFor::AuthRequest => StateUpdateResult::from_nothing(), // outdated server message
             WaitingFor::ClientRequestOrServerMessage => {
-                match msg.kind {
-                    ServerMessageKind::RequestResponse(_, _) => StateUpdateResult::from_nothing(), // outdated response
-                    ServerMessageKind::ChatEvents(chat, events) => {
+                match msg {
+                    ServerMessage::RequestResponse(_, _) => StateUpdateResult::from_nothing(), // outdated response
+                    ServerMessage::ChatEvent(chat, event) => {
                         match &mut self.chat {
                             Some(current_chat) => {
                                 if current_chat.name() == chat {
                                     let events_info = current_chat
-                                        .process_events(events)
+                                        .process_event(event)
                                         .into_iter()
                                         .map(|event| event.into())
                                         .collect();
@@ -154,12 +143,12 @@ impl State {
                 }
             }
             WaitingFor::ServerResponse(waiting_request_id, waiting_request_kind) => {
-                match &msg.kind {
-                    ServerMessageKind::ChatEvents(_, _) => {
+                match &msg {
+                    ServerMessage::ChatEvent(_, _) => {
                         self.pending_server_messages.push(msg);
                         StateUpdateResult::from_nothing()
                     }
-                    ServerMessageKind::RequestResponse(got_request_id, request_result) => {
+                    ServerMessage::RequestResponse(got_request_id, request_result) => {
                         if *waiting_request_id != *got_request_id {
                             StateUpdateResult::from_nothing() // Ignore.
                         } else {
@@ -183,17 +172,6 @@ impl State {
         self.waiting_for = WaitingFor::ClientRequestOrServerMessage; // Only bad auth response can change it.
 
         let mut update_result = match request_kind {
-            ClientRequestKind::Auth => match request_result {
-                Ok(_) => {
-                    // This messages are not actual.
-                    self.drain_and_filter_pending_server_messages();
-                    StateUpdateResult::from_to_user_info("authentication done".into())
-                }
-                Err(info) => {
-                    self.waiting_for = WaitingFor::AuthRequest;
-                    StateUpdateResult::from_to_user_info(info.as_str().into())
-                }
-            },
             ClientRequestKind::SendMessage(_) => match request_result {
                 Ok(_) => StateUpdateResult::from_to_user_info_vec(
                     self.drain_and_filter_pending_server_messages(),
@@ -251,11 +229,11 @@ impl State {
             let drain = self.pending_server_messages.drain(..);
 
             for message in drain {
-                match message.kind {
-                    ServerMessageKind::ChatEvents(destination_chat, events) => {
+                match message {
+                    ServerMessage::ChatEvent(destination_chat, event) => {
                         if current_chat.name() == destination_chat {
-                            let mut events_info = current_chat
-                                .process_events(events)
+                            let mut events_info: Vec<Info> = current_chat
+                                .process_event(event)
                                 .into_iter()
                                 .map(|event| event.into())
                                 .collect();
