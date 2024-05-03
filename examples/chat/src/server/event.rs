@@ -100,7 +100,7 @@ impl ChatEvent {
 
 impl fmt::Display for ChatEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dt: DateTime<Local> = self.time.clone().into();
+        let dt: DateTime<Local> = self.time.into();
 
         match &self.kind {
             ChatEventKind::SentMessage(msg) => write!(

@@ -77,7 +77,7 @@ fn validate_param(param: &[&str]) -> Result<String, ParseError> {
 
 /// Parse request from user.
 pub fn parse_request(req: &str) -> Result<ClientRequestKind, ParseError> {
-    if !req.starts_with("/") {
+    if !req.starts_with('/') {
         bad_syntax("request must start with /")
     } else {
         let keys = req
@@ -97,21 +97,21 @@ pub fn parse_request(req: &str) -> Result<ClientRequestKind, ParseError> {
                     if keys.len() == 1 {
                         bad_syntax("send: expected 'message'")
                     } else {
-                        validate_param(&keys[1..]).map(|msg| ClientRequestKind::SendMessage(msg))
+                        validate_param(&keys[1..]).map(ClientRequestKind::SendMessage)
                     }
                 }
                 "create" => {
                     if keys.len() == 1 {
                         bad_syntax("create: expected 'chat name'")
                     } else {
-                        validate_param(&keys[1..]).map(|chat| ClientRequestKind::Create(chat))
+                        validate_param(&keys[1..]).map(ClientRequestKind::Create)
                     }
                 }
                 "connect" => {
                     if keys.len() == 1 {
                         bad_syntax("connect: expected 'chat name'")
                     } else {
-                        validate_param(&keys[1..]).map(|chat| ClientRequestKind::Connect(chat))
+                        validate_param(&keys[1..]).map(ClientRequestKind::Connect)
                     }
                 }
                 "disconnect" => {

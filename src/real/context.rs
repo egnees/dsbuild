@@ -134,7 +134,7 @@ impl RealContext {
                 ErrorKind::AlreadyExists => StorageError::AlreadyExists,
                 _ => StorageError::Unavailable,
             })
-            .map(|file| File::RealFile(file))
+            .map(File::RealFile)
     }
 
     /// Open file with specified name.
@@ -150,6 +150,6 @@ impl RealContext {
                 ErrorKind::NotFound => StorageError::NotFound,
                 _ => StorageError::Unavailable,
             })
-            .map(|file| File::RealFile(file))
+            .map(File::RealFile)
     }
 }

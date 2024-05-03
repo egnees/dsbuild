@@ -1,5 +1,5 @@
-use std::fmt;
 ///! Definition of requests from client to server which can appear in the system.
+use std::fmt;
 use std::time::SystemTime;
 
 use chrono::DateTime;

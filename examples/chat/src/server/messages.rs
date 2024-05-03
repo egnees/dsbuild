@@ -1,5 +1,5 @@
-use core::fmt;
 ///! Definition of messages which can be produces by server.
+use core::fmt;
 use dsbuild::{Address, Message};
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +25,7 @@ impl fmt::Display for ServerMessage {
                 write!(f, "[id={}] response={:?}", id, response)
             }
             ServerMessage::ChatEvent(chat, event) => {
-                write!(f, "chat={}, event={}", chat, event.to_string())
+                write!(f, "chat={}, event={:?}", chat, event)
             }
         }
     }
