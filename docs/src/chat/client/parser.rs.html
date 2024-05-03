@@ -207,7 +207,7 @@
 
 <span class="doccomment">/// Parse request from user.
 </span><span class="kw">pub fn </span>parse_request(req: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;ClientRequestKind, ParseError&gt; {
-    <span class="kw">if </span>!req.starts_with(<span class="string">"/"</span>) {
+    <span class="kw">if </span>!req.starts_with(<span class="string">'/'</span>) {
         bad_syntax(<span class="string">"request must start with /"</span>)
     } <span class="kw">else </span>{
         <span class="kw">let </span>keys = req
@@ -227,21 +227,21 @@
                     <span class="kw">if </span>keys.len() == <span class="number">1 </span>{
                         bad_syntax(<span class="string">"send: expected 'message'"</span>)
                     } <span class="kw">else </span>{
-                        validate_param(<span class="kw-2">&amp;</span>keys[<span class="number">1</span>..]).map(|msg| ClientRequestKind::SendMessage(msg))
+                        validate_param(<span class="kw-2">&amp;</span>keys[<span class="number">1</span>..]).map(ClientRequestKind::SendMessage)
                     }
                 }
                 <span class="string">"create" </span>=&gt; {
                     <span class="kw">if </span>keys.len() == <span class="number">1 </span>{
                         bad_syntax(<span class="string">"create: expected 'chat name'"</span>)
                     } <span class="kw">else </span>{
-                        validate_param(<span class="kw-2">&amp;</span>keys[<span class="number">1</span>..]).map(|chat| ClientRequestKind::Create(chat))
+                        validate_param(<span class="kw-2">&amp;</span>keys[<span class="number">1</span>..]).map(ClientRequestKind::Create)
                     }
                 }
                 <span class="string">"connect" </span>=&gt; {
                     <span class="kw">if </span>keys.len() == <span class="number">1 </span>{
                         bad_syntax(<span class="string">"connect: expected 'chat name'"</span>)
                     } <span class="kw">else </span>{
-                        validate_param(<span class="kw-2">&amp;</span>keys[<span class="number">1</span>..]).map(|chat| ClientRequestKind::Connect(chat))
+                        validate_param(<span class="kw-2">&amp;</span>keys[<span class="number">1</span>..]).map(ClientRequestKind::Connect)
                     }
                 }
                 <span class="string">"disconnect" </span>=&gt; {

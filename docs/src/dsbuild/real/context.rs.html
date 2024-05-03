@@ -291,7 +291,7 @@
                 ErrorKind::AlreadyExists =&gt; StorageError::AlreadyExists,
                 <span class="kw">_ </span>=&gt; StorageError::Unavailable,
             })
-            .map(|file| File::RealFile(file))
+            .map(File::RealFile)
     }
 
     <span class="doccomment">/// Open file with specified name.
@@ -307,7 +307,7 @@
                 ErrorKind::NotFound =&gt; StorageError::NotFound,
                 <span class="kw">_ </span>=&gt; StorageError::Unavailable,
             })
-            .map(|file| File::RealFile(file))
+            .map(File::RealFile)
     }
 }
 </code></pre></div></section></main></body></html>

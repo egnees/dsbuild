@@ -43,9 +43,9 @@
 <a href="#41" id="41">41</a>
 <a href="#42" id="42">42</a>
 <a href="#43" id="43">43</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>core::fmt;
-<span class="doccomment">///! Definition of messages which can be produces by server.
-</span><span class="kw">use </span>dsbuild::{Address, Message};
+</pre></div><pre class="rust"><code><span class="doccomment">///! Definition of messages which can be produces by server.
+</span><span class="kw">use </span>core::fmt;
+<span class="kw">use </span>dsbuild::{Address, Message};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="kw">use </span><span class="kw">super</span>::event::ChatEvent;
@@ -70,7 +70,7 @@
                 <span class="macro">write!</span>(f, <span class="string">"[id={}] response={:?}"</span>, id, response)
             }
             ServerMessage::ChatEvent(chat, event) =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">"chat={}, event={}"</span>, chat, event.to_string())
+                <span class="macro">write!</span>(f, <span class="string">"chat={}, event={:?}"</span>, chat, event)
             }
         }
     }
