@@ -37,12 +37,16 @@ impl File {
         match self {
             File::SimulationFile(file) => file.append(data).await,
             File::RealFile(file) => {
-                file.seek(SeekFrom::End(0))
-                    .await
-                    .map_err(|_| StorageError::Unavailable)?;
+                file.seek(SeekFrom::End(0)).await.map_err(|e| {
+                    eprintln!("seed error: {}", e);
+                    StorageError::Unavailable
+                })?;
                 file.write(data)
                     .await
-                    .map_err(|_| StorageError::Unavailable)
+                    .map_err(|e| {
+                        eprintln!("write error: {}", e);
+                        StorageError::Unavailable
+                    })
                     .map(|bytes| u64::try_from(bytes).unwrap())
             }
         }

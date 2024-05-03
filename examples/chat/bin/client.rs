@@ -3,7 +3,7 @@ use dsbuild::{Address, RealSystem};
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();
-    if args.len() < 7 {
+    if args.len() < 6 {
         println!(
             "Usage: {} <server_host> <server_port> <client_host> <client_port> <name>",
             args[0]

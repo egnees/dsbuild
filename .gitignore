@@ -1,4 +1,4 @@
 /target
 /Cargo.lock
 /.vscode
-/examples/chat/.chat-server
+/examples/chat/.storage

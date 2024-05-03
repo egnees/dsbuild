@@ -141,7 +141,10 @@ impl RealContext {
     pub async fn open_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
         let mount_dir = self.mount_dir.clone();
 
-        async_std::fs::File::open(mount_dir + "/" + name)
+        async_std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(mount_dir + "/" + name)
             .await
             .map_err(|error| match error.kind() {
                 ErrorKind::NotFound => StorageError::NotFound,
