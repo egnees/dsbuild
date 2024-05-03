@@ -177,7 +177,7 @@ impl NodeManager {
 
                 // Fill process address.
                 let mut process_address = node_address.clone();
-                process_address.process_name = process_name.to_owned();
+                process_name.clone_into(&mut process_address.process_name);
 
                 // Return process address.
                 Ok(process_address)
