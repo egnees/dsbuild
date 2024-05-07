@@ -8,6 +8,7 @@ use crate::{
         message::Message,
         network::{SendError, SendResult},
         process::Address,
+        tag::Tag,
     },
     storage::StorageResult,
 };
@@ -79,6 +80,49 @@ impl VirtualContext {
         SendFuture::from_future(async move {
             if let Ok(process_name) = process_name {
                 ctx.send_with_ack(msg.into(), &process_name, timeout).await
+            } else {
+                Err(SendError::NotSent)
+            }
+        })
+    }
+
+    /// See [`crate::common::context::Context::send_with_tag`].
+    pub fn send_with_tag(
+        &self,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -> Sf<SendResult<()>> {
+        let process_name = self.node_manager.borrow().get_full_process_name(&to);
+
+        let ctx = self.dslab_ctx.clone();
+        SendFuture::from_future(async move {
+            if let Ok(process_name) = process_name {
+                ctx.send_with_tag(msg.into(), tag, &process_name, timeout)
+                    .await
+            } else {
+                Err(SendError::NotSent)
+            }
+        })
+    }
+
+    /// See [`crate::common::context::Context::send_recv_with_tag`].
+    pub fn send_recv_with_tag(
+        &self,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -> Sf<SendResult<Message>> {
+        let process_name = self.node_manager.borrow().get_full_process_name(&to);
+
+        let ctx = self.dslab_ctx.clone();
+        SendFuture::from_future(async move {
+            if let Ok(process_name) = process_name {
+                ctx.send_recv_with_tag(msg.into(), tag, &process_name, timeout)
+                    .await
+                    .map(|msg| msg.into())
             } else {
                 Err(SendError::NotSent)
             }

@@ -35,7 +35,7 @@ pub struct System {
 
 impl System {
     /// Create new system with specified size of buffers, host and port.
-    pub fn new(max_buffer_size: usize, host: &str, port: u16, storage_mount: String) -> Self {
+    pub fn new(max_buffer_size: usize, host: &str, port: u16, storage_mount: &str) -> Self {
         let (messages_sender, network_receiver) = mpsc::channel(max_buffer_size);
 
         let (network_sender, messages_receiver) = mpsc::channel(max_buffer_size);
@@ -55,7 +55,7 @@ impl System {
             max_buffer_size,
             host: host.to_owned(),
             port,
-            mount_dir: storage_mount,
+            mount_dir: storage_mount.to_owned(),
         };
 
         system.spawn(Box::pin(network_handler));

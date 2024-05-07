@@ -18,6 +18,7 @@ pub struct RoutedMessage {
     pub msg: Message,
     pub from: Address,
     pub to: Address,
+    pub tag: Option<Tag>,
 }
 
 impl Message {
@@ -89,6 +90,8 @@ impl Message {
 use dslab_async_mp::network::message::Message as DSLabMessage;
 
 use crate::Address;
+
+use super::tag::Tag;
 
 impl From<DSLabMessage> for Message {
     fn from(msg: DSLabMessage) -> Self {

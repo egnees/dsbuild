@@ -17,6 +17,8 @@ message SendMessageRequest {
 
   string message_tip = 7;
   bytes message_data = 8;
+
+  optional uint64 tag = 9;
 }
 
 message SendMessageResponse { string status = 1; }

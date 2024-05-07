@@ -19,6 +19,8 @@ use message_passing::{SendMessageRequest, SendMessageResponse};
 
 use tonic::{transport::Server, Request, Response, Status};
 
+use crate::common::tag::Tag;
+
 pub struct ProcessSendRequest {
     /// Address of process, which sends request.
     pub sender_address: Address,
@@ -26,6 +28,8 @@ pub struct ProcessSendRequest {
     pub receiver_address: Address,
     /// Passed message.
     pub message: Message,
+    /// Optional message tag.
+    pub tag: Option<Tag>,
 }
 
 /// Used to pass responses on [requests][`ProcessSendRequest`].
@@ -65,6 +69,7 @@ impl MessagePassing for MessagePassingService {
             msg: message,
             from: sender_address,
             to: receiver_address,
+            tag: req.tag,
         };
 
         self.send_to
@@ -94,6 +99,7 @@ impl GRpcMessenger {
             receiver_process: request.receiver_address.process_name.clone(),
             message_tip: request.message.get_tip().clone(),
             message_data: request.message.get_raw_data().to_vec(),
+            tag: request.tag,
         });
 
         let receiver_host = request.receiver_address.host.clone();

@@ -1,11 +1,17 @@
 //! Definition of context-related objects.
 
-use std::future::Future;
+use std::{future::Future, time::Duration};
 
 use dslab_async_mp::storage::result::{StorageError, StorageResult};
+use tokio::{select, sync::oneshot};
 
 use crate::{
-    common::{file::File, message::RoutedMessage, network::SendResult},
+    common::{
+        file::File,
+        message::RoutedMessage,
+        network::{SendError, SendResult},
+        tag::Tag,
+    },
     Address, Message,
 };
 
@@ -65,6 +71,7 @@ impl RealContext {
             msg,
             from: self.address.clone(),
             to: dst,
+            tag: None,
         };
         let sender = self.output.network.clone();
         tokio::spawn(async move {
@@ -88,9 +95,69 @@ impl RealContext {
             msg,
             from: self.address.clone(),
             to: dst,
+            tag: None,
         };
 
         network::send_message_with_ack_timeout(msg, timeout).await
+    }
+
+    /// See [`crate::common::context::Context::send_with_tag`].
+    pub async fn send_with_tag(
+        &self,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -> SendResult<()> {
+        let msg = RoutedMessage {
+            msg,
+            from: self.address.clone(),
+            to,
+            tag: Some(tag),
+        };
+
+        network::send_message_with_ack_timeout(msg, timeout).await
+    }
+
+    /// See [`crate::common::context::Context::send_recv_with_tag`].
+    pub async fn send_recv_with_tag(
+        &self,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -> SendResult<Message> {
+        let (sender, receiver) = oneshot::channel();
+
+        let output = self.output.clone();
+        let from = self.address.clone();
+
+        output
+            .message_waiters
+            .lock()
+            .unwrap()
+            .entry(tag)
+            .or_default()
+            .push(sender);
+
+        let timeout = Duration::from_millis((timeout * 1000.0) as u64);
+
+        let send_future = async move {
+            network::send_message_with_ack(RoutedMessage {
+                msg,
+                from,
+                to,
+                tag: None,
+            })
+            .await?;
+
+            receiver.await.map_err(|_| SendError::NotSent)
+        };
+
+        select! {
+            result = send_future => result,
+            _ = tokio::time::sleep(timeout) => Err(SendError::Timeout)
+        }
     }
 
     /// Spawn asynchronous activity.

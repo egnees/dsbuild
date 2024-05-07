@@ -10,7 +10,9 @@ use crate::{
     Address, Message, Process,
 };
 
-use super::{context::RealContext, network::NetworkRequest, timer::TimerManager};
+use super::{
+    context::RealContext, msg_waiters::MessageWaiters, network::NetworkRequest, timer::TimerManager,
+};
 
 /// All messages which can be received from system.
 pub enum FromSystemMessage {
@@ -50,6 +52,7 @@ pub(crate) struct Output {
     pub network: Sender<NetworkRequest>,
     pub system: Sender<ToSystemMessage>,
     pub timer_mngr: Arc<Mutex<TimerManager>>,
+    pub message_waiters: Arc<Mutex<MessageWaiters>>,
 }
 
 pub(crate) struct ProcessManagerConfig {
@@ -77,6 +80,7 @@ impl ProcessManager {
             network: config.network_sender,
             system: config.system_sender,
             timer_mngr: timer_manager_ref,
+            message_waiters: Arc::new(Mutex::new(MessageWaiters::default())),
         };
 
         Self {
@@ -131,7 +135,19 @@ impl ProcessManager {
         }
     }
 
-    fn handle_message(&mut self, msg: RoutedMessage) {
+    fn handle_message(&mut self, mut msg: RoutedMessage) {
+        if let Some(tag) = msg.tag {
+            if let Some(waiting) = self.output.message_waiters.lock().unwrap().get_mut(&tag) {
+                if let Some(s) = waiting.pop() {
+                    if let Err(returned_msg) = s.send(msg.msg) {
+                        msg.msg = returned_msg;
+                    } else {
+                        return;
+                    }
+                }
+            }
+        }
+
         let result = self.process.write().unwrap().on_message(
             msg.msg.clone(),
             msg.from.clone(),

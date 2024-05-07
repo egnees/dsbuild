@@ -52,6 +52,7 @@ async fn send_message(msg: RoutedMessage) {
         sender_address: msg.from.clone(),
         receiver_address: msg.to.clone(),
         message: msg.msg,
+        tag: msg.tag,
     })
     .await;
 
@@ -68,6 +69,7 @@ pub async fn send_message_with_ack(msg: RoutedMessage) -> SendResult<()> {
         sender_address: msg.from.clone(),
         receiver_address: msg.to.clone(),
         message: msg.msg,
+        tag: msg.tag,
     })
     .await;
 

@@ -8,6 +8,7 @@ use crate::virt::context::VirtualContext;
 use crate::{real::context::RealContext, storage::StorageResult};
 
 use super::file::File;
+use super::tag::Tag;
 use super::{message::Message, process::Address};
 
 /// Represents enum of two context variants - real and virtual.
@@ -86,6 +87,36 @@ impl Context {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.send_with_ack(msg, dst, timeout).await,
             ContextVariant::Virtual(ctx) => ctx.send_with_ack(msg, dst, timeout).await,
+        }
+    }
+
+    /// Allows to send message with specified tag reliable.
+    pub async fn send_with_tag(
+        &self,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -> SendResult<()> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.send_with_tag(msg, tag, to, timeout).await,
+            ContextVariant::Virtual(ctx) => ctx.send_with_tag(msg, tag, to, timeout).await,
+        }
+    }
+
+    /// Send reliable message to specified address
+    /// and await message sent via [`Context::send_with_tag`] with specified tag
+    /// from any process.
+    pub async fn send_recv_with_tag(
+        &self,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -> SendResult<Message> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.send_recv_with_tag(msg, tag, to, timeout).await,
+            ContextVariant::Virtual(ctx) => ctx.send_recv_with_tag(msg, tag, to, timeout).await,
         }
     }
 

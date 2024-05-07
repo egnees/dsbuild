@@ -26,4 +26,5 @@ pub use common::{
     context::Context,
     message::Message,
     process::{Address, IOProcessWrapper, Process, ProcessGuard, ProcessWrapper},
+    tag::Tag,
 };

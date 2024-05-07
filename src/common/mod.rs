@@ -6,6 +6,7 @@ pub mod file;
 pub mod network;
 pub mod process;
 pub mod storage;
+pub mod tag;
 
 pub mod message;
 
