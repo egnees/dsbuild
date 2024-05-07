@@ -16,7 +16,7 @@ fn main() {
     let listen_port = args[2].parse::<u16>().expect("Can not parse listen port");
     let mount_dir = &args[3];
 
-    let mut system = RealSystem::new(1024, listen_host, listen_port, mount_dir.to_string());
+    let mut system = RealSystem::new(1024, listen_host, listen_port, mount_dir);
 
     system.add_process(ServerProcess::default(), "server".to_owned());
 
