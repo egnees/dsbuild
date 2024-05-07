@@ -134,6 +134,37 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of [`Context`].
 
 </span><span class="kw">use </span>std::future::Future;
@@ -144,6 +175,7 @@
 <span class="kw">use crate</span>::{real::context::RealContext, storage::StorageResult};
 
 <span class="kw">use </span><span class="kw">super</span>::file::File;
+<span class="kw">use </span><span class="kw">super</span>::tag::Tag;
 <span class="kw">use super</span>::{message::Message, process::Address};
 
 <span class="doccomment">/// Represents enum of two context variants - real and virtual.
@@ -222,6 +254,36 @@
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.context_variant {
             ContextVariant::Real(ctx) =&gt; ctx.send_with_ack(msg, dst, timeout).<span class="kw">await</span>,
             ContextVariant::Virtual(ctx) =&gt; ctx.send_with_ack(msg, dst, timeout).<span class="kw">await</span>,
+        }
+    }
+
+    <span class="doccomment">/// Allows to send message with specified tag reliable.
+    </span><span class="kw">pub async fn </span>send_with_tag(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -&gt; SendResult&lt;()&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.context_variant {
+            ContextVariant::Real(ctx) =&gt; ctx.send_with_tag(msg, tag, to, timeout).<span class="kw">await</span>,
+            ContextVariant::Virtual(ctx) =&gt; ctx.send_with_tag(msg, tag, to, timeout).<span class="kw">await</span>,
+        }
+    }
+
+    <span class="doccomment">/// Send reliable message to specified address
+    /// and await message sent via [`Context::send_with_tag`] with specified tag
+    /// from any process.
+    </span><span class="kw">pub async fn </span>send_recv_with_tag(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        msg: Message,
+        tag: Tag,
+        to: Address,
+        timeout: f64,
+    ) -&gt; SendResult&lt;Message&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.context_variant {
+            ContextVariant::Real(ctx) =&gt; ctx.send_recv_with_tag(msg, tag, to, timeout).<span class="kw">await</span>,
+            ContextVariant::Virtual(ctx) =&gt; ctx.send_recv_with_tag(msg, tag, to, timeout).<span class="kw">await</span>,
         }
     }
 

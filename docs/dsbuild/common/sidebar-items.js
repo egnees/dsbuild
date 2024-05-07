@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["context","file","message","network","process","storage"]};
+window.SIDEBAR_ITEMS = {"mod":["context","file","message","network","process","storage","tag"]};

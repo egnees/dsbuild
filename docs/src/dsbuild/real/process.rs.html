@@ -163,6 +163,22 @@
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of process management objects.
 
 </span><span class="kw">use </span>std::sync::{Arc, Mutex, RwLock};
@@ -175,7 +191,9 @@
     Address, Message, Process,
 };
 
-<span class="kw">use super</span>::{context::RealContext, network::NetworkRequest, timer::TimerManager};
+<span class="kw">use super</span>::{
+    context::RealContext, msg_waiters::MessageWaiters, network::NetworkRequest, timer::TimerManager,
+};
 
 <span class="doccomment">/// All messages which can be received from system.
 </span><span class="kw">pub enum </span>FromSystemMessage {
@@ -215,6 +233,7 @@
     <span class="kw">pub </span>network: Sender&lt;NetworkRequest&gt;,
     <span class="kw">pub </span>system: Sender&lt;ToSystemMessage&gt;,
     <span class="kw">pub </span>timer_mngr: Arc&lt;Mutex&lt;TimerManager&gt;&gt;,
+    <span class="kw">pub </span>message_waiters: Arc&lt;Mutex&lt;MessageWaiters&gt;&gt;,
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ProcessManagerConfig {
@@ -242,6 +261,7 @@
             network: config.network_sender,
             system: config.system_sender,
             timer_mngr: timer_manager_ref,
+            message_waiters: Arc::new(Mutex::new(MessageWaiters::default())),
         };
 
         <span class="self">Self </span>{
@@ -296,7 +316,19 @@
         }
     }
 
-    <span class="kw">fn </span>handle_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: RoutedMessage) {
+    <span class="kw">fn </span>handle_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>msg: RoutedMessage) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(tag) = msg.tag {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(waiting) = <span class="self">self</span>.output.message_waiters.lock().unwrap().get_mut(<span class="kw-2">&amp;</span>tag) {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(s) = waiting.pop() {
+                    <span class="kw">if let </span><span class="prelude-val">Err</span>(returned_msg) = s.send(msg.msg) {
+                        msg.msg = returned_msg;
+                    } <span class="kw">else </span>{
+                        <span class="kw">return</span>;
+                    }
+                }
+            }
+        }
+
         <span class="kw">let </span>result = <span class="self">self</span>.process.write().unwrap().on_message(
             msg.msg.clone(),
             msg.from.clone(),

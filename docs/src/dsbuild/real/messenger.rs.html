@@ -149,6 +149,12 @@
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of asynchronous messenger [`GRpcMessenger`] structure.
 
 </span><span class="kw">use </span>std::net::{IpAddr, SocketAddr};
@@ -170,6 +176,8 @@
 
 <span class="kw">use </span>tonic::{transport::Server, Request, Response, Status};
 
+<span class="kw">use </span><span class="kw">crate</span>::common::tag::Tag;
+
 <span class="kw">pub struct </span>ProcessSendRequest {
     <span class="doccomment">/// Address of process, which sends request.
     </span><span class="kw">pub </span>sender_address: Address,
@@ -177,6 +185,8 @@
     </span><span class="kw">pub </span>receiver_address: Address,
     <span class="doccomment">/// Passed message.
     </span><span class="kw">pub </span>message: Message,
+    <span class="doccomment">/// Optional message tag.
+    </span><span class="kw">pub </span>tag: <span class="prelude-ty">Option</span>&lt;Tag&gt;,
 }
 
 <span class="doccomment">/// Used to pass responses on [requests][`ProcessSendRequest`].
@@ -216,6 +226,7 @@
             msg: message,
             from: sender_address,
             to: receiver_address,
+            tag: req.tag,
         };
 
         <span class="self">self</span>.send_to
@@ -245,6 +256,7 @@
             receiver_process: request.receiver_address.process_name.clone(),
             message_tip: request.message.get_tip().clone(),
             message_data: request.message.get_raw_data().to_vec(),
+            tag: request.tag,
         });
 
         <span class="kw">let </span>receiver_host = request.receiver_address.host.clone();
