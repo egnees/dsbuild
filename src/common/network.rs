@@ -4,4 +4,4 @@
 pub type SendError = dslab_async_mp::network::result::SendError;
 
 /// Represents result of `send message` operation.
-pub type SendResult<T> = dslab_async_mp::network::result::SendResult<T>;
+pub type SendResult<T> = Result<T, SendError>;

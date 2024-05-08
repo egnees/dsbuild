@@ -3,12 +3,11 @@
 
 pub mod context;
 pub mod file;
+pub mod message;
 pub mod network;
 pub mod process;
 pub mod storage;
 pub mod tag;
-
-pub mod message;
 
 #[cfg(test)]
 mod tests;

@@ -24,7 +24,7 @@ use super::{
 /// Responsible for user-simulation interaction.
 /// Serves as a proxy between user and underlying
 /// [DSLab MP simulation](https://github.com/osukhoroslov/dslab/tree/main/crates/dslab-mp),
-/// uses corresponding [`DSLab MP context`][DSLabContext] methods.
+/// uses corresponding `DSLabContext` methods.
 #[derive(Clone)]
 pub(crate) struct VirtualContext {
     pub dslab_ctx: DSLabContext,

@@ -22,7 +22,6 @@ pub enum ProcessState {
 ///
 /// Every user-defined process must satisfy the following requirements:
 /// - It must implement the [`Process`] trait.
-/// - It must implement the [`Clone`] trait.
 ///
 /// Ideologically every process must be created by the user,
 /// and after that passed to the system (real or virtual), which will own the process.
@@ -34,8 +33,8 @@ pub enum ProcessState {
 /// so system can not hold the process.
 /// So, for system every process' lifetime is static.
 ///
-/// To interact with system, process can use context object, which implements [`Context`] trait.
-/// It allows to send messages, set timers, etc.
+/// To interact with system, process can use context [`Context`] object.
+/// It allows [send messages][`Context::send`], [set timers][`Context::set_timer`], [work with file system][`Context::create_file`], etc.
 pub trait Process: Send + Sync {
     /// Called when process starts interaction with system.
     fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String>;
