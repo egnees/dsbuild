@@ -13,5 +13,5 @@
 </span><span class="kw">pub type </span>SendError = dslab_async_mp::network::result::SendError;
 
 <span class="doccomment">/// Represents result of `send message` operation.
-</span><span class="kw">pub type </span>SendResult&lt;T&gt; = dslab_async_mp::network::result::SendResult&lt;T&gt;;
+</span><span class="kw">pub type </span>SendResult&lt;T&gt; = <span class="prelude-ty">Result</span>&lt;T, SendError&gt;;
 </code></pre></div></section></main></body></html>
