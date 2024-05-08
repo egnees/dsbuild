@@ -19,13 +19,13 @@ use std::io::ErrorKind;
 
 use super::{
     network::{self, NetworkRequest},
-    process::{Output, ToSystemMessage},
+    process::{InteractionBlock, ToSystemMessage},
 };
 
 /// Represents context of system in the real mode.
 #[derive(Clone)]
 pub(crate) struct RealContext {
-    pub(crate) output: Output,
+    pub(crate) output: InteractionBlock,
     pub(crate) address: Address,
     pub(crate) mount_dir: String,
 }

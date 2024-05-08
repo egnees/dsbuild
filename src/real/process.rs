@@ -35,7 +35,7 @@ pub(crate) struct ProcessManager {
     timers_receiver: Receiver<String>,
     /// To communicate with outside.
     /// Must be passed to real context.
-    output: Output,
+    output: InteractionBlock,
     /// Address of the process.
     /// Used to communicate in network.
     address: Address,
@@ -44,10 +44,9 @@ pub(crate) struct ProcessManager {
     mount_dir: String,
 }
 
-/// Responsible for process communication with outside.
-/// Used to communicate in network.
+/// Responsible for process interaction with system, storage, user and network.
 #[derive(Clone)]
-pub(crate) struct Output {
+pub(crate) struct InteractionBlock {
     pub local: Sender<Message>,
     pub network: Sender<NetworkRequest>,
     pub system: Sender<ToSystemMessage>,
@@ -75,7 +74,7 @@ impl ProcessManager {
         let timer_manager = TimerManager::new(timer_sender);
         let timer_manager_ref = Arc::new(Mutex::new(timer_manager));
 
-        let output = Output {
+        let output = InteractionBlock {
             local: config.local_sender,
             network: config.network_sender,
             system: config.system_sender,
