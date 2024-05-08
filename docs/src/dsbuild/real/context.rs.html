@@ -243,13 +243,13 @@
 
 <span class="kw">use super</span>::{
     network::{<span class="self">self</span>, NetworkRequest},
-    process::{Output, ToSystemMessage},
+    process::{InteractionBlock, ToSystemMessage},
 };
 
 <span class="doccomment">/// Represents context of system in the real mode.
 </span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>RealContext {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) output: Output,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) output: InteractionBlock,
     <span class="kw">pub</span>(<span class="kw">crate</span>) address: Address,
     <span class="kw">pub</span>(<span class="kw">crate</span>) mount_dir: String,
 }

@@ -178,7 +178,6 @@
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of process management objects.
 
 </span><span class="kw">use </span>std::sync::{Arc, Mutex, RwLock};
@@ -216,7 +215,7 @@
     timers_receiver: Receiver&lt;String&gt;,
     <span class="doccomment">/// To communicate with outside.
     /// Must be passed to real context.
-    </span>output: Output,
+    </span>output: InteractionBlock,
     <span class="doccomment">/// Address of the process.
     /// Used to communicate in network.
     </span>address: Address,
@@ -225,10 +224,9 @@
     mount_dir: String,
 }
 
-<span class="doccomment">/// Responsible for process communication with outside.
-/// Used to communicate in network.
+<span class="doccomment">/// Responsible for process interaction with system, storage, user and network.
 </span><span class="attr">#[derive(Clone)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Output {
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>InteractionBlock {
     <span class="kw">pub </span>local: Sender&lt;Message&gt;,
     <span class="kw">pub </span>network: Sender&lt;NetworkRequest&gt;,
     <span class="kw">pub </span>system: Sender&lt;ToSystemMessage&gt;,
@@ -256,7 +254,7 @@
         <span class="kw">let </span>timer_manager = TimerManager::new(timer_sender);
         <span class="kw">let </span>timer_manager_ref = Arc::new(Mutex::new(timer_manager));
 
-        <span class="kw">let </span>output = Output {
+        <span class="kw">let </span>output = InteractionBlock {
             local: config.local_sender,
             network: config.network_sender,
             system: config.system_sender,
