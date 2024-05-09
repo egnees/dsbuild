@@ -28,7 +28,7 @@ impl Default for WaitingFor {
     }
 }
 
-/// Represents information which [`State`] returns to the [`Client`].
+/// Represents information which [`State`] returns to the client.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StateUpdateResult {
     /// Request which client can send to the server.

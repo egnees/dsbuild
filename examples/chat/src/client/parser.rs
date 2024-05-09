@@ -56,21 +56,19 @@ fn validate_param(param: &[&str]) -> Result<String, ParseError> {
         } else {
             Ok(param[0].to_owned())
         }
+    } else if !param[0].starts_with('\'') || !param[param.len() - 1].ends_with('\'') {
+        bad_syntax("composite parameter must be in the quotation marks")
     } else {
-        if !param[0].starts_with('\'') || !param[param.len() - 1].ends_with('\'') {
-            bad_syntax("composite parameter must be in the quotation marks")
+        let params = param.len();
+
+        let first = param[0][1..].to_owned();
+        let last = param[params - 1][..param[params - 1].len() - 1].to_owned();
+        let mid = param[1..params - 1].join(" ");
+
+        if mid.is_empty() {
+            Ok([first, last].join(" "))
         } else {
-            let params = param.len();
-
-            let first = param[0][1..].to_owned();
-            let last = param[params - 1][..param[params - 1].len() - 1].to_owned();
-            let mid = param[1..params - 1].join(" ");
-
-            if mid.is_empty() {
-                Ok([first, last].join(" "))
-            } else {
-                Ok([first, mid, last].join(" "))
-            }
+            Ok([first, mid, last].join(" "))
         }
     }
 }

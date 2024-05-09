@@ -1,4 +1,4 @@
-///! Definition of requests from client to server which can appear in the system.
+//! Definition of requests from client to server which can appear in the system.
 use std::fmt;
 use std::time::SystemTime;
 

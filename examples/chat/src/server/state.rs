@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
-use dsbuild::{storage::StorageError, Address, Context};
+use dsbuild::{storage::StorageError, Address, Context, Message};
 use tokio::sync::Mutex;
 
 use crate::client::requests::{ClientRequest, ClientRequestKind};
@@ -8,7 +8,14 @@ use crate::client::requests::{ClientRequest, ClientRequestKind};
 use super::{
     event::{ChatEvent, ChatEventKind},
     messages::ServerMessage,
-    util::{auth_user, calc_events_in_chat, send_ack, send_err, transfer_chat_history},
+    replication::{
+        get_replica_total_seq_num, request_replica_events_from_range, ReceiveEventsRequest,
+        ReplicateEventRequest, TotalSeqNumMsg, TotalSeqNumRequest,
+    },
+    util::{
+        append_global_event, auth_user, calc_events_in_chat, calc_global_events_cnt, send_ack,
+        send_err, transfer_chat_history, transfer_events,
+    },
 };
 
 #[derive(Default)]
@@ -16,11 +23,96 @@ pub struct ServerState {
     chat_seq_nums: HashMap<String, u64>,
     chat_users: HashMap<String, Vec<Address>>,
     user_chat: HashMap<String, String>,
+    waiting_for_seq: Option<u64>,
+    total_seq: Option<u64>,
+    replica: Option<Address>,
+    tag: u64,
 }
 
 pub type ServerStateLock = Arc<Mutex<ServerState>>;
 
 impl ServerState {
+    async fn get_total_seq(&mut self, ctx: Context) -> u64 {
+        self.total_seq
+            .get_or_insert(calc_global_events_cnt(ctx.clone()).await)
+            .to_owned()
+    }
+
+    pub async fn process_msg(&mut self, from: Address, ctx: Context, msg: Message) {
+        let tip = msg.get_tip().as_str();
+        match tip {
+            "total_seg_num_request" => {
+                let tag = msg.get_data::<TotalSeqNumRequest>().unwrap().tag;
+                let total_seq = self.get_total_seq(ctx.clone()).await;
+                let _ = ctx
+                    .send_with_tag(
+                        TotalSeqNumMsg {
+                            total_seq_num: total_seq,
+                        }
+                        .into(),
+                        tag,
+                        from,
+                        5.0,
+                    )
+                    .await;
+            }
+            "replicate_event_request" => {
+                let request = msg.get_data::<ReplicateEventRequest>().unwrap();
+                let seq = self.get_total_seq(ctx.clone()).await;
+                if seq < request.total_seq_num {
+                    assert_eq!(seq + 1, request.total_seq_num);
+                    self.total_seq = Some(seq + 1);
+                    if let Some(waiting_for) = self.waiting_for_seq {
+                        if waiting_for == request.total_seq_num {
+                            self.waiting_for_seq = None;
+                        }
+                    }
+                    let _ = self
+                        .append_event_to_chat(
+                            request.event.chat,
+                            request.event.user,
+                            request.event.kind,
+                            ctx.clone(),
+                        )
+                        .await;
+                }
+            }
+            "total_seq_num_msg" => {
+                // do nothing
+            }
+            "receive_events_request" => {
+                let request = msg.get_data::<ReceiveEventsRequest>().unwrap();
+                transfer_events(ctx.clone(), from, request.from, request.to).await;
+            }
+            _ => {
+                if self.waiting_for_seq.is_some() {
+                    return;
+                }
+                if let Some(replica) = self.replica.clone() {
+                    self.tag += 1;
+                    let replica_seq =
+                        get_replica_total_seq_num(ctx.clone(), self.tag, replica.clone()).await;
+                    let seq = self.get_total_seq(ctx.clone()).await;
+                    if let Some(replica_seq) = replica_seq {
+                        if seq < replica_seq {
+                            request_replica_events_from_range(
+                                ctx.clone(),
+                                seq + 1,
+                                replica_seq,
+                                replica,
+                            )
+                            .await;
+                            self.waiting_for_seq = Some(replica_seq);
+                            return;
+                        }
+                    }
+                }
+                let user_request = msg.get_data::<ClientRequest>().unwrap();
+                self.handle_user_request(from, ctx, user_request).await;
+            }
+        }
+    }
+
     pub async fn handle_user_request(
         &mut self,
         from: Address,
@@ -53,7 +145,12 @@ impl ServerState {
         };
 
         match result {
-            Ok(_) => send_ack(ctx, request.id, from),
+            Ok(event) => {
+                append_global_event(ctx.clone(), event).await;
+                let seq = self.get_total_seq(ctx.clone()).await;
+                *self.total_seq.as_mut().unwrap() = seq + 1;
+                send_ack(ctx, request.id, from);
+            }
             Err(info) => send_err(ctx, request.id, from, info),
         }
     }
@@ -63,7 +160,7 @@ impl ServerState {
         client: String,
         msg: String,
         ctx: Context,
-    ) -> Result<(), String> {
+    ) -> Result<ChatEvent, String> {
         if msg.len() > 4096 {
             return Err("message too long".to_owned());
         }
@@ -81,8 +178,8 @@ impl ServerState {
                 ctx.clone(),
             )
             .await?;
-        self.broadcast_chat_event(chat, event, ctx);
-        Ok(())
+        self.broadcast_chat_event(chat, event.clone(), ctx);
+        Ok(event)
     }
 
     async fn create_chat(
@@ -91,12 +188,12 @@ impl ServerState {
         client: String,
         _client_addr: Address,
         ctx: Context,
-    ) -> Result<(), String> {
+    ) -> Result<ChatEvent, String> {
         if chat.len() > 4096 {
             return Err("chat name too long".to_owned());
         }
 
-        if !self.user_chat.get(&client).is_none() {
+        if self.user_chat.contains_key(&client) {
             return Err("already connected to chat".to_owned());
         }
         let file_name = format!("{}.chat", chat);
@@ -115,8 +212,8 @@ impl ServerState {
                 )
                 .await
                 .unwrap();
-            self.broadcast_chat_event(chat, event, ctx);
-            Ok(())
+            self.broadcast_chat_event(chat, event.clone(), ctx);
+            Ok(event)
         }
     }
 
@@ -126,8 +223,8 @@ impl ServerState {
         client: String,
         client_addr: Address,
         ctx: Context,
-    ) -> Result<(), String> {
-        if let Some(_) = self.user_chat.get(&client) {
+    ) -> Result<ChatEvent, String> {
+        if self.user_chat.contains_key(&client) {
             Err("user already connected to chat".to_owned())
         } else {
             let event = self
@@ -140,8 +237,8 @@ impl ServerState {
                 .await?;
             self.connect_user_to_chat(chat.clone(), client_addr.clone(), client);
             transfer_chat_history(ctx.clone(), client_addr, chat.clone()).await;
-            self.broadcast_chat_event(chat, event, ctx);
-            Ok(())
+            self.broadcast_chat_event(chat, event.clone(), ctx);
+            Ok(event)
         }
     }
 
@@ -150,7 +247,7 @@ impl ServerState {
         client: String,
         client_addr: Address,
         ctx: Context,
-    ) -> Result<(), String> {
+    ) -> Result<ChatEvent, String> {
         let chat = self
             .user_chat
             .get(&client)
@@ -165,11 +262,11 @@ impl ServerState {
                 ctx.clone(),
             )
             .await?;
-        self.broadcast_chat_event(chat, event, ctx);
-        Ok(())
+        self.broadcast_chat_event(chat, event.clone(), ctx);
+        Ok(event)
     }
 
-    async fn append_event_to_chat(
+    pub async fn append_event_to_chat(
         &mut self,
         chat: String,
         author: String,
@@ -177,10 +274,22 @@ impl ServerState {
         ctx: Context,
     ) -> Result<ChatEvent, String> {
         let file_name = format!("{}.chat", chat);
-        let mut file = ctx.open_file(&file_name).await.map_err(|e| match e {
-            StorageError::NotFound => "chat not found".to_string(),
-            _ => panic!("storage unavailable"),
-        })?;
+
+        let mut file = if !ctx
+            .file_exists(&file_name)
+            .await
+            .map_err(|_| "storage unavailable")?
+        {
+            ctx.create_file(&file_name)
+                .await
+                .map_err(|_| "storage unavailable")?
+        } else {
+            ctx.open_file(&file_name).await.map_err(|e| match e {
+                StorageError::NotFound => "chat not found".to_string(),
+                _ => panic!("storage unavailable"),
+            })?
+        };
+
         let seq_num = *self
             .chat_seq_nums
             .get(&chat)
@@ -213,7 +322,7 @@ impl ServerState {
     fn connect_user_to_chat(&mut self, chat: String, user_addr: Address, user: String) {
         self.chat_users
             .entry(chat.clone())
-            .or_insert(Vec::new())
+            .or_default()
             .push(user_addr);
         assert!(self.user_chat.insert(user, chat).is_none());
     }

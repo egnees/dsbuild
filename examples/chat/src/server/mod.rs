@@ -4,6 +4,7 @@
 pub mod event;
 pub mod messages;
 pub mod process;
+pub mod replication;
 pub mod state;
 pub mod util;
 

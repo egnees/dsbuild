@@ -25,6 +25,7 @@ pub use common::storage;
 pub use common::{
     context::Context,
     message::Message,
+    network::{SendError, SendResult},
     process::{Address, IOProcessWrapper, Process, ProcessGuard, ProcessWrapper},
     tag::Tag,
 };

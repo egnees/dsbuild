@@ -127,7 +127,7 @@ impl System {
 
     // Process ------------------------------------------------------
 
-    /// Adds a process to the [`VirtualSystem`].
+    /// Adds a process to the [`System`].
     ///
     /// # Panics
     ///

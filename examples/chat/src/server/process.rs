@@ -1,7 +1,5 @@
 use dsbuild::{Address, Context, Message, Process};
 
-use crate::client::requests::ClientRequest;
-
 use super::state::ServerStateLock;
 
 #[derive(Default)]
@@ -19,13 +17,10 @@ impl Process for ServerProcess {
     }
 
     fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
-        let client_request = msg.get_data::<ClientRequest>()?;
         let state_lock = self.state_lock.clone();
         ctx.clone().spawn(async move {
             let mut state_guard = state_lock.lock().await;
-            state_guard
-                .handle_user_request(from, ctx, client_request)
-                .await;
+            state_guard.process_msg(from, ctx, msg).await;
         });
         Ok(())
     }

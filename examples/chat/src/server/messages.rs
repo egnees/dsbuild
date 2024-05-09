@@ -1,4 +1,4 @@
-///! Definition of messages which can be produces by server.
+//! Definition of messages which can be produces by server.
 use core::fmt;
 use dsbuild::{Address, Message};
 use serde::{Deserialize, Serialize};
