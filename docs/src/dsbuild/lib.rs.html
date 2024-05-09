@@ -30,6 +30,7 @@
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Framework for building distributed systems with support for
 //! [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
 //! simulation-based testing.
@@ -57,6 +58,7 @@
 </span><span class="kw">pub use </span>common::{
     context::Context,
     message::Message,
+    network::{SendError, SendResult},
     process::{Address, IOProcessWrapper, Process, ProcessGuard, ProcessWrapper},
     tag::Tag,
 };

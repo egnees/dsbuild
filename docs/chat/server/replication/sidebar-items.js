@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_replica_total_seq_num","request_replica_events_from_range"],"struct":["ReceiveEventsRequest","ReplicateEventRequest","TotalSeqNumMsg","TotalSeqNumRequest"]};

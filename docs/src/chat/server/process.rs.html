@@ -27,14 +27,7 @@
 <a href="#25" id="25">25</a>
 <a href="#26" id="26">26</a>
 <a href="#27" id="27">27</a>
-<a href="#28" id="28">28</a>
-<a href="#29" id="29">29</a>
-<a href="#30" id="30">30</a>
-<a href="#31" id="31">31</a>
-<a href="#32" id="32">32</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>dsbuild::{Address, Context, Message, Process};
-
-<span class="kw">use </span><span class="kw">crate</span>::client::requests::ClientRequest;
 
 <span class="kw">use </span><span class="kw">super</span>::state::ServerStateLock;
 
@@ -53,13 +46,10 @@
     }
 
     <span class="kw">fn </span>on_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, from: Address, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
-        <span class="kw">let </span>client_request = msg.get_data::&lt;ClientRequest&gt;()<span class="question-mark">?</span>;
         <span class="kw">let </span>state_lock = <span class="self">self</span>.state_lock.clone();
         ctx.clone().spawn(<span class="kw">async move </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>state_guard = state_lock.lock().<span class="kw">await</span>;
-            state_guard
-                .handle_user_request(from, ctx, client_request)
-                .<span class="kw">await</span>;
+            state_guard.process_msg(from, ctx, msg).<span class="kw">await</span>;
         });
         <span class="prelude-val">Ok</span>(())
     }

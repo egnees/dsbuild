@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["event","messages","process","state","util"]};
+window.SIDEBAR_ITEMS = {"mod":["event","messages","process","replication","state","util"]};

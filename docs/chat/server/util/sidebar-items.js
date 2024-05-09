@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["auth_user","calc_events_in_chat","send_ack","send_err","transfer_chat_history"]};
+window.SIDEBAR_ITEMS = {"fn":["append_global_event","auth_user","calc_events_in_chat","calc_global_events_cnt","send_ack","send_err","transfer_chat_history","transfer_events"]};
