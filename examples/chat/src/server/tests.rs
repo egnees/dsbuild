@@ -8,7 +8,11 @@ use dsbuild::{Address, Context, Message, Process, VirtualSystem};
 
 use crate::{
     client::requests::{ClientRequest, ClientRequestKind},
-    server::{event::ChatEvent, messages::ServerMessage},
+    server::{
+        event::{ChatEvent, ChatEventKind},
+        messages::ServerMessage,
+    },
+    utils::sim::read_history,
 };
 
 use super::process::ServerProcess;
@@ -250,10 +254,6 @@ fn state_works() {
 
 #[test]
 fn state_multiple_users() {
-    // env_logger::Builder::new()
-    //     .filter_level(log::LevelFilter::Debug)
-    //     .init();
-
     let mut chats = vec!["chat1", "chat2", "chat3", "chat4", "chat5"];
     let clients = vec!["client1", "client2", "client3", "client4", "client5"];
 
@@ -358,4 +358,221 @@ fn state_multiple_users() {
 
         sys.step_until_no_events();
     }
+}
+
+struct ReplicaNotifiedClientStub {
+    name: String,
+    password: String,
+    server1: Address,
+    server2: Address,
+    req_id: u64,
+}
+
+impl ReplicaNotifiedClientStub {
+    pub fn new(name: String, password: String, server1: Address, server2: Address) -> Self {
+        Self {
+            name,
+            password,
+            server1,
+            server2,
+            req_id: 0,
+        }
+    }
+}
+
+impl Process for ReplicaNotifiedClientStub {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+        let kind = msg.get_data::<ClientRequestKind>().unwrap();
+        let req = ClientRequest {
+            id: self.req_id,
+            client: self.name.clone(),
+            password: self.password.clone(),
+            time: SystemTime::now(),
+            kind,
+        };
+        self.req_id += 1;
+        let to1 = self.server1.clone();
+        let to2 = self.server2.clone();
+        ctx.clone().spawn(async move {
+            let msg: Message = req.into();
+            let send_result = ctx.send_with_ack(msg.clone(), to1, 5.0).await;
+            if send_result.is_err() {
+                ctx.send_with_ack(msg, to2, 5.0).await.unwrap();
+            }
+        });
+        Ok(())
+    }
+
+    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+        unreachable!()
+    }
+
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
+        assert!(from == self.server1 || from == self.server2);
+        ctx.send_local(msg);
+        Ok(())
+    }
+}
+
+#[test]
+fn replication_works() {
+    let mut sys = VirtualSystem::new(543210);
+
+    sys.add_node("client", "client", 0);
+    sys.add_node_with_storage("server1", "server1", 0, 4096);
+    sys.add_node_with_storage("server2", "server2", 0, 4096);
+
+    sys.network().connect_node("client1");
+    sys.network().connect_node("server1");
+    sys.network().connect_node("server2");
+    sys.network().set_delays(0.5, 1.0);
+
+    sys.add_process(
+        "server1",
+        ServerProcess::new_with_replica(Address::new_ref("server2", 0, "server2")),
+        "server1",
+    );
+
+    sys.add_process(
+        "server2",
+        ServerProcess::new_with_replica(Address::new_ref("server1", 0, "server1")),
+        "server2",
+    );
+
+    sys.add_process(
+        "client",
+        ReplicaNotifiedClientStub::new(
+            "client".to_owned(),
+            "pass123".to_owned(),
+            Address::new_ref("server1", 0, "server1"),
+            Address::new_ref("server2", 0, "server2"),
+        ),
+        "client",
+    );
+
+    sys.send_local_message(
+        "client",
+        "client",
+        ClientRequestKind::Create("chat1".to_owned()).into(),
+    );
+
+    sys.step_until_no_events();
+
+    let msgs = sys.read_local_messages("client", "client").unwrap();
+    assert_eq!(msgs.len(), 1);
+
+    sys.shutdown_node("server1");
+
+    sys.send_local_message(
+        "client",
+        "client",
+        ClientRequestKind::Connect("chat1".to_owned()).into(),
+    );
+
+    sys.step_until_no_events();
+
+    let history = read_history(&mut sys, "client", "client");
+    assert_eq!(history[0].kind, ChatEventKind::Created());
+    assert_eq!(history[1].kind, ChatEventKind::Connected());
+
+    sys.send_local_message(
+        "client",
+        "client",
+        ClientRequestKind::SendMessage("hello".to_owned()).into(),
+    );
+
+    sys.add_node("client1", "client1", 0);
+    sys.network().connect_node("client1");
+
+    sys.add_process(
+        "client1",
+        ReplicaNotifiedClientStub::new(
+            "client1".to_owned(),
+            "123pass321".to_owned(),
+            Address::new_ref("server1", 0, "server1"),
+            Address::new_ref("server2", 0, "server2"),
+        ),
+        "client1",
+    );
+
+    sys.send_local_message(
+        "client1",
+        "client1",
+        ClientRequestKind::Connect("chat1".to_owned()).into(),
+    );
+    sys.step_until_no_events();
+
+    let history = read_history(&mut sys, "client1", "client1");
+    assert_eq!(history.len(), 4);
+    assert_eq!(history[0].kind, ChatEventKind::Created());
+    assert_eq!(history[1].kind, ChatEventKind::Connected());
+    assert!(
+        (history[2].kind == ChatEventKind::SentMessage("hello".to_owned())
+            && history[3].kind == ChatEventKind::Connected())
+            || (history[3].kind == ChatEventKind::SentMessage("hello".to_owned())
+                && history[2].kind == ChatEventKind::Connected())
+    );
+
+    sys.rerun_node("server1");
+    sys.add_process(
+        "server1",
+        ServerProcess::new_with_replica(Address::new_ref("server2", 0, "server2")),
+        "server1",
+    );
+    sys.network().connect_node("server1");
+    sys.send_local_message(
+        "server1",
+        "server1",
+        Message::new("download_events_from_replica", &String::new()).unwrap(),
+    );
+    sys.step_until_no_events();
+
+    sys.send_local_message(
+        "client1",
+        "client1",
+        ClientRequestKind::Connect("chat1".to_owned()).into(),
+    );
+    sys.step_until_no_events();
+
+    let history = read_history(&mut sys, "client1", "client1");
+    assert_eq!(history.len(), 5);
+    assert_eq!(history[0].kind, ChatEventKind::Created());
+    assert_eq!(history[1].kind, ChatEventKind::Connected());
+    assert!(
+        (history[2].kind == ChatEventKind::SentMessage("hello".to_owned())
+            && history[3].kind == ChatEventKind::Connected())
+            || (history[3].kind == ChatEventKind::SentMessage("hello".to_owned())
+                && history[2].kind == ChatEventKind::Connected())
+    );
+    assert_eq!(history[4].kind, ChatEventKind::Connected());
+
+    sys.crash_node("server2");
+    sys.step_until_no_events();
+
+    sys.recover_node("server2");
+    sys.add_process(
+        "server2",
+        ServerProcess::new_with_replica(Address::new_ref("server1", 0, "server1")),
+        "server2",
+    );
+    sys.network().connect_node("server2");
+    sys.send_local_message(
+        "server2",
+        "server2",
+        Message::new("download_events_from_replica", &String::new()).unwrap(),
+    );
+    sys.step_until_no_events();
+
+    sys.crash_node("server1");
+
+    sys.send_local_message(
+        "client1",
+        "client1",
+        ClientRequestKind::Connect("chat1".to_owned()).into(),
+    );
+
+    sys.step_until_no_events();
+
+    let history = read_history(&mut sys, "client1", "client1");
+    assert_eq!(history.len(), 6);
 }

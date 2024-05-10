@@ -30,13 +30,7 @@ pub struct ChatEvent {
 /// It makes sense to compare two chat events only in context of common chat.
 impl Ord for ChatEvent {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.seq < other.seq {
-            Ordering::Less
-        } else if self.seq == other.seq {
-            Ordering::Equal
-        } else {
-            Ordering::Greater
-        }
+        self.seq.cmp(&other.seq)
     }
 }
 

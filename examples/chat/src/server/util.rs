@@ -1,6 +1,6 @@
 use dsbuild::{Address, Context};
 
-use super::{event::ChatEvent, messages::ServerMessage};
+use super::{event::ChatEvent, messages::ServerMessage, replication::ReplicateEventRequest};
 
 pub fn send_err(ctx: Context, request_id: u64, to: Address, info: String) {
     ctx.clone().spawn(async move {
@@ -228,7 +228,11 @@ pub async fn transfer_events(ctx: Context, to: Address, range_from: u64, range_t
                         let event: ChatEvent =
                             serde_json::from_slice(current_event.as_slice()).unwrap();
 
-                        let msg = ServerMessage::ChatEvent(event.chat.clone(), event).into();
+                        let msg = ReplicateEventRequest {
+                            total_seq_num: cnt,
+                            event,
+                        }
+                        .into();
                         let to = to.clone();
                         let result = ctx.send_with_ack(msg, to, 5.0).await;
                         if result.is_err() {

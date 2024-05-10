@@ -75,3 +75,17 @@ pub async fn request_replica_events_from_range(
         .await
         .map_or(false, |_| true)
 }
+
+pub async fn replicate_event(ctx: Context, replica: Address, event: ChatEvent, id: u64) -> bool {
+    ctx.send_with_ack(
+        ReplicateEventRequest {
+            total_seq_num: id,
+            event,
+        }
+        .into(),
+        replica,
+        5.0,
+    )
+    .await
+    .map_or(false, |_| true)
+}

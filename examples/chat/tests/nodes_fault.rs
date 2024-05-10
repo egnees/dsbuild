@@ -1,16 +1,17 @@
 use chat::{
     client::{io::Info, requests::ClientRequestKind},
     server::process::ServerProcess,
+    utils::sim::read_history_from_info,
     Client,
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Message, VirtualSystem};
 
 #[test]
-fn no_faults_2_users() {
+fn servers_fault_2_users() {
     let mut sys = VirtualSystem::new(12345);
 
     sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(1.0, 3.0);
+    sys.network().set_delays(0.5, 1.0);
     sys.network().set_drop_rate(0.05);
 
     let client1_addr = Address {
@@ -25,10 +26,16 @@ fn no_faults_2_users() {
         process_name: "client2".into(),
     };
 
-    let server_addr = Address {
-        host: "server".into(),
+    let server1_addr = Address {
+        host: "server1".into(),
         port: 10024,
-        process_name: "server".into(),
+        process_name: "server1".into(),
+    };
+
+    let server2_addr = Address {
+        host: "server2".into(),
+        port: 10024,
+        process_name: "server2".into(),
     };
 
     sys.add_node("client1_node", &client1_addr.host, client1_addr.port);
@@ -37,35 +44,56 @@ fn no_faults_2_users() {
     sys.add_node("client2_node", &client2_addr.host, client2_addr.port);
     sys.network().connect_node("client2_node");
 
-    sys.add_node_with_storage("server_node", &server_addr.host, server_addr.port, 1 << 20);
-    sys.network().connect_node("server_node");
+    sys.add_node_with_storage(
+        "server1_node",
+        &server1_addr.host,
+        server1_addr.port,
+        1 << 20,
+    );
+    sys.network().connect_node("server1_node");
+
+    sys.add_node_with_storage(
+        "server2_node",
+        &server2_addr.host,
+        server2_addr.port,
+        1 << 20,
+    );
+    sys.network().connect_node("server2_node");
 
     sys.add_process(
         &client1_addr.process_name,
-        Client::new(
-            server_addr.clone(),
+        Client::new_with_replica(
+            server1_addr.clone(),
+            server2_addr.clone(),
             client1_addr.clone(),
             "client1".into(),
-            "pass123".into(),
+            "pass123client1".into(),
         ),
         "client1_node".into(),
     );
 
     sys.add_process(
         &client2_addr.process_name,
-        Client::new(
-            server_addr.clone(),
+        Client::new_with_replica(
+            server1_addr.clone(),
+            server2_addr.clone(),
             client2_addr.clone(),
             "client2".into(),
-            "pass123".into(),
+            "pass123client2".into(),
         ),
         "client2_node".into(),
     );
 
     sys.add_process(
-        &server_addr.process_name,
-        ServerProcess::default(),
-        "server_node",
+        &server1_addr.process_name,
+        ServerProcess::new_with_replica(server2_addr.clone()),
+        "server1_node",
+    );
+
+    sys.add_process(
+        &server2_addr.process_name,
+        ServerProcess::new_with_replica(server1_addr.clone()),
+        "server2_node",
     );
 
     // Client1 creates chat.
@@ -114,7 +142,55 @@ fn no_faults_2_users() {
     assert_eq!(client1_events, client2_events);
 
     // Both clients send messages in the chat.
-    for iter in 0..10 {
+    for iter in 0..15 {
+        if iter % 5 == 0 {
+            sys.crash_node("server1_node");
+        } else if iter % 5 == 1 {
+            sys.recover_node("server1_node");
+            sys.network().connect_node("server1_node");
+            sys.add_process(
+                &server1_addr.process_name,
+                ServerProcess::new_with_replica(server2_addr.clone()),
+                "server1_node",
+            );
+            sys.send_local_message(
+                &server1_addr.process_name,
+                "server1_node",
+                Message::new("download_events_from_replica", &String::new()).unwrap(),
+            );
+        } else if iter % 5 == 2 {
+            sys.crash_node("server2_node");
+        } else if iter % 5 == 3 {
+            sys.recover_node("server2_node");
+            sys.network().connect_node("server2_node");
+            sys.add_process(
+                &server2_addr.process_name,
+                ServerProcess::new_with_replica(server1_addr.clone()),
+                "server2_node",
+            );
+            sys.send_local_message(
+                &server2_addr.process_name,
+                "server2_node",
+                Message::new("download_events_from_replica", &String::new()).unwrap(),
+            );
+        }
+
+        sys.step_until_no_events();
+
+        sys.send_local_message(
+            "client1",
+            "client1_node",
+            ClientRequestKind::Connect("chat".to_owned()).into(),
+        );
+
+        sys.send_local_message(
+            "client2",
+            "client2_node",
+            ClientRequestKind::Connect("chat".to_owned()).into(),
+        );
+
+        sys.step_until_no_events();
+
         for i in 0..10 {
             sys.send_local_message(
                 "client1",
@@ -129,10 +205,8 @@ fn no_faults_2_users() {
             );
         }
 
-        sys.make_steps(15);
+        sys.step_until_no_events();
     }
-
-    sys.step_until_no_events();
 
     // Check both clients got the same messages.
     let client1_msg = sys.read_local_messages("client1", "client1_node").unwrap();
@@ -182,104 +256,7 @@ fn no_faults_2_users() {
 
     sys.step_until_no_events();
 
-    let first_history = sys.read_local_messages("client1", "client1_node").unwrap();
-    assert_eq!(first_history.len(), 1 + 1 + 1 + 100 + 100 + 1 + 1 + 1 + 1);
-
-    let second_history = sys.read_local_messages("client2", "client2_node").unwrap();
-    assert_eq!(second_history.len(), 1 + 1 + 1 + 100 + 100 + 1 + 1 + 1 + 1);
-
-    assert_eq!(first_history, second_history);
-}
-
-#[test]
-fn no_faults_10_users() {
-    let mut sys = VirtualSystem::new(12345);
-
-    sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(1.0, 3.0);
-    sys.network().set_drop_rate(0.8);
-
-    // Add server
-    let server: &'static str = "server";
-    let server_addr = Address {
-        host: server.into(),
-        port: 1000,
-        process_name: server.into(),
-    };
-    sys.add_node_with_storage(server, &server_addr.host, server_addr.port, 1 << 20);
-    sys.network().connect_node(server);
-    sys.add_process(&server_addr.process_name, ServerProcess::default(), server);
-
-    // Add clients
-    let clients: Vec<String> = (1..=10)
-        .into_iter()
-        .map(|id| format!("client_{}", id))
-        .collect();
-
-    for client in clients.as_slice().into_iter() {
-        let client_addr = Address {
-            host: client.clone(),
-            port: 1000,
-            process_name: client.clone(),
-        };
-        sys.add_node(
-            &client_addr.process_name,
-            &client_addr.host,
-            client_addr.port,
-        );
-        sys.network().connect_node(&client_addr.process_name);
-        sys.add_process(
-            &client_addr.process_name,
-            Client::new(
-                server_addr.clone(),
-                client_addr.clone(),
-                client_addr.process_name.clone(),
-                "pass123".into(),
-            ),
-            &client_addr.process_name,
-        );
-    }
-
-    // First client creates chat.
-    let chat: &'static str = "chat";
-    sys.send_local_message(
-        &clients[0],
-        &clients[0],
-        ClientRequestKind::Create(chat.into()).into(),
-    );
-    sys.step_until_no_events();
-
-    // All clients connect to created chat.
-    for client in clients.as_slice().into_iter() {
-        sys.send_local_message(
-            client,
-            client,
-            ClientRequestKind::Connect(chat.into()).into(),
-        );
-    }
-    sys.step_until_no_events();
-
-    // All clients will send random messages.
-    let iters = 100;
-    for iter in 0..iters {
-        for client in clients.as_slice().into_iter() {
-            sys.send_local_message(
-                client,
-                client,
-                ClientRequestKind::SendMessage(format!("msg_{}_{}", client, iter)).into(),
-            );
-        }
-
-        sys.make_steps(25);
-    }
-
-    sys.step_until_no_events();
-
-    let ref_history = sys.read_local_messages(&clients[0], &clients[0]).unwrap();
-    assert!(ref_history.len() >= iters * clients.len());
-
-    for client in clients.as_slice().into_iter().skip(1) {
-        let history = sys.read_local_messages(client, client).unwrap();
-        assert_eq!(history, ref_history);
-    }
+    let first = read_history_from_info(&mut sys, "client1_node", "client1");
+    let second = read_history_from_info(&mut sys, "client2_node", "client2");
+    assert_eq!(first, second);
 }

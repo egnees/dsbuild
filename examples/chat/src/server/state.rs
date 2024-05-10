@@ -9,8 +9,8 @@ use super::{
     event::{ChatEvent, ChatEventKind},
     messages::ServerMessage,
     replication::{
-        get_replica_total_seq_num, request_replica_events_from_range, ReceiveEventsRequest,
-        ReplicateEventRequest, TotalSeqNumMsg, TotalSeqNumRequest,
+        get_replica_total_seq_num, replicate_event, request_replica_events_from_range,
+        ReceiveEventsRequest, ReplicateEventRequest, TotalSeqNumMsg, TotalSeqNumRequest,
     },
     util::{
         append_global_event, auth_user, calc_events_in_chat, calc_global_events_cnt, send_ack,
@@ -32,16 +32,50 @@ pub struct ServerState {
 pub type ServerStateLock = Arc<Mutex<ServerState>>;
 
 impl ServerState {
+    pub fn new_with_replica(replica: Address) -> Self {
+        Self {
+            chat_seq_nums: HashMap::new(),
+            chat_users: HashMap::new(),
+            user_chat: HashMap::new(),
+            waiting_for_seq: None,
+            total_seq: None,
+            replica: Some(replica),
+            tag: 0,
+        }
+    }
+
     async fn get_total_seq(&mut self, ctx: Context) -> u64 {
         self.total_seq
-            .get_or_insert(calc_global_events_cnt(ctx.clone()).await)
+            .get_or_insert(calc_global_events_cnt(ctx).await)
             .to_owned()
+    }
+
+    pub async fn check_replication(&mut self, ctx: Context) -> bool {
+        if self.waiting_for_seq.is_some() {
+            return false;
+        }
+
+        if let Some(replica) = self.replica.clone() {
+            self.tag += 1;
+            let replica_seq =
+                get_replica_total_seq_num(ctx.clone(), self.tag, replica.clone()).await;
+            let seq = self.get_total_seq(ctx.clone()).await;
+            if let Some(replica_seq) = replica_seq {
+                if seq < replica_seq {
+                    request_replica_events_from_range(ctx.clone(), seq, replica_seq - 1, replica)
+                        .await;
+                    self.waiting_for_seq = Some(replica_seq - 1);
+                    return false;
+                }
+            }
+        }
+        true
     }
 
     pub async fn process_msg(&mut self, from: Address, ctx: Context, msg: Message) {
         let tip = msg.get_tip().as_str();
         match tip {
-            "total_seg_num_request" => {
+            "total_seq_num_request" => {
                 let tag = msg.get_data::<TotalSeqNumRequest>().unwrap().tag;
                 let total_seq = self.get_total_seq(ctx.clone()).await;
                 let _ = ctx
@@ -59,20 +93,21 @@ impl ServerState {
             "replicate_event_request" => {
                 let request = msg.get_data::<ReplicateEventRequest>().unwrap();
                 let seq = self.get_total_seq(ctx.clone()).await;
-                if seq < request.total_seq_num {
-                    assert_eq!(seq + 1, request.total_seq_num);
+                if seq <= request.total_seq_num {
+                    assert_eq!(seq, request.total_seq_num);
                     self.total_seq = Some(seq + 1);
                     if let Some(waiting_for) = self.waiting_for_seq {
                         if waiting_for == request.total_seq_num {
                             self.waiting_for_seq = None;
                         }
                     }
+                    append_global_event(ctx.clone(), request.event.clone()).await;
                     let _ = self
                         .append_event_to_chat(
                             request.event.chat,
                             request.event.user,
                             request.event.kind,
-                            ctx.clone(),
+                            ctx,
                         )
                         .await;
                 }
@@ -85,29 +120,10 @@ impl ServerState {
                 transfer_events(ctx.clone(), from, request.from, request.to).await;
             }
             _ => {
-                if self.waiting_for_seq.is_some() {
+                let user_request = msg.get_data::<ClientRequest>().unwrap();
+                if !self.check_replication(ctx.clone()).await {
                     return;
                 }
-                if let Some(replica) = self.replica.clone() {
-                    self.tag += 1;
-                    let replica_seq =
-                        get_replica_total_seq_num(ctx.clone(), self.tag, replica.clone()).await;
-                    let seq = self.get_total_seq(ctx.clone()).await;
-                    if let Some(replica_seq) = replica_seq {
-                        if seq < replica_seq {
-                            request_replica_events_from_range(
-                                ctx.clone(),
-                                seq + 1,
-                                replica_seq,
-                                replica,
-                            )
-                            .await;
-                            self.waiting_for_seq = Some(replica_seq);
-                            return;
-                        }
-                    }
-                }
-                let user_request = msg.get_data::<ClientRequest>().unwrap();
                 self.handle_user_request(from, ctx, user_request).await;
             }
         }
@@ -146,8 +162,11 @@ impl ServerState {
 
         match result {
             Ok(event) => {
-                append_global_event(ctx.clone(), event).await;
+                append_global_event(ctx.clone(), event.clone()).await;
                 let seq = self.get_total_seq(ctx.clone()).await;
+                if let Some(replica) = self.replica.clone() {
+                    replicate_event(ctx.clone(), replica, event, seq).await;
+                }
                 *self.total_seq.as_mut().unwrap() = seq + 1;
                 send_ack(ctx, request.id, from);
             }

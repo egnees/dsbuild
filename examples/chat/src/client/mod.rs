@@ -1,7 +1,7 @@
 pub mod chat;
-pub mod client;
 pub mod io;
 pub mod parser;
+pub mod process;
 pub mod requests;
 pub mod state;
 

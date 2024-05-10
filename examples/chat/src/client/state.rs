@@ -208,15 +208,12 @@ impl State {
             },
         };
 
-        match self.waiting_for {
-            WaitingFor::ClientRequestOrServerMessage => {
-                if let Some(client_request) = self.pending_client_requests.pop_front() {
-                    self.waiting_for =
-                        WaitingFor::ServerResponse(client_request.id, client_request.kind.clone());
-                    update_result.set_to_server_request(client_request);
-                }
+        if self.waiting_for == WaitingFor::ClientRequestOrServerMessage {
+            if let Some(client_request) = self.pending_client_requests.pop_front() {
+                self.waiting_for =
+                    WaitingFor::ServerResponse(client_request.id, client_request.kind.clone());
+                update_result.set_to_server_request(client_request);
             }
-            _ => {}
         }
 
         update_result

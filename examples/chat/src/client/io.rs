@@ -11,7 +11,7 @@ use chrono::{DateTime, Local};
 
 use crate::server::event::ChatEvent;
 
-use super::{client::Client, parser::parse_request};
+use super::{parser::parse_request, process::Client};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InnerInfo {

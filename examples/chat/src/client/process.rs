@@ -9,7 +9,8 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    server_address: Address,
+    server_1_address: Address,
+    server_2_address: Option<Address>,
     self_address: Address,
     state_machine: State,
     request_builder: RequestBuilder,
@@ -23,7 +24,24 @@ impl Client {
         password: String,
     ) -> Self {
         Self {
-            server_address,
+            server_1_address: server_address,
+            server_2_address: None,
+            self_address,
+            state_machine: State::default(),
+            request_builder: RequestBuilder::new(name, password),
+        }
+    }
+
+    pub fn new_with_replica(
+        server_1_address: Address,
+        server_2_address: Address,
+        self_address: Address,
+        name: String,
+        password: String,
+    ) -> Self {
+        Self {
+            server_1_address,
+            server_2_address: Some(server_2_address),
             self_address,
             state_machine: State::default(),
             request_builder: RequestBuilder::new(name, password),
@@ -36,22 +54,34 @@ impl Client {
         }
 
         if let Some(to_server) = update.to_server {
-            let server = self.server_address.clone();
+            let server = self.server_1_address.clone();
+            let replica = self.server_2_address.clone();
             let self_address = self.self_address.clone();
 
             ctx.clone().spawn(async move {
                 let request_id = to_server.id;
 
                 let send_result = ctx
-                    .send_with_ack(to_server.into(), server.clone(), 5.0)
+                    .send_with_ack(to_server.clone().into(), server, 5.0)
                     .await;
 
-                if let Err(err) = send_result {
+                let success = if send_result.is_err() {
+                    if let Some(replica) = replica {
+                        ctx.send_with_ack(to_server.clone().into(), replica, 5.0)
+                            .await
+                            .is_ok()
+                    } else {
+                        false
+                    }
+                } else {
+                    true
+                };
+
+                if !success {
                     let msg = Self::emit_server_response_error(
                         request_id,
-                        format!("can not send request on server: {:?}", err),
+                        "can not send request on server".to_string(),
                     );
-
                     ctx.send(msg.into(), self_address);
                 }
             });
@@ -77,8 +107,14 @@ impl Process for Client {
     }
 
     fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
-        if from != self.server_address {
-            return Ok(());
+        if from != self.server_1_address {
+            if let Some(server_2) = &self.server_2_address {
+                if from != *server_2 {
+                    return Ok(());
+                }
+            } else {
+                return Ok(());
+            }
         }
         let server_msg = msg.get_data::<ServerMessage>().unwrap();
         let update_result = self.state_machine.apply_server_msg(server_msg);
