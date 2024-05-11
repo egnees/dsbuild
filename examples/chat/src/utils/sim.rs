@@ -46,6 +46,10 @@ pub fn read_history_from_info(sys: &mut VirtualSystem, node: &str, proc: &str) -
     events
 }
 
+pub fn default_pass() -> String {
+    "pass123".to_owned()
+}
+
 pub fn build_sim(sys: &mut VirtualSystem, clients: &[Address], server: Address, replica: Address) {
     sys.network().set_corrupt_rate(0.0);
     sys.network().set_delays(0.5, 1.0);
@@ -61,7 +65,7 @@ pub fn build_sim(sys: &mut VirtualSystem, clients: &[Address], server: Address, 
                 replica.clone(),
                 client.clone(),
                 client.process_name.clone(),
-                "pass123".to_owned(),
+                default_pass(),
             ),
             &client.process_name,
         );
@@ -98,7 +102,7 @@ pub fn build_sim_without_replica(sys: &mut VirtualSystem, clients: &[Address], s
                 server.clone(),
                 client.clone(),
                 client.process_name.clone(),
-                "pass123".to_owned(),
+                default_pass(),
             ),
             &client.process_name,
         );
@@ -110,5 +114,33 @@ pub fn build_sim_without_replica(sys: &mut VirtualSystem, clients: &[Address], s
         &server.process_name,
         ServerProcess::default(),
         &server.process_name,
+    );
+}
+
+pub fn stop_server(sys: &mut VirtualSystem, server_node: &str, with_crash: bool) {
+    if with_crash {
+        sys.crash_node(server_node);
+    } else {
+        sys.shutdown_node(server_node);
+    }
+}
+
+pub fn rerun_server(
+    sys: &mut VirtualSystem,
+    server_node: &str,
+    server_addr: &Address,
+    replica_addr: &Address,
+    with_recovery: bool,
+) {
+    if with_recovery {
+        sys.recover_node(server_node);
+    } else {
+        sys.rerun_node(server_node);
+    }
+    sys.network().connect_node(server_node);
+    sys.add_process(
+        &server_addr.process_name,
+        ServerProcess::new_with_replica(replica_addr.clone()),
+        server_node,
     );
 }

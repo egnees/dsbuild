@@ -6,7 +6,7 @@ use chat::{
 use dsbuild::{Address, VirtualSystem};
 
 #[test]
-fn no_faults_2_users() {
+fn stress_no_faults_2_users() {
     let mut sys = VirtualSystem::new(12345);
 
     sys.network().set_corrupt_rate(0.0);
@@ -192,7 +192,7 @@ fn no_faults_2_users() {
 }
 
 #[test]
-fn no_faults_10_users() {
+fn stress_no_faults_10_users() {
     let mut sys = VirtualSystem::new(12345);
 
     sys.network().set_corrupt_rate(0.0);

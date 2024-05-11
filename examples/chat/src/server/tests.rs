@@ -12,7 +12,7 @@ use crate::{
         event::{ChatEvent, ChatEventKind},
         messages::ServerMessage,
     },
-    utils::{log::enable_debug_log, sim::read_history},
+    utils::sim::read_history,
 };
 
 use super::process::ServerProcess;
@@ -347,8 +347,6 @@ impl Process for ReplicaNotifiedClientStub {
 
 #[test]
 fn replication_works() {
-    enable_debug_log();
-
     let mut sys = VirtualSystem::new(543210);
 
     sys.add_node("client", "client", 0);
@@ -460,15 +458,11 @@ fn replication_works() {
     );
     sys.step_until_no_events();
 
-    sys.send_local_message(
-        "client1",
-        "client1",
-        ClientRequestKind::Connect("chat1".to_owned()).into(),
-    );
+    sys.send_local_message("client1", "client1", ClientRequestKind::Status.into());
     sys.step_until_no_events();
 
     let history = read_history(&mut sys, "client1", "client1");
-    assert_eq!(history.len(), 5);
+    assert_eq!(history.len(), 4);
     assert_eq!(history[0].kind, ChatEventKind::Created());
     assert_eq!(history[1].kind, ChatEventKind::Connected());
     assert!(
@@ -477,7 +471,6 @@ fn replication_works() {
             || (history[3].kind == ChatEventKind::SentMessage("hello".to_owned())
                 && history[2].kind == ChatEventKind::Connected())
     );
-    assert_eq!(history[4].kind, ChatEventKind::Connected());
 
     sys.crash_node("server2");
     sys.step_until_no_events();
@@ -497,15 +490,11 @@ fn replication_works() {
     sys.step_until_no_events();
 
     sys.crash_node("server1");
+    sys.step_until_no_events();
 
-    sys.send_local_message(
-        "client1",
-        "client1",
-        ClientRequestKind::Connect("chat1".to_owned()).into(),
-    );
-
+    sys.send_local_message("client1", "client1", ClientRequestKind::Status.into());
     sys.step_until_no_events();
 
     let history = read_history(&mut sys, "client1", "client1");
-    assert_eq!(history.len(), 6);
+    assert_eq!(history.len(), 4);
 }

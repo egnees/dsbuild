@@ -18,7 +18,7 @@ pub enum ChatEventKind {
 }
 
 /// Represents chat event born by request of some client.
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChatEvent {
     pub chat: String,
     pub user: String,
@@ -26,6 +26,17 @@ pub struct ChatEvent {
     pub kind: ChatEventKind,
     pub seq: u64,
 }
+
+impl PartialEq for ChatEvent {
+    fn eq(&self, other: &Self) -> bool {
+        self.seq == other.seq
+            && self.chat == other.chat
+            && self.user == other.user
+            && self.kind == other.kind
+    }
+}
+
+impl Eq for ChatEvent {}
 
 /// It makes sense to compare two chat events only in context of common chat.
 impl Ord for ChatEvent {
@@ -94,50 +105,6 @@ impl ChatEvent {
 
 impl Display for ChatEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let dt: DateTime<Local> = self.time.into();
-
-        match &self.kind {
-            ChatEventKind::SentMessage(msg) => write!(
-                f,
-                "[{}]\t{} {} {}: {}",
-                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.user.bold().green(),
-                "->".green(),
-                self.chat.bold().green(),
-                msg.italic()
-            ),
-            ChatEventKind::Connected() => {
-                write!(
-                    f,
-                    "[{}]\t{} {} {}",
-                    dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                    self.user.bold().green(),
-                    "connected to".green(),
-                    self.chat.bold().green()
-                )
-            }
-            ChatEventKind::Disconnected() => write!(
-                f,
-                "[{}]\t{} {} {}",
-                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.user.bold().green(),
-                "disconnected from".green(),
-                self.chat.bold().green()
-            ),
-            ChatEventKind::Created() => write!(
-                f,
-                "[{}]\t{} {} {}",
-                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
-                self.user.bold().green(),
-                "created".green(),
-                self.chat.bold().green()
-            ),
-        }
-    }
-}
-
-impl Debug for ChatEvent {
-    fn fmt(&self, f: &mut Formatter) -> Result {
         let dt: DateTime<Local> = self.time.into();
 
         match &self.kind {
