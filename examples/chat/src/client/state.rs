@@ -169,7 +169,7 @@ impl State {
         request_kind: ClientRequestKind,
         request_result: Result<(), String>,
     ) -> StateUpdateResult {
-        self.waiting_for = WaitingFor::ClientRequestOrServerMessage; // Only bad auth response can change it.
+        self.waiting_for = WaitingFor::ClientRequestOrServerMessage;
 
         let mut update_result = match request_kind {
             ClientRequestKind::SendMessage(_) => match request_result {
@@ -205,6 +205,23 @@ impl State {
                 }
                 Err(info) => StateUpdateResult::from_to_user_info(info.as_str().into())
                     .add_to_user_info_vec(self.drain_and_filter_pending_server_messages()),
+            },
+            ClientRequestKind::Status => match request_result {
+                Ok(_) => panic!("there should not be ok response on status request"),
+                Err(connected_chat) => {
+                    let info = if connected_chat.is_empty() {
+                        "user not connected to chat".to_string()
+                    } else {
+                        format!("user connected to {}", connected_chat)
+                    };
+                    if self.chat.is_some() {
+                        assert_eq!(self.chat.as_ref().unwrap().name(), connected_chat);
+                    } else {
+                        self.chat = Some(Chat::new(connected_chat));
+                    }
+                    StateUpdateResult::from_to_user_info(info.as_str().into())
+                        .add_to_user_info_vec(self.drain_and_filter_pending_server_messages())
+                }
             },
         };
 

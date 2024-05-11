@@ -1,6 +1,13 @@
-use crate::server::event::ChatEvent;
+use std::time::SystemTime;
 
-use super::{chat::Chat, parser, requests::ClientRequestKind};
+use crate::server::{event::ChatEvent, messages::ServerMessage};
+
+use super::{
+    chat::Chat,
+    parser,
+    requests::{ClientRequest, ClientRequestKind},
+    state::State,
+};
 
 #[test]
 fn parser() {
@@ -44,6 +51,11 @@ fn parser() {
     assert_eq!(
         parser::parse_request("/sEnD msg"),
         Ok(ClientRequestKind::SendMessage("msg".into()))
+    );
+
+    assert_eq!(
+        parser::parse_request("/status"),
+        Ok(ClientRequestKind::Status)
     );
 }
 
@@ -104,4 +116,50 @@ fn chat() {
 
     assert_eq!(events.len(), 4);
     assert_eq!(events, vec![send_msg_3, send_msg_4, send_msg_5, send_msg_6]);
+}
+
+#[test]
+fn state_works_with_status() {
+    let mut state = State::default();
+    let result = state.apply_client_request(ClientRequest {
+        id: 1,
+        client: "client1".to_owned(),
+        password: "password123".to_owned(),
+        time: SystemTime::now(),
+        kind: ClientRequestKind::Status,
+        addr: None,
+    });
+    assert!(result.to_server.is_some());
+    assert!(result.to_user.is_empty());
+
+    let result = state.apply_server_msg(ServerMessage::ChatEvent(
+        "chat".to_owned(),
+        ChatEvent::message_sent(
+            "chat".to_owned(),
+            "client123".to_owned(),
+            "msg123".to_owned(),
+            1,
+        ),
+    ));
+
+    assert!(result.to_server.is_none());
+    assert!(result.to_user.is_empty());
+
+    let result = state.apply_server_msg(ServerMessage::RequestResponse(1, Err("chat".to_owned())));
+    assert!(result.to_server.is_none());
+    assert_eq!(result.to_user.len(), 1);
+
+    let result = state.apply_server_msg(ServerMessage::ChatEvent(
+        "chat".to_owned(),
+        ChatEvent::chat_created("client321".to_owned(), "chat".to_owned(), 0),
+    ));
+    assert!(result.to_server.is_none());
+    assert_eq!(result.to_user.len(), 2);
+
+    let result = state.apply_server_msg(ServerMessage::ChatEvent(
+        "chat".to_owned(),
+        ChatEvent::client_connected("chat".to_owned(), "client1111".to_owned(), 2),
+    ));
+    assert!(result.to_server.is_none());
+    assert_eq!(result.to_user.len(), 1);
 }

@@ -1,6 +1,6 @@
 //! Definition of events in chat.
 
-use core::fmt;
+use std::fmt::{Debug, Display, Formatter, Result};
 use std::{cmp::Ordering, time::SystemTime};
 
 use chrono::{DateTime, Local};
@@ -12,13 +12,13 @@ use colored::Colorize;
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum ChatEventKind {
     SentMessage(String), // Client sent message,
-    Connected(),         // Client connected to server,
-    Disconnected(),      // Client disconnected from server,
+    Connected(),         // Client connected to chat,
+    Disconnected(),      // Client disconnected from chat,
     Created(),           // Client created chat.
 }
 
 /// Represents chat event born by request of some client.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChatEvent {
     pub chat: String,
     pub user: String,
@@ -92,8 +92,52 @@ impl ChatEvent {
     }
 }
 
-impl fmt::Display for ChatEvent {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ChatEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let dt: DateTime<Local> = self.time.into();
+
+        match &self.kind {
+            ChatEventKind::SentMessage(msg) => write!(
+                f,
+                "[{}]\t{} {} {}: {}",
+                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
+                self.user.bold().green(),
+                "->".green(),
+                self.chat.bold().green(),
+                msg.italic()
+            ),
+            ChatEventKind::Connected() => {
+                write!(
+                    f,
+                    "[{}]\t{} {} {}",
+                    dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
+                    self.user.bold().green(),
+                    "connected to".green(),
+                    self.chat.bold().green()
+                )
+            }
+            ChatEventKind::Disconnected() => write!(
+                f,
+                "[{}]\t{} {} {}",
+                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
+                self.user.bold().green(),
+                "disconnected from".green(),
+                self.chat.bold().green()
+            ),
+            ChatEventKind::Created() => write!(
+                f,
+                "[{}]\t{} {} {}",
+                dt.format("%Y-%m-%d %H:%M:%S").to_string().italic(),
+                self.user.bold().green(),
+                "created".green(),
+                self.chat.bold().green()
+            ),
+        }
+    }
+}
+
+impl Debug for ChatEvent {
+    fn fmt(&self, f: &mut Formatter) -> Result {
         let dt: DateTime<Local> = self.time.into();
 
         match &self.kind {

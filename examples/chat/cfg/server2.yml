@@ -1,0 +1,6 @@
+launch: server
+host: 127.0.0.1
+port: 10025
+replica_host: 127.0.0.1
+replica_port: 10024
+mount_dir: /Users/macbook/Sergey/dsbuild/examples/chat/.tmp/storage2/

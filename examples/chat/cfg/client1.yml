@@ -1,0 +1,9 @@
+launch: client
+host: 127.0.0.1
+port: 10026
+login: Client1
+password: client1pass
+server_host: 127.0.0.1
+server_port: 10024
+replica_host: 127.0.0.1
+replica_port: 10025

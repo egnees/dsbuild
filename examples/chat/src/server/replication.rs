@@ -3,13 +3,13 @@
 use dsbuild::{Address, Context, Message, Tag};
 use serde::{Deserialize, Serialize};
 
-use super::event::ChatEvent;
+use crate::client::requests::ClientRequest;
 
 /// Represents request to replicate event.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ReplicateEventRequest {
-    pub total_seq_num: u64,
-    pub event: ChatEvent,
+pub struct ReplicateRequest {
+    pub seq_num: u64,
+    pub client_request: ClientRequest,
 }
 
 /// Represents request to get receiver total seq number.
@@ -32,9 +32,9 @@ pub struct ReceiveEventsRequest {
     pub to: u64,
 }
 
-impl From<ReplicateEventRequest> for Message {
-    fn from(value: ReplicateEventRequest) -> Self {
-        Message::borrow_new("replicate_event_request", value).unwrap()
+impl From<ReplicateRequest> for Message {
+    fn from(value: ReplicateRequest) -> Self {
+        Message::borrow_new("replicate_request", value).unwrap()
     }
 }
 
@@ -76,11 +76,16 @@ pub async fn request_replica_events_from_range(
         .map_or(false, |_| true)
 }
 
-pub async fn replicate_event(ctx: Context, replica: Address, event: ChatEvent, id: u64) -> bool {
+pub async fn replicate_client_request(
+    ctx: Context,
+    replica: Address,
+    client_request: ClientRequest,
+    id: u64,
+) -> bool {
     ctx.send_with_ack(
-        ReplicateEventRequest {
-            total_seq_num: id,
-            event,
+        ReplicateRequest {
+            seq_num: id,
+            client_request,
         }
         .into(),
         replica,

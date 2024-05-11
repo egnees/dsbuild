@@ -5,6 +5,7 @@ use std::time::SystemTime;
 use chrono::DateTime;
 use chrono::Local;
 use colored::Colorize;
+use dsbuild::Address;
 use dsbuild::Message;
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +17,7 @@ pub struct ClientRequest {
     pub password: String,
     pub time: SystemTime,
     pub kind: ClientRequestKind,
+    pub addr: Option<Address>,
 }
 
 impl fmt::Display for ClientRequest {
@@ -40,6 +42,7 @@ pub enum ClientRequestKind {
     Create(String),      // Create chat with specified name.
     Connect(String),     // Connect to chat with specified name.
     Disconnect,          // Disconnect from chat with specified name.
+    Status,              // Status of the client.
 }
 
 impl fmt::Display for ClientRequestKind {
@@ -63,6 +66,7 @@ impl fmt::Display for ClientRequestKind {
                 )
             }
             ClientRequestKind::Disconnect => write!(f, "{}", "disconnect".italic()),
+            ClientRequestKind::Status => write!(f, "{}", "status".italic()),
         }
     }
 }
@@ -70,14 +74,14 @@ impl fmt::Display for ClientRequestKind {
 /// Allows to create [`Message`] from [`ClientRequest`].
 impl From<ClientRequest> for Message {
     fn from(value: ClientRequest) -> Self {
-        Message::borrow_new("CLIENT_REQUEST", value).unwrap()
+        Message::borrow_new("client_request", value).unwrap()
     }
 }
 
 /// Allows to create [`Message`] from [`ClientRequestKind`].
 impl From<ClientRequestKind> for Message {
     fn from(value: ClientRequestKind) -> Self {
-        Message::borrow_new("CLIENT_REQUEST_KIND", value).unwrap()
+        Message::borrow_new("client_request_kind", value).unwrap()
     }
 }
 
@@ -126,6 +130,7 @@ impl RequestBuilder {
             password: self.password.clone(),
             time: SystemTime::now(),
             kind,
+            addr: None,
         }
     }
 }

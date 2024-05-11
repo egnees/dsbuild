@@ -195,12 +195,17 @@ impl RealContext {
     pub async fn create_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
         let mount_dir = self.mount_dir.clone();
 
-        async_std::fs::File::create(mount_dir + "/" + name)
+        if self.file_exists(name).await? {
+            return Err(StorageError::AlreadyExists);
+        }
+
+        async_std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(mount_dir + "/" + name)
             .await
-            .map_err(|e| match e.kind() {
-                ErrorKind::AlreadyExists => StorageError::AlreadyExists,
-                _ => StorageError::Unavailable,
-            })
+            .map_err(|_| StorageError::Unavailable)
             .map(File::RealFile)
     }
 

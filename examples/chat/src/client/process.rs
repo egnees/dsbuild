@@ -8,7 +8,7 @@ use super::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Client {
+pub struct ClientProcess {
     server_1_address: Address,
     server_2_address: Option<Address>,
     self_address: Address,
@@ -16,7 +16,7 @@ pub struct Client {
     request_builder: RequestBuilder,
 }
 
-impl Client {
+impl ClientProcess {
     pub fn new(
         server_address: Address,
         self_address: Address,
@@ -93,7 +93,7 @@ impl Client {
     }
 }
 
-impl Process for Client {
+impl Process for ClientProcess {
     fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
         let request_kind = msg.get_data::<ClientRequestKind>().unwrap();
         let request = self.request_builder.build_with_kind(request_kind);

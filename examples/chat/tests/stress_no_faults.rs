@@ -1,7 +1,7 @@
 use chat::{
     client::{io::Info, requests::ClientRequestKind},
     server::process::ServerProcess,
-    Client,
+    ClientProcess,
 };
 use dsbuild::{Address, VirtualSystem};
 
@@ -42,7 +42,7 @@ fn no_faults_2_users() {
 
     sys.add_process(
         &client1_addr.process_name,
-        Client::new(
+        ClientProcess::new(
             server_addr.clone(),
             client1_addr.clone(),
             "client1".into(),
@@ -53,7 +53,7 @@ fn no_faults_2_users() {
 
     sys.add_process(
         &client2_addr.process_name,
-        Client::new(
+        ClientProcess::new(
             server_addr.clone(),
             client2_addr.clone(),
             "client2".into(),
@@ -230,7 +230,7 @@ fn no_faults_10_users() {
         sys.network().connect_node(&client_addr.process_name);
         sys.add_process(
             &client_addr.process_name,
-            Client::new(
+            ClientProcess::new(
                 server_addr.clone(),
                 client_addr.clone(),
                 client_addr.process_name.clone(),

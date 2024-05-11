@@ -3,4 +3,4 @@ pub mod server;
 pub mod utils;
 
 pub use client::io::start_io;
-pub use client::process::Client;
+pub use client::process::ClientProcess;

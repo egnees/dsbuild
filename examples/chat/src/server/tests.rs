@@ -12,7 +12,7 @@ use crate::{
         event::{ChatEvent, ChatEventKind},
         messages::ServerMessage,
     },
-    utils::sim::read_history,
+    utils::{log::enable_debug_log, sim::read_history},
 };
 
 use super::process::ServerProcess;
@@ -53,6 +53,7 @@ impl Process for ClientStub {
             password: self.password.clone(),
             time: SystemTime::now(),
             kind,
+            addr: None,
         };
         self.req_id += 1;
         let to = self.server.clone();
@@ -75,10 +76,6 @@ impl Process for ClientStub {
 
 #[test]
 fn state_works() {
-    // env_logger::Builder::new()
-    //     .filter_level(log::LevelFilter::Debug)
-    //     .init();
-
     let mut sys = VirtualSystem::new(12345);
     let server_addr = Address {
         host: "server".to_owned(),
@@ -112,24 +109,7 @@ fn state_works() {
 
     sys.step_until_no_events();
 
-    let messages = sys
-        .read_local_messages("client", "client")
-        .unwrap()
-        .into_iter()
-        .map(|msg| msg.get_data::<ServerMessage>().unwrap())
-        .filter(|msg| match msg {
-            ServerMessage::RequestResponse(id, res) => {
-                assert_eq!(*id, 1);
-                assert_eq!(*res, Ok(()));
-                false
-            }
-            ServerMessage::ChatEvent(_, _) => true,
-        })
-        .map(|msg| match msg {
-            ServerMessage::RequestResponse(_, _) => panic!("impossible"),
-            ServerMessage::ChatEvent(_, event) => event,
-        })
-        .collect::<BTreeSet<ChatEvent>>();
+    let messages = read_history(&mut sys, "client", "client");
     assert_eq!(messages.len(), 2);
 
     sys.send_local_message(
@@ -153,23 +133,7 @@ fn state_works() {
 
     sys.step_until_no_events();
 
-    let chat_history = sys
-        .read_local_messages("client", "client")
-        .unwrap()
-        .into_iter()
-        .map(|msg| msg.get_data::<ServerMessage>().unwrap())
-        .filter(|msg| match msg {
-            ServerMessage::RequestResponse(_, res) => {
-                assert_eq!(*res, Ok(()));
-                false
-            }
-            ServerMessage::ChatEvent(_, _) => true,
-        })
-        .map(|msg| match msg {
-            ServerMessage::RequestResponse(_, _) => panic!("impossible"),
-            ServerMessage::ChatEvent(_, event) => event,
-        })
-        .collect::<BTreeSet<ChatEvent>>();
+    let chat_history = read_history(&mut sys, "client", "client");
 
     assert_eq!(chat_history.len(), 5);
 
@@ -178,75 +142,41 @@ fn state_works() {
         "client",
         ClientRequestKind::SendMessage("msg1".to_string()).into(),
     );
-
     sys.send_local_message(
         "client",
         "client",
         ClientRequestKind::SendMessage("msg2".to_string()).into(),
     );
-
     sys.send_local_message(
         "client",
         "client",
         ClientRequestKind::SendMessage("msg3".to_string()).into(),
     );
-
     sys.step_until_no_events();
 
-    let new_events = sys
-        .read_local_messages("client", "client")
-        .unwrap()
-        .into_iter()
-        .map(|msg| msg.get_data::<ServerMessage>().unwrap())
-        .filter(|msg| match msg {
-            ServerMessage::RequestResponse(_, res) => {
-                assert_eq!(*res, Ok(()));
-                false
-            }
-            ServerMessage::ChatEvent(_, _) => true,
-        })
-        .map(|msg| match msg {
-            ServerMessage::RequestResponse(_, _) => panic!("impossible"),
-            ServerMessage::ChatEvent(_, event) => event,
-        })
-        .collect::<BTreeSet<ChatEvent>>();
+    let new_events = read_history(&mut sys, "client", "client");
 
     assert_eq!(new_events.len(), 3);
 
     sys.shutdown_node("server");
-
     sys.step_until_no_events();
 
     sys.rerun_node("server");
     sys.add_process("server", ServerProcess::default(), "server");
+
+    sys.send_local_message("client", "client", ClientRequestKind::Disconnect.into());
+    sys.step_until_no_events();
 
     sys.send_local_message(
         "client",
         "client",
         ClientRequestKind::Connect("chat".to_string()).into(),
     );
-
     sys.step_until_no_events();
 
-    let history = sys
-        .read_local_messages("client", "client")
-        .unwrap()
-        .into_iter()
-        .map(|msg| msg.get_data::<ServerMessage>().unwrap())
-        .filter(|msg| match msg {
-            ServerMessage::RequestResponse(_, res) => {
-                assert_eq!(*res, Ok(()));
-                false
-            }
-            ServerMessage::ChatEvent(_, _) => true,
-        })
-        .map(|msg| match msg {
-            ServerMessage::RequestResponse(_, _) => panic!("impossible"),
-            ServerMessage::ChatEvent(_, event) => event,
-        })
-        .collect::<BTreeSet<ChatEvent>>();
+    let history = read_history(&mut sys, "client", "client");
 
-    assert_eq!(history.len(), 9);
+    assert_eq!(history.len(), 10);
     for (i, event) in history.iter().enumerate() {
         assert_eq!(i as u64, event.seq);
     }
@@ -389,6 +319,7 @@ impl Process for ReplicaNotifiedClientStub {
             password: self.password.clone(),
             time: SystemTime::now(),
             kind,
+            addr: None,
         };
         self.req_id += 1;
         let to1 = self.server1.clone();
@@ -416,6 +347,8 @@ impl Process for ReplicaNotifiedClientStub {
 
 #[test]
 fn replication_works() {
+    enable_debug_log();
+
     let mut sys = VirtualSystem::new(543210);
 
     sys.add_node("client", "client", 0);

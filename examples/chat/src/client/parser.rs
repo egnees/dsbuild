@@ -119,6 +119,13 @@ pub fn parse_request(req: &str) -> Result<ClientRequestKind, ParseError> {
                         Ok(ClientRequestKind::Disconnect)
                     }
                 }
+                "status" => {
+                    if keys.len() != 1 {
+                        bad_syntax("status: argument not expected")
+                    } else {
+                        Ok(ClientRequestKind::Status)
+                    }
+                }
                 _ => command_not_exists(cmd),
             }
         }

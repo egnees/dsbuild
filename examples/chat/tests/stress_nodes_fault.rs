@@ -2,7 +2,7 @@ use chat::{
     client::{io::Info, requests::ClientRequestKind},
     server::process::ServerProcess,
     utils::sim::read_history_from_info,
-    Client,
+    ClientProcess,
 };
 use dsbuild::{Address, Message, VirtualSystem};
 
@@ -62,7 +62,7 @@ fn servers_fault_2_users() {
 
     sys.add_process(
         &client1_addr.process_name,
-        Client::new_with_replica(
+        ClientProcess::new_with_replica(
             server1_addr.clone(),
             server2_addr.clone(),
             client1_addr.clone(),
@@ -74,7 +74,7 @@ fn servers_fault_2_users() {
 
     sys.add_process(
         &client2_addr.process_name,
-        Client::new_with_replica(
+        ClientProcess::new_with_replica(
             server1_addr.clone(),
             server2_addr.clone(),
             client2_addr.clone(),

@@ -33,7 +33,7 @@ impl fmt::Display for ServerMessage {
 
 impl From<ServerMessage> for Message {
     fn from(value: ServerMessage) -> Self {
-        Message::borrow_new("SERVER_MESSAGE", value).unwrap()
+        Message::borrow_new("server_message", value).unwrap()
     }
 }
 

@@ -11,7 +11,7 @@ use chrono::{DateTime, Local};
 
 use crate::server::event::ChatEvent;
 
-use super::{parser::parse_request, process::Client};
+use super::{parser::parse_request, process::ClientProcess, requests::ClientRequestKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InnerInfo {
@@ -79,9 +79,12 @@ impl From<Message> for Info {
     }
 }
 /// Start client io-activity.
-pub async fn start_io(wrapper: IOProcessWrapper<Client>) {
+pub async fn start_io(wrapper: IOProcessWrapper<ClientProcess>) {
     let sender = wrapper.sender;
     let mut receiver = wrapper.receiver;
+
+    // request status
+    sender.send(ClientRequestKind::Status.into()).await.unwrap();
 
     let stdio = async_std::io::stdin();
 
