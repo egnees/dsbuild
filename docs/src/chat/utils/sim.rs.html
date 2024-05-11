@@ -114,6 +114,38 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>dsbuild::{Address, VirtualSystem};
 
 <span class="kw">use crate</span>::{
@@ -162,6 +194,10 @@
     events
 }
 
+<span class="kw">pub fn </span>default_pass() -&gt; String {
+    <span class="string">"pass123"</span>.to_owned()
+}
+
 <span class="kw">pub fn </span>build_sim(sys: <span class="kw-2">&amp;mut </span>VirtualSystem, clients: <span class="kw-2">&amp;</span>[Address], server: Address, replica: Address) {
     sys.network().set_corrupt_rate(<span class="number">0.0</span>);
     sys.network().set_delays(<span class="number">0.5</span>, <span class="number">1.0</span>);
@@ -177,7 +213,7 @@
                 replica.clone(),
                 client.clone(),
                 client.process_name.clone(),
-                <span class="string">"pass123"</span>.to_owned(),
+                default_pass(),
             ),
             <span class="kw-2">&amp;</span>client.process_name,
         );
@@ -214,7 +250,7 @@
                 server.clone(),
                 client.clone(),
                 client.process_name.clone(),
-                <span class="string">"pass123"</span>.to_owned(),
+                default_pass(),
             ),
             <span class="kw-2">&amp;</span>client.process_name,
         );
@@ -226,6 +262,34 @@
         <span class="kw-2">&amp;</span>server.process_name,
         ServerProcess::default(),
         <span class="kw-2">&amp;</span>server.process_name,
+    );
+}
+
+<span class="kw">pub fn </span>stop_server(sys: <span class="kw-2">&amp;mut </span>VirtualSystem, server_node: <span class="kw-2">&amp;</span>str, with_crash: bool) {
+    <span class="kw">if </span>with_crash {
+        sys.crash_node(server_node);
+    } <span class="kw">else </span>{
+        sys.shutdown_node(server_node);
+    }
+}
+
+<span class="kw">pub fn </span>rerun_server(
+    sys: <span class="kw-2">&amp;mut </span>VirtualSystem,
+    server_node: <span class="kw-2">&amp;</span>str,
+    server_addr: <span class="kw-2">&amp;</span>Address,
+    replica_addr: <span class="kw-2">&amp;</span>Address,
+    with_recovery: bool,
+) {
+    <span class="kw">if </span>with_recovery {
+        sys.recover_node(server_node);
+    } <span class="kw">else </span>{
+        sys.rerun_node(server_node);
+    }
+    sys.network().connect_node(server_node);
+    sys.add_process(
+        <span class="kw-2">&amp;</span>server_addr.process_name,
+        ServerProcess::new_with_replica(replica_addr.clone()),
+        server_node,
     );
 }
 </code></pre></div></section></main></body></html>

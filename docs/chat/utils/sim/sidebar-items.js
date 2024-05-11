@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_sim","build_sim_without_replica","read_history","read_history_from_info"]};
+window.SIDEBAR_ITEMS = {"fn":["build_sim","build_sim_without_replica","default_pass","read_history","read_history_from_info","rerun_server","stop_server"]};
