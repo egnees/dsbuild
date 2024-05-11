@@ -429,7 +429,15 @@
 <a href="#427" id="427">427</a>
 <a href="#428" id="428">428</a>
 <a href="#429" id="429">429</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, sync::Arc, time::SystemTime};
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::Arc,
+    time::SystemTime,
+};
 
 <span class="kw">use </span>dsbuild::{Address, Context, Message};
 <span class="kw">use </span>tokio::sync::Mutex;
@@ -485,27 +493,27 @@
         ctx: Context,
         chat: String,
     ) -&gt; Vec&lt;Address&gt; {
-        <span class="kw">if </span><span class="self">self</span>.chat_users.contains_key(<span class="kw-2">&amp;</span>chat) {
-            <span class="self">self</span>.chat_users.get(<span class="kw-2">&amp;</span>chat).unwrap().to_owned()
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>users = get_clients_connected_to_chat(ctx.clone(), chat.clone()).<span class="kw">await</span>;
+        <span class="kw">if let </span>Entry::Vacant(e) = <span class="self">self</span>.chat_users.entry(chat.clone()) {
+            <span class="kw">let </span>users = get_clients_connected_to_chat(ctx.clone(), chat).<span class="kw">await</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>addrs = Vec::new();
             <span class="kw">for </span>user <span class="kw">in </span>users.into_iter() {
                 <span class="kw">let </span>addr = get_client_address(ctx.clone(), user).<span class="kw">await</span>.unwrap();
                 addrs.push(addr);
             }
-            <span class="self">self</span>.chat_users.insert(chat, addrs.clone());
+            e.insert(addrs.clone());
             addrs
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.chat_users.get(<span class="kw-2">&amp;</span>chat).unwrap().to_owned()
         }
     }
 
     <span class="kw">pub async fn </span>get_user_chat(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: Context, user: String) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
-        <span class="kw">if </span><span class="self">self</span>.user_chat.contains_key(<span class="kw-2">&amp;</span>user) {
-            <span class="self">self</span>.user_chat.get(<span class="kw-2">&amp;</span>user).unwrap().to_owned()
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>chat = get_client_chat(ctx.clone(), user.clone()).<span class="kw">await</span>;
-            <span class="self">self</span>.user_chat.insert(user, chat.clone());
+        <span class="kw">if let </span>Entry::Vacant(e) = <span class="self">self</span>.user_chat.entry(user.clone()) {
+            <span class="kw">let </span>chat = get_client_chat(ctx.clone(), user).<span class="kw">await</span>;
+            e.insert(chat.clone());
             chat
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.user_chat.get(<span class="kw-2">&amp;</span>user).unwrap().to_owned()
         }
     }
 
