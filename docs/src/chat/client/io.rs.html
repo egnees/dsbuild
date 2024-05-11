@@ -104,6 +104,9 @@
 <a href="#102" id="102">102</a>
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definitions of methods for [`Client`] input and output interactions.
 </span><span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::time::SystemTime;
@@ -117,7 +120,7 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::server::event::ChatEvent;
 
-<span class="kw">use super</span>::{client::Client, parser::parse_request};
+<span class="kw">use super</span>::{parser::parse_request, process::ClientProcess, requests::ClientRequestKind};
 
 <span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>InnerInfo {
@@ -185,9 +188,12 @@
     }
 }
 <span class="doccomment">/// Start client io-activity.
-</span><span class="kw">pub async fn </span>start_io(wrapper: IOProcessWrapper&lt;Client&gt;) {
+</span><span class="kw">pub async fn </span>start_io(wrapper: IOProcessWrapper&lt;ClientProcess&gt;) {
     <span class="kw">let </span>sender = wrapper.sender;
     <span class="kw">let </span><span class="kw-2">mut </span>receiver = wrapper.receiver;
+
+    <span class="comment">// request status
+    </span>sender.send(ClientRequestKind::Status.into()).<span class="kw">await</span>.unwrap();
 
     <span class="kw">let </span>stdio = async_std::io::stdin();
 

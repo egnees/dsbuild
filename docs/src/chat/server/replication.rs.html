@@ -77,18 +77,37 @@
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of replication logic.
 
 </span><span class="kw">use </span>dsbuild::{Address, Context, Message, Tag};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">use </span><span class="kw">super</span>::event::ChatEvent;
+<span class="kw">use </span><span class="kw">crate</span>::client::requests::ClientRequest;
 
 <span class="doccomment">/// Represents request to replicate event.
 </span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-</span><span class="kw">pub struct </span>ReplicateEventRequest {
-    <span class="kw">pub </span>total_seq_num: u64,
-    <span class="kw">pub </span>event: ChatEvent,
+</span><span class="kw">pub struct </span>ReplicateRequest {
+    <span class="kw">pub </span>seq_num: u64,
+    <span class="kw">pub </span>client_request: ClientRequest,
 }
 
 <span class="doccomment">/// Represents request to get receiver total seq number.
@@ -111,9 +130,9 @@
     <span class="kw">pub </span>to: u64,
 }
 
-<span class="kw">impl </span>From&lt;ReplicateEventRequest&gt; <span class="kw">for </span>Message {
-    <span class="kw">fn </span>from(value: ReplicateEventRequest) -&gt; <span class="self">Self </span>{
-        Message::borrow_new(<span class="string">"replicate_event_request"</span>, value).unwrap()
+<span class="kw">impl </span>From&lt;ReplicateRequest&gt; <span class="kw">for </span>Message {
+    <span class="kw">fn </span>from(value: ReplicateRequest) -&gt; <span class="self">Self </span>{
+        Message::borrow_new(<span class="string">"replicate_request"</span>, value).unwrap()
     }
 }
 
@@ -153,5 +172,24 @@
     ctx.send_with_ack(ReceiveEventsRequest { from, to }.into(), address, <span class="number">5.0</span>)
         .<span class="kw">await
         </span>.map_or(<span class="bool-val">false</span>, |<span class="kw">_</span>| <span class="bool-val">true</span>)
+}
+
+<span class="kw">pub async fn </span>replicate_client_request(
+    ctx: Context,
+    replica: Address,
+    client_request: ClientRequest,
+    id: u64,
+) -&gt; bool {
+    ctx.send_with_ack(
+        ReplicateRequest {
+            seq_num: id,
+            client_request,
+        }
+        .into(),
+        replica,
+        <span class="number">5.0</span>,
+    )
+    .<span class="kw">await
+    </span>.map_or(<span class="bool-val">false</span>, |<span class="kw">_</span>| <span class="bool-val">true</span>)
 }
 </code></pre></div></section></main></body></html>

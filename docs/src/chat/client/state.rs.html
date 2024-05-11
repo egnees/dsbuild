@@ -254,6 +254,20 @@
 <a href="#252" id="252">252</a>
 <a href="#253" id="253">253</a>
 <a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of possible client states and related logic.
 
 </span><span class="kw">use </span>std::collections::VecDeque;
@@ -425,9 +439,9 @@
         request_kind: ClientRequestKind,
         request_result: <span class="prelude-ty">Result</span>&lt;(), String&gt;,
     ) -&gt; StateUpdateResult {
-        <span class="self">self</span>.waiting_for = WaitingFor::ClientRequestOrServerMessage; <span class="comment">// Only bad auth response can change it.
+        <span class="self">self</span>.waiting_for = WaitingFor::ClientRequestOrServerMessage;
 
-        </span><span class="kw">let </span><span class="kw-2">mut </span>update_result = <span class="kw">match </span>request_kind {
+        <span class="kw">let </span><span class="kw-2">mut </span>update_result = <span class="kw">match </span>request_kind {
             ClientRequestKind::SendMessage(<span class="kw">_</span>) =&gt; <span class="kw">match </span>request_result {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; StateUpdateResult::from_to_user_info_vec(
                     <span class="self">self</span>.drain_and_filter_pending_server_messages(),
@@ -462,17 +476,31 @@
                 <span class="prelude-val">Err</span>(info) =&gt; StateUpdateResult::from_to_user_info(info.as_str().into())
                     .add_to_user_info_vec(<span class="self">self</span>.drain_and_filter_pending_server_messages()),
             },
+            ClientRequestKind::Status =&gt; <span class="kw">match </span>request_result {
+                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"there should not be ok response on status request"</span>),
+                <span class="prelude-val">Err</span>(connected_chat) =&gt; {
+                    <span class="kw">let </span>info = <span class="kw">if </span>connected_chat.is_empty() {
+                        <span class="string">"user not connected to chat"</span>.to_string()
+                    } <span class="kw">else </span>{
+                        <span class="macro">format!</span>(<span class="string">"user connected to {}"</span>, connected_chat)
+                    };
+                    <span class="kw">if </span><span class="self">self</span>.chat.is_some() {
+                        <span class="macro">assert_eq!</span>(<span class="self">self</span>.chat.as_ref().unwrap().name(), connected_chat);
+                    } <span class="kw">else </span>{
+                        <span class="self">self</span>.chat = <span class="prelude-val">Some</span>(Chat::new(connected_chat));
+                    }
+                    StateUpdateResult::from_to_user_info(info.as_str().into())
+                        .add_to_user_info_vec(<span class="self">self</span>.drain_and_filter_pending_server_messages())
+                }
+            },
         };
 
-        <span class="kw">match </span><span class="self">self</span>.waiting_for {
-            WaitingFor::ClientRequestOrServerMessage =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(client_request) = <span class="self">self</span>.pending_client_requests.pop_front() {
-                    <span class="self">self</span>.waiting_for =
-                        WaitingFor::ServerResponse(client_request.id, client_request.kind.clone());
-                    update_result.set_to_server_request(client_request);
-                }
+        <span class="kw">if </span><span class="self">self</span>.waiting_for == WaitingFor::ClientRequestOrServerMessage {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(client_request) = <span class="self">self</span>.pending_client_requests.pop_front() {
+                <span class="self">self</span>.waiting_for =
+                    WaitingFor::ServerResponse(client_request.id, client_request.kind.clone());
+                update_result.set_to_server_request(client_request);
             }
-            <span class="kw">_ </span>=&gt; {}
         }
 
         update_result

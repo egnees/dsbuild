@@ -78,7 +78,7 @@
 
 <span class="kw">impl </span>From&lt;ServerMessage&gt; <span class="kw">for </span>Message {
     <span class="kw">fn </span>from(value: ServerMessage) -&gt; <span class="self">Self </span>{
-        Message::borrow_new(<span class="string">"SERVER_MESSAGE"</span>, value).unwrap()
+        Message::borrow_new(<span class="string">"server_message"</span>, value).unwrap()
     }
 }
 

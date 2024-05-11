@@ -126,6 +126,13 @@
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{fmt, time::SystemTime};
 
 <span class="kw">use </span>colored::Colorize;
@@ -245,6 +252,13 @@
                         bad_syntax(<span class="string">"disconnect: argument not expected"</span>)
                     } <span class="kw">else </span>{
                         <span class="prelude-val">Ok</span>(ClientRequestKind::Disconnect)
+                    }
+                }
+                <span class="string">"status" </span>=&gt; {
+                    <span class="kw">if </span>keys.len() != <span class="number">1 </span>{
+                        bad_syntax(<span class="string">"status: argument not expected"</span>)
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">Ok</span>(ClientRequestKind::Status)
                     }
                 }
                 <span class="kw">_ </span>=&gt; command_not_exists(cmd),
