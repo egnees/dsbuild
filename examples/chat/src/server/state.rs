@@ -1,4 +1,8 @@
-use std::{collections::HashMap, sync::Arc, time::SystemTime};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::Arc,
+    time::SystemTime,
+};
 
 use dsbuild::{Address, Context, Message};
 use tokio::sync::Mutex;
@@ -54,27 +58,27 @@ impl ServerState {
         ctx: Context,
         chat: String,
     ) -> Vec<Address> {
-        if self.chat_users.contains_key(&chat) {
-            self.chat_users.get(&chat).unwrap().to_owned()
-        } else {
-            let users = get_clients_connected_to_chat(ctx.clone(), chat.clone()).await;
+        if let Entry::Vacant(e) = self.chat_users.entry(chat.clone()) {
+            let users = get_clients_connected_to_chat(ctx.clone(), chat).await;
             let mut addrs = Vec::new();
             for user in users.into_iter() {
                 let addr = get_client_address(ctx.clone(), user).await.unwrap();
                 addrs.push(addr);
             }
-            self.chat_users.insert(chat, addrs.clone());
+            e.insert(addrs.clone());
             addrs
+        } else {
+            self.chat_users.get(&chat).unwrap().to_owned()
         }
     }
 
     pub async fn get_user_chat(&mut self, ctx: Context, user: String) -> Option<String> {
-        if self.user_chat.contains_key(&user) {
-            self.user_chat.get(&user).unwrap().to_owned()
-        } else {
-            let chat = get_client_chat(ctx.clone(), user.clone()).await;
-            self.user_chat.insert(user, chat.clone());
+        if let Entry::Vacant(e) = self.user_chat.entry(user.clone()) {
+            let chat = get_client_chat(ctx.clone(), user).await;
+            e.insert(chat.clone());
             chat
+        } else {
+            self.user_chat.get(&user).unwrap().to_owned()
         }
     }
 
