@@ -1,10 +1,12 @@
 use dsbuild::{Address, VirtualSystem};
 
 use crate::{
-    client::io::Info,
+    client::{io::Info, requests::ClientRequestKind},
     server::{event::ChatEvent, messages::ServerMessage, process::ServerProcess},
     ClientProcess,
 };
+
+use super::server::check_replica_request;
 
 pub fn read_history(sys: &mut VirtualSystem, node: &str, proc: &str) -> Vec<ChatEvent> {
     let mut events = sys
@@ -69,6 +71,11 @@ pub fn build_sim(sys: &mut VirtualSystem, clients: &[Address], server: Address, 
             ),
             &client.process_name,
         );
+        sys.send_local_message(
+            &client.process_name,
+            &client.process_name,
+            ClientRequestKind::Status.into(),
+        );
     }
 
     sys.add_node_with_storage(&server.process_name, &server.host, server.port, 1 << 20);
@@ -78,6 +85,11 @@ pub fn build_sim(sys: &mut VirtualSystem, clients: &[Address], server: Address, 
         ServerProcess::new_with_replica(replica.clone()),
         &server.process_name,
     );
+    sys.send_local_message(
+        &server.process_name,
+        &server.process_name,
+        check_replica_request(),
+    );
 
     sys.add_node_with_storage(&replica.process_name, &replica.host, replica.port, 1 << 20);
     sys.network().connect_node(&replica.process_name);
@@ -85,6 +97,11 @@ pub fn build_sim(sys: &mut VirtualSystem, clients: &[Address], server: Address, 
         &replica.process_name,
         ServerProcess::new_with_replica(server.clone()),
         &replica.process_name,
+    );
+    sys.send_local_message(
+        &server.process_name,
+        &server.process_name,
+        check_replica_request(),
     );
 }
 
@@ -105,6 +122,11 @@ pub fn build_sim_without_replica(sys: &mut VirtualSystem, clients: &[Address], s
                 default_pass(),
             ),
             &client.process_name,
+        );
+        sys.send_local_message(
+            &client.process_name,
+            &client.process_name,
+            ClientRequestKind::Status.into(),
         );
     }
 
@@ -142,5 +164,10 @@ pub fn rerun_server(
         &server_addr.process_name,
         ServerProcess::new_with_replica(replica_addr.clone()),
         server_node,
+    );
+    sys.send_local_message(
+        &server_addr.process_name,
+        server_node,
+        check_replica_request(),
     );
 }
