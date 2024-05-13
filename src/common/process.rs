@@ -47,7 +47,7 @@ pub trait Process: Send + Sync {
 }
 
 /// Represents wrapper around user-defined [`process`][crate::Process],
-/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealSystem] or [`virtual`][crate::VirtualSystem] system.
+/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealNode] or [`virtual`][crate::VirtualSystem] system.
 ///
 /// Wrapper holds reference to user-defined process, which implements [`Process`] trait,
 /// and allows user to get read access to it.
@@ -120,24 +120,24 @@ impl<P: Process + 'static> IOProcessWrapper<P> {
 }
 
 /// Represents [`process`][`crate::Process`] address, which is used in
-/// [`real system`][`crate::RealSystem`] and [`virtual system`][`crate::VirtualSystem`]
+/// [`real node`][`crate::RealNode`] and [`virtual system`][`crate::VirtualSystem`]
 ///  to route [`network messages`][crate::Message].
 #[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq, serde::Deserialize, serde::Serialize)]
 pub struct Address {
     /// Specifies host,
     /// which is used to deliver messages
-    /// to the [real system][`crate::real::system::System`] instance
+    /// to the [real node][`crate::real::system::System`] instance
     /// through the network.
     pub host: String,
 
     /// Specifies port,
     /// which is used to deliver messages
-    /// to the [real system][`crate::real::system::System`] instance
+    /// to the [real node][`crate::real::system::System`] instance
     /// through the network.
     pub port: u16,
 
     /// Specifies process name
-    /// inside of the [real system][`crate::real::system::System`] instance.
+    /// inside of the [real node][`crate::real::system::System`] instance.
     pub process_name: String,
 }
 

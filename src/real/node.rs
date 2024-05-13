@@ -1,4 +1,4 @@
-//! Definition of real system.
+//! Definition of real node.
 
 use std::{
     collections::HashMap,
@@ -19,8 +19,8 @@ use super::{
     process::{FromSystemMessage, ProcessManager, ProcessManagerConfig, ToSystemMessage},
 };
 
-/// Represents real system.
-pub struct System {
+/// Represents real node.
+pub struct Node {
     scheduled: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
     process_senders: HashMap<String, Sender<FromSystemMessage>>,
     from_process_receiver: Receiver<ToSystemMessage>,
@@ -33,7 +33,7 @@ pub struct System {
     mount_dir: String,
 }
 
-impl System {
+impl Node {
     /// Create new system with specified size of buffers, host and port.
     pub fn new(max_buffer_size: usize, host: &str, port: u16, storage_mount: &str) -> Self {
         let (messages_sender, network_receiver) = mpsc::channel(max_buffer_size);

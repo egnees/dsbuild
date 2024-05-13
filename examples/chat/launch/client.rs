@@ -1,10 +1,10 @@
 use chat::{start_io, ClientProcess};
-use dsbuild::{Address, RealSystem};
+use dsbuild::{Address, RealNode};
 
 use crate::cfg::ClientConfig;
 
 pub fn run_client_with_config(config: ClientConfig) {
-    let mut sys = RealSystem::new(1024, config.host.as_str(), config.port, "/tmp/");
+    let mut sys = RealNode::new(1024, config.host.as_str(), config.port, "/tmp/");
 
     let server1_address = Address::new(config.server_host, config.server_port, "server".to_owned());
     let server2_address = Address::new(

@@ -6,7 +6,7 @@ use tokio::{
 };
 
 use crate::{
-    common::context::Context, real::timer::TimerManager, Address, Message, Process, RealSystem, Tag,
+    common::context::Context, real::timer::TimerManager, Address, Message, Process, RealNode, Tag,
 };
 
 #[derive(Clone)]
@@ -50,7 +50,7 @@ fn local_messages_works() {
         process_name: "proc2".to_owned(),
     };
 
-    let mut system = RealSystem::new(1024, "127.0.0.1", 11123, "storage_mount".into());
+    let mut system = RealNode::new(1024, "127.0.0.1", 11123, "storage_mount".into());
 
     let proc1 = LocalProcess {};
     let mut wrapper1 = system.add_process(proc1, "proc1".to_owned());
@@ -209,7 +209,7 @@ impl Process for SendRecvProcess {
 
 #[test]
 fn send_recv_works() {
-    let mut sys = RealSystem::new(1024, "127.0.0.1", 10092, "/tmp/");
+    let mut sys = RealNode::new(1024, "127.0.0.1", 10092, "/tmp/");
     let addr1 = Address::new_ref("127.0.0.1", 10092, "proc1");
     let addr2 = Address::new_ref("127.0.0.1", 10092, "proc2");
     let mut proc1_io = sys.add_process(

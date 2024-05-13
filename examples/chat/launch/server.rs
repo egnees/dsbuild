@@ -1,10 +1,10 @@
 use chat::{server::process::ServerProcess, utils::server::check_replica_request};
-use dsbuild::{Address, RealSystem};
+use dsbuild::{Address, RealNode};
 
 use crate::cfg::ServerConfig;
 
 pub fn run_server_with_config(config: ServerConfig) {
-    let mut sys = RealSystem::new(
+    let mut sys = RealNode::new(
         1024,
         config.host.as_str(),
         config.port,

@@ -11,7 +11,7 @@
 mod real;
 
 // Re-export public entities.
-pub use real::system::System as RealSystem;
+pub use real::node::Node as RealNode;
 
 mod virt;
 
