@@ -212,7 +212,7 @@
 }
 
 <span class="doccomment">/// Represents wrapper around user-defined [`process`][crate::Process],
-/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealSystem] or [`virtual`][crate::VirtualSystem] system.
+/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealNode] or [`virtual`][crate::VirtualSystem] system.
 ///
 /// Wrapper holds reference to user-defined process, which implements [`Process`] trait,
 /// and allows user to get read access to it.
@@ -285,24 +285,24 @@
 }
 
 <span class="doccomment">/// Represents [`process`][`crate::Process`] address, which is used in
-/// [`real system`][`crate::RealSystem`] and [`virtual system`][`crate::VirtualSystem`]
+/// [`real node`][`crate::RealNode`] and [`virtual system`][`crate::VirtualSystem`]
 ///  to route [`network messages`][crate::Message].
 </span><span class="attr">#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq, serde::Deserialize, serde::Serialize)]
 </span><span class="kw">pub struct </span>Address {
     <span class="doccomment">/// Specifies host,
     /// which is used to deliver messages
-    /// to the [real system][`crate::real::system::System`] instance
+    /// to the [real node][`crate::real::system::System`] instance
     /// through the network.
     </span><span class="kw">pub </span>host: String,
 
     <span class="doccomment">/// Specifies port,
     /// which is used to deliver messages
-    /// to the [real system][`crate::real::system::System`] instance
+    /// to the [real node][`crate::real::system::System`] instance
     /// through the network.
     </span><span class="kw">pub </span>port: u16,
 
     <span class="doccomment">/// Specifies process name
-    /// inside of the [real system][`crate::real::system::System`] instance.
+    /// inside of the [real node][`crate::real::system::System`] instance.
     </span><span class="kw">pub </span>process_name: String,
 }
 
