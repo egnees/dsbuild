@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, time::SystemTime};
+use std::collections::BTreeSet;
 
 use rand::{distributions::Alphanumeric, seq::SliceRandom, Rng};
 use rand_pcg::Pcg64;
@@ -51,7 +51,7 @@ impl Process for ClientStub {
             id: self.req_id,
             client: self.login.clone(),
             password: self.password.clone(),
-            time: SystemTime::now(),
+            time: None,
             kind,
             addr: None,
         };
@@ -317,7 +317,7 @@ impl Process for ReplicaNotifiedClientStub {
             id: self.req_id,
             client: self.name.clone(),
             password: self.password.clone(),
-            time: SystemTime::now(),
+            time: None,
             kind,
             addr: None,
         };

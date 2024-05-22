@@ -1,7 +1,6 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
     sync::Arc,
-    time::SystemTime,
 };
 
 use dsbuild::{Address, Context, Message};
@@ -216,6 +215,7 @@ impl ServerState {
         let from_replica = self.replica.is_some() && *self.replica.as_ref().unwrap() == from;
         if !from_replica {
             request.addr = Some(from.clone());
+            request.time = Some(ctx.time());
         }
 
         let client_addr = request.addr.clone().unwrap();
@@ -243,21 +243,22 @@ impl ServerState {
             return;
         }
 
+        let event_time = request.time.unwrap();
         let result = match request.kind.clone() {
             ClientRequestKind::SendMessage(msg) => {
-                self.send_message_to_chat(request.client.clone(), msg, ctx.clone())
+                self.send_message_to_chat(request.client.clone(), msg, ctx.clone(), event_time)
                     .await
             }
             ClientRequestKind::Create(chat) => {
-                self.create_chat(chat, request.client.clone(), ctx.clone())
+                self.create_chat(chat, request.client.clone(), ctx.clone(), event_time)
                     .await
             }
             ClientRequestKind::Connect(chat) => {
-                self.connect_to_chat(chat, request.client.clone(), ctx.clone())
+                self.connect_to_chat(chat, request.client.clone(), ctx.clone(), event_time)
                     .await
             }
             ClientRequestKind::Disconnect => {
-                self.disconnect_from_chat(request.client.clone(), ctx.clone())
+                self.disconnect_from_chat(request.client.clone(), ctx.clone(), event_time)
                     .await
             }
             ClientRequestKind::Status => Err(self
@@ -296,6 +297,7 @@ impl ServerState {
         client: String,
         msg: String,
         ctx: Context,
+        time: f64,
     ) -> Result<(), String> {
         if msg.len() > 4096 {
             return Err("message too long".to_owned());
@@ -311,6 +313,7 @@ impl ServerState {
                 chat.clone(),
                 client,
                 ChatEventKind::SentMessage(msg),
+                time,
                 ctx.clone(),
             )
             .await;
@@ -325,6 +328,7 @@ impl ServerState {
         chat: String,
         client: String,
         ctx: Context,
+        time: f64,
     ) -> Result<(), String> {
         if chat.len() > 4096 {
             return Err("chat name too long".to_owned());
@@ -343,7 +347,13 @@ impl ServerState {
         }
 
         let event = self
-            .apply_chat_event_from_user(chat.clone(), client, ChatEventKind::Created(), ctx.clone())
+            .apply_chat_event_from_user(
+                chat.clone(),
+                client,
+                ChatEventKind::Created(),
+                time,
+                ctx.clone(),
+            )
             .await;
 
         self.broadcast_chat_event(chat, event.clone(), ctx).await;
@@ -356,6 +366,7 @@ impl ServerState {
         chat: String,
         client: String,
         ctx: Context,
+        time: f64,
     ) -> Result<(), String> {
         if !chat_exists(ctx.clone(), chat.clone()).await {
             return Err("chat with such name does not exist".to_string());
@@ -376,6 +387,7 @@ impl ServerState {
                 chat.clone(),
                 client.clone(),
                 ChatEventKind::Connected(),
+                time,
                 ctx.clone(),
             )
             .await;
@@ -386,7 +398,12 @@ impl ServerState {
         Ok(())
     }
 
-    async fn disconnect_from_chat(&mut self, client: String, ctx: Context) -> Result<(), String> {
+    async fn disconnect_from_chat(
+        &mut self,
+        client: String,
+        ctx: Context,
+        time: f64,
+    ) -> Result<(), String> {
         let chat = self
             .get_user_chat(ctx.clone(), client.clone())
             .await
@@ -399,6 +416,7 @@ impl ServerState {
                 chat.clone(),
                 client.clone(),
                 ChatEventKind::Disconnected(),
+                time,
                 ctx.clone(),
             )
             .await;
@@ -407,12 +425,13 @@ impl ServerState {
         Ok(())
     }
 
-    // here chat files can not exist
+    // here chat files can be absent
     pub async fn apply_chat_event_from_user(
         &mut self,
         chat: String,
         author: String,
         event_kind: ChatEventKind,
+        event_time: f64,
         ctx: Context,
     ) -> ChatEvent {
         let chat_seq_num = self.get_chat_seq_num(ctx.clone(), chat.clone()).await;
@@ -420,7 +439,7 @@ impl ServerState {
         let event = ChatEvent {
             chat: chat.clone(),
             user: author.clone(),
-            time: SystemTime::now(),
+            time: event_time,
             kind: event_kind,
             seq: chat_seq_num,
         };

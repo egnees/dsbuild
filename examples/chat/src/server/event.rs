@@ -1,6 +1,7 @@
 //! Definition of events in chat.
 
 use std::fmt::{Debug, Display, Formatter, Result};
+use std::time::Duration;
 use std::{cmp::Ordering, time::SystemTime};
 
 use chrono::{DateTime, Local};
@@ -22,7 +23,7 @@ pub enum ChatEventKind {
 pub struct ChatEvent {
     pub chat: String,
     pub user: String,
-    pub time: SystemTime,
+    pub time: f64,
     pub kind: ChatEventKind,
     pub seq: u64,
 }
@@ -33,6 +34,7 @@ impl PartialEq for ChatEvent {
             && self.chat == other.chat
             && self.user == other.user
             && self.kind == other.kind
+            && self.time == other.time
     }
 }
 
@@ -56,7 +58,7 @@ impl ChatEvent {
         Self {
             chat,
             user: client,
-            time: SystemTime::now(),
+            time: 0.0,
             kind: ChatEventKind::SentMessage(msg),
             seq,
         }
@@ -66,7 +68,7 @@ impl ChatEvent {
         Self {
             chat,
             user: client,
-            time: SystemTime::now(),
+            time: 0.0,
             kind: ChatEventKind::Connected(),
             seq,
         }
@@ -76,7 +78,7 @@ impl ChatEvent {
         Self {
             chat,
             user: client,
-            time: SystemTime::now(),
+            time: 0.0,
             kind: ChatEventKind::Disconnected(),
             seq,
         }
@@ -86,7 +88,7 @@ impl ChatEvent {
         Self {
             chat,
             user: client,
-            time: SystemTime::now(),
+            time: 0.0,
             kind: ChatEventKind::Created(),
             seq,
         }
@@ -96,7 +98,7 @@ impl ChatEvent {
         Self {
             chat,
             user: client,
-            time: SystemTime::now(),
+            time: 0.0,
             kind,
             seq,
         }
@@ -105,7 +107,10 @@ impl ChatEvent {
 
 impl Display for ChatEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let dt: DateTime<Local> = self.time.into();
+        let dt: DateTime<Local> = SystemTime::UNIX_EPOCH
+            .checked_add(Duration::from_secs_f64(self.time))
+            .unwrap()
+            .into();
 
         match &self.kind {
             ChatEventKind::SentMessage(msg) => write!(

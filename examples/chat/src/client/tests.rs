@@ -1,5 +1,3 @@
-use std::time::SystemTime;
-
 use crate::server::{event::ChatEvent, messages::ServerMessage};
 
 use super::{
@@ -125,7 +123,7 @@ fn state_works_with_status() {
         id: 1,
         client: "client1".to_owned(),
         password: "password123".to_owned(),
-        time: SystemTime::now(),
+        time: None,
         kind: ClientRequestKind::Status,
         addr: None,
     });

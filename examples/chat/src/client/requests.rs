@@ -1,5 +1,6 @@
 //! Definition of requests from client to server which can appear in the system.
 use std::fmt;
+use std::time::Duration;
 use std::time::SystemTime;
 
 use chrono::DateTime;
@@ -10,19 +11,24 @@ use dsbuild::Message;
 use serde::{Deserialize, Serialize};
 
 /// Represents request from client to server.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ClientRequest {
     pub id: u64,
     pub client: String,
     pub password: String,
-    pub time: SystemTime,
+    pub time: Option<f64>,
     pub kind: ClientRequestKind,
     pub addr: Option<Address>,
 }
 
+impl Eq for ClientRequest {}
+
 impl fmt::Display for ClientRequest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dt: DateTime<Local> = self.time.into();
+        let dt: DateTime<Local> = SystemTime::UNIX_EPOCH
+            .checked_add(Duration::from_secs_f64(self.time.unwrap_or(0.0)))
+            .unwrap()
+            .into();
         write!(
             f,
             "[{}]\t [{}{}] {}: {}",
@@ -128,7 +134,7 @@ impl RequestBuilder {
             id: self.next_id(),
             client: self.client.clone(),
             password: self.password.clone(),
-            time: SystemTime::now(),
+            time: None,
             kind,
             addr: None,
         }
