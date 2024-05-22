@@ -433,10 +433,28 @@
 <a href="#431" id="431">431</a>
 <a href="#432" id="432">432</a>
 <a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{hash_map::Entry, HashMap},
     sync::Arc,
-    time::SystemTime,
 };
 
 <span class="kw">use </span>dsbuild::{Address, Context, Message};
@@ -651,6 +669,7 @@
         <span class="kw">let </span>from_replica = <span class="self">self</span>.replica.is_some() &amp;&amp; <span class="kw-2">*</span><span class="self">self</span>.replica.as_ref().unwrap() == from;
         <span class="kw">if </span>!from_replica {
             request.addr = <span class="prelude-val">Some</span>(from.clone());
+            request.time = <span class="prelude-val">Some</span>(ctx.time());
         }
 
         <span class="kw">let </span>client_addr = request.addr.clone().unwrap();
@@ -678,21 +697,22 @@
             <span class="kw">return</span>;
         }
 
+        <span class="kw">let </span>event_time = request.time.unwrap();
         <span class="kw">let </span>result = <span class="kw">match </span>request.kind.clone() {
             ClientRequestKind::SendMessage(msg) =&gt; {
-                <span class="self">self</span>.send_message_to_chat(request.client.clone(), msg, ctx.clone())
+                <span class="self">self</span>.send_message_to_chat(request.client.clone(), msg, ctx.clone(), event_time)
                     .<span class="kw">await
             </span>}
             ClientRequestKind::Create(chat) =&gt; {
-                <span class="self">self</span>.create_chat(chat, request.client.clone(), ctx.clone())
+                <span class="self">self</span>.create_chat(chat, request.client.clone(), ctx.clone(), event_time)
                     .<span class="kw">await
             </span>}
             ClientRequestKind::Connect(chat) =&gt; {
-                <span class="self">self</span>.connect_to_chat(chat, request.client.clone(), ctx.clone())
+                <span class="self">self</span>.connect_to_chat(chat, request.client.clone(), ctx.clone(), event_time)
                     .<span class="kw">await
             </span>}
             ClientRequestKind::Disconnect =&gt; {
-                <span class="self">self</span>.disconnect_from_chat(request.client.clone(), ctx.clone())
+                <span class="self">self</span>.disconnect_from_chat(request.client.clone(), ctx.clone(), event_time)
                     .<span class="kw">await
             </span>}
             ClientRequestKind::Status =&gt; <span class="prelude-val">Err</span>(<span class="self">self
@@ -731,6 +751,7 @@
         client: String,
         msg: String,
         ctx: Context,
+        time: f64,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="kw">if </span>msg.len() &gt; <span class="number">4096 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"message too long"</span>.to_owned());
@@ -746,6 +767,7 @@
                 chat.clone(),
                 client,
                 ChatEventKind::SentMessage(msg),
+                time,
                 ctx.clone(),
             )
             .<span class="kw">await</span>;
@@ -760,6 +782,7 @@
         chat: String,
         client: String,
         ctx: Context,
+        time: f64,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="kw">if </span>chat.len() &gt; <span class="number">4096 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"chat name too long"</span>.to_owned());
@@ -778,7 +801,13 @@
         }
 
         <span class="kw">let </span>event = <span class="self">self
-            </span>.apply_chat_event_from_user(chat.clone(), client, ChatEventKind::Created(), ctx.clone())
+            </span>.apply_chat_event_from_user(
+                chat.clone(),
+                client,
+                ChatEventKind::Created(),
+                time,
+                ctx.clone(),
+            )
             .<span class="kw">await</span>;
 
         <span class="self">self</span>.broadcast_chat_event(chat, event.clone(), ctx).<span class="kw">await</span>;
@@ -791,6 +820,7 @@
         chat: String,
         client: String,
         ctx: Context,
+        time: f64,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="kw">if </span>!chat_exists(ctx.clone(), chat.clone()).<span class="kw">await </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"chat with such name does not exist"</span>.to_string());
@@ -811,6 +841,7 @@
                 chat.clone(),
                 client.clone(),
                 ChatEventKind::Connected(),
+                time,
                 ctx.clone(),
             )
             .<span class="kw">await</span>;
@@ -821,7 +852,12 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>disconnect_from_chat(<span class="kw-2">&amp;mut </span><span class="self">self</span>, client: String, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
+    <span class="kw">async fn </span>disconnect_from_chat(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        client: String,
+        ctx: Context,
+        time: f64,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="kw">let </span>chat = <span class="self">self
             </span>.get_user_chat(ctx.clone(), client.clone())
             .<span class="kw">await
@@ -834,6 +870,7 @@
                 chat.clone(),
                 client.clone(),
                 ChatEventKind::Disconnected(),
+                time,
                 ctx.clone(),
             )
             .<span class="kw">await</span>;
@@ -842,12 +879,13 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// here chat files can not exist
+    <span class="comment">// here chat files can be absent
     </span><span class="kw">pub async fn </span>apply_chat_event_from_user(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         chat: String,
         author: String,
         event_kind: ChatEventKind,
+        event_time: f64,
         ctx: Context,
     ) -&gt; ChatEvent {
         <span class="kw">let </span>chat_seq_num = <span class="self">self</span>.get_chat_seq_num(ctx.clone(), chat.clone()).<span class="kw">await</span>;
@@ -855,7 +893,7 @@
         <span class="kw">let </span>event = ChatEvent {
             chat: chat.clone(),
             user: author.clone(),
-            time: SystemTime::now(),
+            time: event_time,
             kind: event_kind,
             seq: chat_seq_num,
         };
