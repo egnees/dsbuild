@@ -1,6 +1,9 @@
 //! Definition of context-related objects.
 
-use std::{future::Future, time::Duration};
+use std::{
+    future::Future,
+    time::{Duration, SystemTime},
+};
 
 use dslab_async_mp::storage::result::{StorageError, StorageResult};
 use tokio::{select, sync::oneshot};
@@ -223,5 +226,13 @@ impl RealContext {
                 _ => StorageError::Unavailable,
             })
             .map(File::RealFile)
+    }
+
+    /// Returns current time in seconds since the Unix epoch.
+    pub fn time(&self) -> f64 {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f64()
     }
 }

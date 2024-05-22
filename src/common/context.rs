@@ -162,4 +162,12 @@ impl Context {
             ContextVariant::Virtual(ctx) => ctx.open_file(name).await,
         }
     }
+
+    /// Returns current system time.
+    pub fn time(&self) -> f64 {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.time(),
+            ContextVariant::Virtual(ctx) => ctx.time(),
+        }
+    }
 }

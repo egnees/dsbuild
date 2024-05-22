@@ -163,6 +163,11 @@ impl VirtualContext {
                 .map(|file| File::SimulationFile(FileWrapper { file }))
         })
     }
+
+    /// Get current simulation time.
+    pub fn time(&self) -> f64 {
+        self.dslab_ctx.time()
+    }
 }
 
 /// [`VirtualContext`] wont be shared between threads,
