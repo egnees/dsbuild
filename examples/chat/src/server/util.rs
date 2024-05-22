@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 use dsbuild::{storage::StorageError, Address, Context};
 
@@ -31,6 +34,8 @@ pub fn send_ack(ctx: Context, request_id: u64, to: Address) {
 }
 
 pub async fn auth_user(ctx: Context, login: String, password: String, addr: Address) -> bool {
+    let password = password_hash(password);
+
     let pass_file_name = get_client_password_file_name(login.clone());
     let addr_file_name = get_client_address_file_name(login.clone());
     let user_registered = ctx.file_exists(&pass_file_name).await.unwrap();
@@ -460,4 +465,10 @@ pub fn get_global_requests_file_name() -> String {
 
 pub fn get_client_address_file_name(client: String) -> String {
     format!("{}.address", client)
+}
+
+pub fn password_hash(pass: String) -> String {
+    let mut hasher = DefaultHasher::new();
+    pass.hash(&mut hasher);
+    hasher.finish().to_string()
 }
