@@ -442,9 +442,8 @@ pub async fn get_client_address(ctx: Context, client: String) -> Option<Address>
 }
 
 pub async fn chat_exists(ctx: Context, chat: String) -> bool {
-    ctx.file_exists(&get_chat_history_file_name(chat))
-        .await
-        .unwrap()
+    let filename = get_chat_history_file_name(chat);
+    ctx.file_exists(&filename).await.unwrap()
 }
 
 pub fn get_chat_history_file_name(chat: String) -> String {

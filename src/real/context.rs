@@ -184,8 +184,15 @@ impl RealContext {
 
     /// Check if file exists.
     pub async fn file_exists(&self, name: &str) -> StorageResult<bool> {
-        let mount_dir = self.mount_dir.clone();
-        match async_std::fs::File::open(mount_dir + "/" + name).await {
+        let s = self.mount_dir.clone() + "/" + name;
+
+        let res = async_std::fs::OpenOptions::new()
+            .read(true)
+            .create(false)
+            .open(s)
+            .await;
+
+        match res {
             Ok(_) => Ok(true),
             Err(e) => match e.kind() {
                 ErrorKind::NotFound => Ok(false),

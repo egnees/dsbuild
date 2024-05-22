@@ -2,3 +2,4 @@
 /Cargo.lock
 /.vscode
 /examples/chat/.tmp
+/examples/chat/cfg/server-hse-1.yml

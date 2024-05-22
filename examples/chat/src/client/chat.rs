@@ -32,8 +32,8 @@ impl Chat {
     /// Returns events in chat, which became visible to user.
     pub fn process_event(&mut self, event: ChatEvent) -> Vec<ChatEvent> {
         assert_eq!(
-            self.name,
-            event.chat,
+            self.name.to_lowercase(),
+            event.chat.to_lowercase(),
             "bad event chat name, expected '{}'",
             self.name.as_str()
         );
