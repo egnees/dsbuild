@@ -36,6 +36,10 @@ fn capital_letter_chat_name() {
         .read_local_messages(&client_addr.process_name, "Client")
         .unwrap();
     for m in msg {
-        println!("{:?}", m.get_data::<Info>());
+        let info = m.get_data::<Info>().unwrap();
+        match info {
+            Info::InnerInfo(_) => {}
+            Info::ChatEvent(_) => panic!("system is not sensitive to chat name register"),
+        }
     }
 }
