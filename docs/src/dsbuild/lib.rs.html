@@ -31,6 +31,7 @@
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Framework for building distributed systems with support for
 //! [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
 //! simulation-based testing.
@@ -44,7 +45,8 @@
 </span><span class="kw">mod </span>real;
 
 <span class="comment">// Re-export public entities.
-</span><span class="kw">pub use </span>real::node::Node <span class="kw">as </span>RealNode;
+</span><span class="kw">pub use </span>real::io::IOProcessWrapper;
+<span class="kw">pub use </span>real::node::Node <span class="kw">as </span>RealNode;
 
 <span class="kw">mod </span>virt;
 
@@ -59,7 +61,7 @@
     context::Context,
     message::Message,
     network::{SendError, SendResult},
-    process::{Address, IOProcessWrapper, Process, ProcessGuard, ProcessWrapper},
+    process::{Address, Process, ProcessGuard, ProcessWrapper},
     tag::Tag,
 };
 </code></pre></div></section></main></body></html>

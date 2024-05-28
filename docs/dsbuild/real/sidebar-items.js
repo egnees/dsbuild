@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["context","messenger","msg_waiters","network","node","process","timer"]};
+window.SIDEBAR_ITEMS = {"mod":["context","io","messenger","msg_waiters","network","node","process","timer"]};

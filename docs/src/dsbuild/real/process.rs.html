@@ -208,7 +208,7 @@
 <span class="doccomment">/// Proxy between system and process implementation.
 /// Calls process methods, when receives network message, timer fires,
 /// or local message appears.
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ProcessManager {
+</span><span class="kw">pub struct </span>ProcessManager {
     <span class="doccomment">/// Waiters.
     </span>local_receiver: Receiver&lt;Message&gt;,
     system_receiver: Receiver&lt;FromSystemMessage&gt;,
@@ -226,7 +226,7 @@
 
 <span class="doccomment">/// Responsible for process interaction with system, storage, user and network.
 </span><span class="attr">#[derive(Clone)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>InteractionBlock {
+</span><span class="kw">pub struct </span>InteractionBlock {
     <span class="kw">pub </span>local: Sender&lt;Message&gt;,
     <span class="kw">pub </span>network: Sender&lt;NetworkRequest&gt;,
     <span class="kw">pub </span>system: Sender&lt;ToSystemMessage&gt;,
@@ -234,7 +234,7 @@
     <span class="kw">pub </span>message_waiters: Arc&lt;Mutex&lt;MessageWaiters&gt;&gt;,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ProcessManagerConfig {
+<span class="kw">pub struct </span>ProcessManagerConfig {
     <span class="kw">pub </span>address: Address,
     <span class="kw">pub </span>process: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Process&gt;&gt;,
     <span class="kw">pub </span>local_sender: Sender&lt;Message&gt;,
