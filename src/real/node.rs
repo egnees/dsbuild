@@ -9,12 +9,10 @@ use std::{
 
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::{
-    common::{message::RoutedMessage, process::IOProcessWrapper},
-    Address, Process, ProcessWrapper,
-};
+use crate::{common::message::RoutedMessage, Address, Process, ProcessWrapper};
 
 use super::{
+    io::IOProcessWrapper,
     network::{self, NetworkRequest},
     process::{FromSystemMessage, ProcessManager, ProcessManagerConfig, ToSystemMessage},
 };
@@ -82,12 +80,6 @@ impl Node {
         let (local_proc_sender, local_user_receiver) = mpsc::channel(self.max_buffer_size);
         let (local_user_sender, local_proc_receiver) = mpsc::channel(self.max_buffer_size);
 
-        let io_process_wrapper = IOProcessWrapper {
-            wrapper: process_wrapper,
-            sender: local_user_sender,
-            receiver: local_user_receiver,
-        };
-
         let address = Address {
             host: self.host.clone(),
             port: self.port,
@@ -95,6 +87,14 @@ impl Node {
         };
 
         let (to_proc_sender, from_proc_receiver) = mpsc::channel(self.max_buffer_size);
+
+        let io_process_wrapper = IOProcessWrapper {
+            wrapper: process_wrapper,
+            sender: local_user_sender,
+            receiver: local_user_receiver,
+            system_sender: Some(self.to_system_sender.clone()),
+            proc_name: name.clone(),
+        };
 
         let process_manager_config = ProcessManagerConfig {
             address,

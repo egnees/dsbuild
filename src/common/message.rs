@@ -110,3 +110,15 @@ impl From<Message> for DSLabMessage {
         }
     }
 }
+
+impl From<String> for Message {
+    fn from(value: String) -> Self {
+        Message::borrow_new("info", value).unwrap()
+    }
+}
+
+impl From<&str> for Message {
+    fn from(value: &str) -> Self {
+        Message::borrow_new("info", value).unwrap()
+    }
+}

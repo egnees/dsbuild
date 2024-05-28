@@ -11,6 +11,7 @@
 mod real;
 
 // Re-export public entities.
+pub use real::io::IOProcessWrapper;
 pub use real::node::Node as RealNode;
 
 mod virt;
@@ -26,6 +27,6 @@ pub use common::{
     context::Context,
     message::Message,
     network::{SendError, SendResult},
-    process::{Address, IOProcessWrapper, Process, ProcessGuard, ProcessWrapper},
+    process::{Address, Process, ProcessGuard, ProcessWrapper},
     tag::Tag,
 };

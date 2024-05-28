@@ -28,7 +28,7 @@ pub enum ToSystemMessage {
 /// Proxy between system and process implementation.
 /// Calls process methods, when receives network message, timer fires,
 /// or local message appears.
-pub(crate) struct ProcessManager {
+pub struct ProcessManager {
     /// Waiters.
     local_receiver: Receiver<Message>,
     system_receiver: Receiver<FromSystemMessage>,
@@ -46,7 +46,7 @@ pub(crate) struct ProcessManager {
 
 /// Responsible for process interaction with system, storage, user and network.
 #[derive(Clone)]
-pub(crate) struct InteractionBlock {
+pub struct InteractionBlock {
     pub local: Sender<Message>,
     pub network: Sender<NetworkRequest>,
     pub system: Sender<ToSystemMessage>,
@@ -54,7 +54,7 @@ pub(crate) struct InteractionBlock {
     pub message_waiters: Arc<Mutex<MessageWaiters>>,
 }
 
-pub(crate) struct ProcessManagerConfig {
+pub struct ProcessManagerConfig {
     pub address: Address,
     pub process: Arc<RwLock<dyn Process>>,
     pub local_sender: Sender<Message>,

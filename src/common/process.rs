@@ -5,8 +5,6 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard},
 };
 
-use tokio::sync::mpsc::{Receiver, Sender};
-
 use crate::common::{context::Context, message::Message};
 
 /// Represents possible states of the user processes inside of the system.
@@ -60,16 +58,6 @@ pub struct ProcessWrapper<P: Process + 'static> {
     pub(crate) process_ref: Arc<RwLock<P>>,
 }
 
-/// Represents process wrapper around user-defined [`process`][crate::Process],
-/// which allows to send and receive local messages from the process.
-pub struct IOProcessWrapper<P: Process + 'static> {
-    pub(crate) wrapper: ProcessWrapper<P>,
-    /// Allows to send local messages to the process.
-    pub sender: Sender<Message>,
-    /// Allows to receive local messages from the process.
-    pub receiver: Receiver<Message>,
-}
-
 /// Represents guard for user-defined [`process`][`crate::Process`].
 ///
 /// While user hold [`guard`][`ProcessGuard`] on the process, system can not get access to it.
@@ -109,13 +97,6 @@ impl<P: Process + 'static> ProcessWrapper<P> {
             .expect("Can not read process, probably runtime panicked");
 
         ProcessGuard { inner: read_guard }
-    }
-}
-
-impl<P: Process + 'static> IOProcessWrapper<P> {
-    /// Returns guard for read access to user-defined process.
-    pub fn read(&self) -> ProcessGuard<'_, P> {
-        self.wrapper.read()
     }
 }
 
