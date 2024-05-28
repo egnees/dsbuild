@@ -162,6 +162,7 @@ fn server_fault_virtual() {
     assert_eq!(msgs.len(), 1);
     assert_eq!(msgs[0].get_data::<String>().unwrap(), "first ping");
 
+    // crash server
     sys.crash_node("echo_server");
     sys.step_until_no_events();
 
