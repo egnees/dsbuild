@@ -107,18 +107,17 @@ impl<P: Process + 'static> ProcessWrapper<P> {
 pub struct Address {
     /// Specifies host,
     /// which is used to deliver messages
-    /// to the [real node][`crate::real::system::System`] instance
-    /// through the network.
+    /// to the node instance through the network.
     pub host: String,
 
     /// Specifies port,
     /// which is used to deliver messages
-    /// to the [real node][`crate::real::system::System`] instance
+    /// to the node instance
     /// through the network.
     pub port: u16,
 
     /// Specifies process name
-    /// inside of the [real node][`crate::real::system::System`] instance.
+    /// inside of the real node instance.
     pub process_name: String,
 }
 

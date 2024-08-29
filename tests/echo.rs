@@ -1,7 +1,6 @@
 use std::thread;
 
 use dsbuild::{Address, Context, Message, Process};
-use dslab_async_mp::log::init::enable_console_log;
 
 struct EchoServer {}
 
@@ -47,9 +46,6 @@ impl Process for EchoClient {
 
 #[test]
 fn message_returns_virtual() {
-    // tracing
-    enable_console_log();
-
     let mut sys = dsbuild::VirtualSystem::new(123);
 
     // configure network

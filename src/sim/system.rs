@@ -1,4 +1,4 @@
-//! Definition of [`VirtualSystem`].
+//! Simulation configuration.
 
 use std::{
     cell::{RefCell, RefMut},
@@ -6,9 +6,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use dslab_async_mp::{
-    network::model::Network, node::component::Node, system::System as DSLabSimulation,
-};
+use dslab_async_mp::{network::model::Network, system::System as DSLabSimulation};
 
 use super::{node::NodeManager, process::VirtualProcessWrapper};
 use crate::{
@@ -16,19 +14,21 @@ use crate::{
     Message,
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 /// Represents virtual system, which is responsible
 /// for interacting with user processes,
 /// time, network, and others.
 ///
-/// [`System`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
+/// [`Sim`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
 /// framework for simulating network, time, etc.
-pub struct System {
+pub struct Sim {
     inner: DSLabSimulation,
     node_manager: Rc<RefCell<NodeManager>>,
 }
 
-impl System {
-    /// Create new [`System`] with provided `seed`.
+impl Sim {
+    /// Create new [`Sim`] with provided `seed`.
     pub fn new(seed: u64) -> Self {
         Self {
             inner: DSLabSimulation::new(seed),
@@ -111,15 +111,6 @@ impl System {
         self.inner.rerun_node(node_name);
     }
 
-    /// Returns a mutable reference to the node.
-    ///
-    /// Can not make method public because
-    /// process names on dslab nodes are not the same as in the framework.
-    #[allow(dead_code)]
-    fn get_mut_node(&self, name: &str) -> Option<RefMut<Node>> {
-        self.inner.get_mut_node(name)
-    }
-
     /// Checks if the node is crashed.
     pub fn is_node_crashed(&self, node: &str) -> bool {
         self.inner.node_is_crashed(node)
@@ -127,7 +118,7 @@ impl System {
 
     // Process ------------------------------------------------------
 
-    /// Adds a process to the [`System`].
+    /// Adds a process to the [`Sim`].
     ///
     /// # Panics
     ///

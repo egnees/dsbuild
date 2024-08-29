@@ -4,7 +4,7 @@ use std::future::Future;
 
 use dslab_async_mp::network::result::SendResult;
 
-use crate::virt::context::VirtualContext;
+use crate::sim::context::VirtualContext;
 use crate::{real::context::RealContext, storage::StorageResult};
 
 use super::file::File;

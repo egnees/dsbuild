@@ -8,7 +8,7 @@ use async_std::{
 };
 use dslab_async_mp::storage::result::StorageError;
 
-use crate::{storage::StorageResult, virt::file::FileWrapper};
+use crate::{sim::file::FileWrapper, storage::StorageResult};
 
 pub enum File {
     SimulationFile(FileWrapper),
