@@ -48,7 +48,7 @@ fn stress_no_faults_2_users() {
             "client1".into(),
             "pass123".into(),
         ),
-        "client1_node".into(),
+        "client1_node",
     );
 
     sys.add_process(
@@ -59,7 +59,7 @@ fn stress_no_faults_2_users() {
             "client2".into(),
             "pass123".into(),
         ),
-        "client2_node".into(),
+        "client2_node",
     );
 
     sys.add_process(
@@ -211,12 +211,9 @@ fn stress_no_faults_10_users() {
     sys.add_process(&server_addr.process_name, ServerProcess::default(), server);
 
     // Add clients
-    let clients: Vec<String> = (1..=10)
-        .into_iter()
-        .map(|id| format!("client_{}", id))
-        .collect();
+    let clients: Vec<String> = (1..=10).map(|id| format!("client_{}", id)).collect();
 
-    for client in clients.as_slice().into_iter() {
+    for client in clients.as_slice().iter() {
         let client_addr = Address {
             host: client.clone(),
             port: 1000,
@@ -250,7 +247,7 @@ fn stress_no_faults_10_users() {
     sys.step_until_no_events();
 
     // All clients connect to created chat.
-    for client in clients.as_slice().into_iter() {
+    for client in clients.as_slice().iter() {
         sys.send_local_message(
             client,
             client,
@@ -262,7 +259,7 @@ fn stress_no_faults_10_users() {
     // All clients will send random messages.
     let iters = 100;
     for iter in 0..iters {
-        for client in clients.as_slice().into_iter() {
+        for client in clients.as_slice().iter() {
             sys.send_local_message(
                 client,
                 client,
@@ -278,7 +275,7 @@ fn stress_no_faults_10_users() {
     let ref_history = sys.read_local_messages(&clients[0], &clients[0]).unwrap();
     assert!(ref_history.len() >= iters * clients.len());
 
-    for client in clients.as_slice().into_iter().skip(1) {
+    for client in clients.as_slice().iter().skip(1) {
         let history = sys.read_local_messages(client, client).unwrap();
         assert_eq!(history, ref_history);
     }

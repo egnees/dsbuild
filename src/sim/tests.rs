@@ -119,7 +119,7 @@ fn storage_stress() {
     sys.add_node_with_storage("node", "node", 12345, 1 << 20);
     sys.add_process("storage_process", StorageProc {}, "node");
 
-    let mut files = vec!["file1", "file2", "file3", "file4", "file5"];
+    let mut files = ["file1", "file2", "file3", "file4", "file5"];
     for iter in 0..100 {
         files.shuffle(&mut Seeder::from(iter).make_rng::<Pcg64>());
         for (i, file) in files.iter().enumerate() {

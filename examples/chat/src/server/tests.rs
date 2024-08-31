@@ -184,8 +184,8 @@ fn state_works() {
 
 #[test]
 fn state_multiple_users() {
-    let mut chats = vec!["chat1", "chat2", "chat3", "chat4", "chat5"];
-    let clients = vec!["client1", "client2", "client3", "client4", "client5"];
+    let mut chats = ["chat1", "chat2", "chat3", "chat4", "chat5"];
+    let clients = ["client1", "client2", "client3", "client4", "client5"];
 
     let mut sys = VirtualSystem::new(12345);
     let server_addr = Address {

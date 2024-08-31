@@ -50,7 +50,7 @@ fn local_messages_works() {
         process_name: "proc2".to_owned(),
     };
 
-    let mut system = RealNode::new(1024, "127.0.0.1", 11123, "storage_mount".into());
+    let mut system = RealNode::new(1024, "127.0.0.1", 11123, "storage_mount");
 
     let proc1 = LocalProcess {};
     let mut wrapper1 = system.add_process(proc1, "proc1".to_owned());
@@ -236,5 +236,5 @@ fn send_recv_works() {
     sys.run();
 
     let got_message = flag_event_receiver.blocking_recv().unwrap();
-    assert_eq!(got_message, true);
+    assert!(got_message);
 }

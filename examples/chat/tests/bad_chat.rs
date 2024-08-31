@@ -39,7 +39,9 @@ fn capital_letter_chat_name() {
         let info = m.get_data::<Info>().unwrap();
         match info {
             Info::InnerInfo(_) => {}
-            Info::ChatEvent(_) => panic!("system is not sensitive to chat name register"),
+            Info::ChatEvent(_) => {
+                panic!("system is not sensitive to chat name register")
+            }
         }
     }
 }
