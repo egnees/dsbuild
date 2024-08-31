@@ -2,12 +2,12 @@ use chat::{
     client::requests::ClientRequestKind,
     utils::sim::{build_sim, read_history_from_info},
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 #[test]
 #[should_panic]
 fn network_partition_works() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
     let client1 = Address {
         host: "Client1".into(),

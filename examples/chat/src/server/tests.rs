@@ -4,7 +4,7 @@ use rand::{distributions::Alphanumeric, seq::SliceRandom, Rng};
 use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
 
-use dsbuild::{Address, Context, Message, Process, VirtualSystem};
+use dsbuild::{Address, Context, Message, Process, Sim};
 
 use crate::{
     client::requests::{ClientRequest, ClientRequestKind},
@@ -76,7 +76,7 @@ impl Process for ClientStub {
 
 #[test]
 fn state_works() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
     let server_addr = Address {
         host: "server".to_owned(),
         port: 12345,
@@ -187,7 +187,7 @@ fn state_multiple_users() {
     let mut chats = ["chat1", "chat2", "chat3", "chat4", "chat5"];
     let clients = ["client1", "client2", "client3", "client4", "client5"];
 
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
     let server_addr = Address {
         host: "server".to_owned(),
         port: 12345,
@@ -347,7 +347,7 @@ impl Process for ReplicaNotifiedClientStub {
 
 #[test]
 fn replication_works() {
-    let mut sys = VirtualSystem::new(543210);
+    let mut sys = Sim::new(543210);
 
     sys.add_node("client", "client", 0);
     sys.add_node_with_storage("server1", "server1", 0, 4096);

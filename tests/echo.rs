@@ -46,7 +46,7 @@ impl Process for EchoClient {
 
 #[test]
 fn message_returns_virtual() {
-    let mut sys = dsbuild::VirtualSystem::new(123);
+    let mut sys = dsbuild::Sim::new(123);
 
     // configure network
     sys.network().set_delays(0.5, 1.5);
@@ -132,7 +132,7 @@ fn message_returns_real() {
 
 #[test]
 fn server_fault_virtual() {
-    let mut sys = dsbuild::VirtualSystem::new(321);
+    let mut sys = dsbuild::Sim::new(321);
 
     sys.network().set_delays(0.5, 1.5);
     sys.network().set_drop_rate(0.05);

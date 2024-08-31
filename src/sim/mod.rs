@@ -1,7 +1,7 @@
-//! Definition of structures and functions, which are used in [`virtual mode`][`crate::VirtualSystem`].
+//! Definition of structures and functions, which are used in [`virtual mode`][`crate::Sim`].
 
 pub mod context;
-pub mod file;
+pub mod fs;
 mod node;
 mod process;
 

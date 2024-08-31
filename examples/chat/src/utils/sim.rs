@@ -1,4 +1,4 @@
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 use crate::{
     client::{io::Info, requests::ClientRequestKind},
@@ -8,7 +8,7 @@ use crate::{
 
 use super::server::check_replica_request;
 
-pub fn read_history(sys: &mut VirtualSystem, node: &str, proc: &str) -> Vec<ChatEvent> {
+pub fn read_history(sys: &mut Sim, node: &str, proc: &str) -> Vec<ChatEvent> {
     let mut events = sys
         .read_local_messages(proc, node)
         .unwrap()
@@ -28,7 +28,7 @@ pub fn read_history(sys: &mut VirtualSystem, node: &str, proc: &str) -> Vec<Chat
     events
 }
 
-pub fn read_history_from_info(sys: &mut VirtualSystem, node: &str, proc: &str) -> Vec<ChatEvent> {
+pub fn read_history_from_info(sys: &mut Sim, node: &str, proc: &str) -> Vec<ChatEvent> {
     let mut events = sys
         .read_local_messages(proc, node)
         .unwrap()
@@ -52,7 +52,7 @@ pub fn default_pass() -> String {
     "pass123".to_owned()
 }
 
-pub fn build_sim(sys: &mut VirtualSystem, clients: &[Address], server: Address, replica: Address) {
+pub fn build_sim(sys: &mut Sim, clients: &[Address], server: Address, replica: Address) {
     sys.network().set_corrupt_rate(0.0);
     sys.network().set_delays(0.5, 1.0);
     sys.network().set_drop_rate(0.05);
@@ -105,7 +105,7 @@ pub fn build_sim(sys: &mut VirtualSystem, clients: &[Address], server: Address, 
     );
 }
 
-pub fn build_sim_without_replica(sys: &mut VirtualSystem, clients: &[Address], server: Address) {
+pub fn build_sim_without_replica(sys: &mut Sim, clients: &[Address], server: Address) {
     sys.network().set_corrupt_rate(0.0);
     sys.network().set_delays(0.5, 1.0);
     sys.network().set_drop_rate(0.05);
@@ -139,7 +139,7 @@ pub fn build_sim_without_replica(sys: &mut VirtualSystem, clients: &[Address], s
     );
 }
 
-pub fn stop_server(sys: &mut VirtualSystem, server_node: &str, with_crash: bool) {
+pub fn stop_server(sys: &mut Sim, server_node: &str, with_crash: bool) {
     if with_crash {
         sys.crash_node(server_node);
     } else {
@@ -148,7 +148,7 @@ pub fn stop_server(sys: &mut VirtualSystem, server_node: &str, with_crash: bool)
 }
 
 pub fn rerun_server(
-    sys: &mut VirtualSystem,
+    sys: &mut Sim,
     server_node: &str,
     server_addr: &Address,
     replica_addr: &Address,

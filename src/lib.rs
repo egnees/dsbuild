@@ -59,11 +59,14 @@ pub use real::node::Node as RealNode;
 mod sim;
 
 // Re-export public entities.
-pub use sim::system::Sim as VirtualSystem;
+pub use sim::system::Sim;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 mod common;
+
+pub use common::context;
+pub use common::fs;
 pub use common::storage;
 
 // Re-export public entities.

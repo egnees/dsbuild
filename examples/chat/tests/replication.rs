@@ -2,11 +2,11 @@ use chat::{
     client::requests::ClientRequestKind,
     utils::sim::{build_sim, read_history_from_info, rerun_server, stop_server},
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 #[test]
 fn replication_works() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
     let primary_addr = Address::new_ref("primary", 0, "Primary");
     let replica_addr = Address::new_ref("replica", 0, "Replica");

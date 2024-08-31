@@ -3,11 +3,11 @@ use chat::{
     server::process::ServerProcess,
     ClientProcess,
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 #[test]
 fn stress_no_faults_2_users() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
     sys.network().set_corrupt_rate(0.0);
     sys.network().set_delays(1.0, 3.0);
@@ -193,7 +193,7 @@ fn stress_no_faults_2_users() {
 
 #[test]
 fn stress_no_faults_10_users() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
     sys.network().set_corrupt_rate(0.0);
     sys.network().set_delays(1.0, 3.0);

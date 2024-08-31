@@ -3,7 +3,7 @@ use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
 use serde::{Deserialize, Serialize};
 
-use crate::{Address, Context, Message, Process, VirtualSystem};
+use crate::{Address, Context, Message, Process, Sim};
 
 struct StorageProc {}
 
@@ -73,7 +73,7 @@ impl Process for StorageProc {
 
 #[test]
 fn storage_works() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
     sys.add_node_with_storage("node", "node", 12345, 1 << 20);
     sys.add_process("storage_process", StorageProc {}, "node");
 
@@ -115,7 +115,7 @@ fn storage_works() {
 
 #[test]
 fn storage_stress() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
     sys.add_node_with_storage("node", "node", 12345, 1 << 20);
     sys.add_process("storage_process", StorageProc {}, "node");
 

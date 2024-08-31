@@ -10,7 +10,7 @@ use tokio::{select, sync::oneshot};
 
 use crate::{
     common::{
-        file::File,
+        fs::File,
         message::RoutedMessage,
         network::{SendError, SendResult},
         tag::Tag,
@@ -36,9 +36,7 @@ pub(crate) struct RealContext {
 impl RealContext {
     /// Send local message.
     pub fn send_local(&self, message: Message) {
-        let sender = self.output.local.clone();
-        let result = sender.try_send(message);
-        if let Err(info) = result {
+        if let Err(info) = self.output.local.try_send(message) {
             log::warn!("can not send local message: {}", info);
         }
     }
@@ -216,7 +214,7 @@ impl RealContext {
             .open(mount_dir + "/" + name)
             .await
             .map_err(|_| StorageError::Unavailable)
-            .map(File::RealFile)
+            .map(File::from_real)
     }
 
     /// Open file with specified name.
@@ -232,7 +230,7 @@ impl RealContext {
                 ErrorKind::NotFound => StorageError::NotFound,
                 _ => StorageError::Unavailable,
             })
-            .map(File::RealFile)
+            .map(File::from_real)
     }
 
     /// Returns current time in seconds since the Unix epoch.

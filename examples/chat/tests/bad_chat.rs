@@ -2,11 +2,11 @@ use chat::{
     client::{io::Info, requests::ClientRequestKind},
     utils::sim::build_sim_without_replica,
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 #[test]
 fn capital_letter_chat_name() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
     let primary_addr = Address::new_ref("primary", 0, "Primary");
 

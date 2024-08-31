@@ -4,7 +4,7 @@ use std::{cell::RefCell, future::Future, rc::Rc};
 
 use crate::{
     common::{
-        file::File,
+        fs::File,
         message::Message,
         network::{SendError, SendResult},
         process::Address,
@@ -15,7 +15,7 @@ use crate::{
 use dslab_async_mp::process::context::Context as DSLabContext;
 
 use super::{
-    file::FileWrapper,
+    fs::FileWrapper,
     node::NodeManager,
     send_future::{SendFuture, Sf},
 };
@@ -144,7 +144,7 @@ impl VirtualContext {
         let future = async move {
             self.dslab_ctx
                 .create_file(name)
-                .map(|file| File::SimulationFile(FileWrapper { file }))
+                .map(|file| File::from_sim(FileWrapper { file }))
         };
 
         SendFuture::from_future(future)
@@ -160,7 +160,7 @@ impl VirtualContext {
         SendFuture::from_future(async move {
             self.dslab_ctx
                 .open_file(name)
-                .map(|file| File::SimulationFile(FileWrapper { file }))
+                .map(|file| File::from_sim(FileWrapper { file }))
         })
     }
 
@@ -177,3 +177,42 @@ impl VirtualContext {
 /// but Rust can not know it in compile time.
 unsafe impl Send for VirtualContext {}
 unsafe impl Sync for VirtualContext {}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Address, Context, Message, Process, Sim};
+
+    #[test]
+    fn local_messages() {
+        struct LocalEchoer {}
+
+        impl Process for LocalEchoer {
+            fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+                ctx.send_local(msg);
+                Ok(())
+            }
+
+            fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+                unimplemented!()
+            }
+
+            fn on_message(
+                &mut self,
+                _msg: Message,
+                _from: Address,
+                _ctx: Context,
+            ) -> Result<(), String> {
+                unimplemented!()
+            }
+        }
+
+        let mut sim = Sim::new(123);
+        sim.add_node("node", "192.168.13.2", 10101);
+        let process = LocalEchoer {};
+        sim.add_process("proc", process, "node");
+        sim.send_local_message("proc", "node", "message".into());
+        sim.step_until_no_events();
+        let messages = sim.read_local_messages("proc", "node").unwrap();
+        assert_eq!(messages, vec!["message".into()]);
+    }
+}

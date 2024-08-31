@@ -45,7 +45,7 @@ pub trait Process: Send + Sync {
 }
 
 /// Represents wrapper around user-defined [`process`][crate::Process],
-/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealNode] or [`virtual`][crate::VirtualSystem] system.
+/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealNode] or [`virtual`][crate::Sim] system.
 ///
 /// Wrapper holds reference to user-defined process, which implements [`Process`] trait,
 /// and allows user to get read access to it.
@@ -101,7 +101,7 @@ impl<P: Process + 'static> ProcessWrapper<P> {
 }
 
 /// Represents [`process`][`crate::Process`] address, which is used in
-/// [`real node`][`crate::RealNode`] and [`virtual system`][`crate::VirtualSystem`]
+/// [`real node`][`crate::RealNode`] and [`virtual system`][`crate::Sim`]
 ///  to route [`network messages`][crate::Message].
 #[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq, serde::Deserialize, serde::Serialize)]
 pub struct Address {
