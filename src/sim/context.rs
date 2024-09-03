@@ -2,15 +2,11 @@
 
 use std::{cell::RefCell, future::Future, rc::Rc};
 
-use crate::{
-    common::{
-        fs::File,
-        message::Message,
-        network::{SendError, SendResult},
-        process::Address,
-        tag::Tag,
-    },
-    storage::StorageResult,
+use crate::common::{
+    fs::{File, FsResult},
+    message::{Message, Tag},
+    network::{SendError, SendResult},
+    process::Address,
 };
 use dslab_async_mp::process::context::Context as DSLabContext;
 
@@ -79,7 +75,9 @@ impl VirtualContext {
         let ctx = self.dslab_ctx.clone();
         SendFuture::from_future(async move {
             if let Ok(process_name) = process_name {
-                ctx.send_with_ack(msg.into(), &process_name, timeout).await
+                Ok(ctx
+                    .send_with_ack(msg.into(), &process_name, timeout)
+                    .await?)
             } else {
                 Err(SendError::NotSent)
             }
@@ -99,8 +97,9 @@ impl VirtualContext {
         let ctx = self.dslab_ctx.clone();
         SendFuture::from_future(async move {
             if let Ok(process_name) = process_name {
-                ctx.send_with_tag(msg.into(), tag, &process_name, timeout)
-                    .await
+                Ok(ctx
+                    .send_with_tag(msg.into(), tag, &process_name, timeout)
+                    .await?)
             } else {
                 Err(SendError::NotSent)
             }
@@ -120,9 +119,10 @@ impl VirtualContext {
         let ctx = self.dslab_ctx.clone();
         SendFuture::from_future(async move {
             if let Ok(process_name) = process_name {
-                ctx.send_recv_with_tag(msg.into(), tag, &process_name, timeout)
+                Ok(ctx
+                    .send_recv_with_tag(msg.into(), tag, &process_name, timeout)
                     .await
-                    .map(|msg| msg.into())
+                    .map(|msg| msg.into())?)
             } else {
                 Err(SendError::NotSent)
             }
@@ -140,27 +140,29 @@ impl VirtualContext {
     }
 
     /// Create file with specified name.
-    pub fn create_file<'a>(&'a self, name: &'a str) -> Sf<'a, StorageResult<File>> {
+    pub fn create_file<'a>(&'a self, name: &'a str) -> Sf<'a, FsResult<File>> {
         let future = async move {
-            self.dslab_ctx
+            Ok(self
+                .dslab_ctx
                 .create_file(name)
-                .map(|file| File::from_sim(FileWrapper { file }))
+                .map(|file| File::from_sim(FileWrapper { file }))?)
         };
 
         SendFuture::from_future(future)
     }
 
     /// Check if file exists.
-    pub fn file_exists<'a>(&'a self, name: &'a str) -> Sf<'a, StorageResult<bool>> {
-        SendFuture::from_future(async move { self.dslab_ctx.file_exists(name) })
+    pub fn file_exists<'a>(&'a self, name: &'a str) -> Sf<'a, FsResult<bool>> {
+        SendFuture::from_future(async move { Ok(self.dslab_ctx.file_exists(name)?) })
     }
 
     /// Open file.
-    pub fn open_file<'a>(&'a self, name: &'a str) -> Sf<'a, StorageResult<File>> {
+    pub fn open_file<'a>(&'a self, name: &'a str) -> Sf<'a, FsResult<File>> {
         SendFuture::from_future(async move {
-            self.dslab_ctx
+            Ok(self
+                .dslab_ctx
                 .open_file(name)
-                .map(|file| File::from_sim(FileWrapper { file }))
+                .map(|file| File::from_sim(FileWrapper { file }))?)
         })
     }
 

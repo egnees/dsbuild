@@ -4,12 +4,7 @@ use dsbuild::{Address, RealNode};
 use crate::cfg::ServerConfig;
 
 pub fn run_server_with_config(config: ServerConfig) {
-    let mut sys = RealNode::new(
-        1024,
-        config.host.as_str(),
-        config.port,
-        config.mount_dir.as_str(),
-    );
+    let mut sys = RealNode::new(config.host.as_str(), config.port, config.mount_dir.as_str());
 
     let replica_address = Address::new(
         config.replica_host,

@@ -1,7 +1,28 @@
 //! Definition of network-related structures.
 
-/// Represents error of `send message` operation.
-pub type SendError = dslab_async_mp::network::result::SendError;
+use dslab_async_mp::network::result::SendError as DSLabSendError;
 
-/// Represents result of `send message` operation.
+////////////////////////////////////////////////////////////////////////////////
+
+/// Represents error type of [send][crate::Context::send] operation.
+#[derive(Debug, Clone, PartialEq)]
+pub enum SendError {
+    /// Message was not acknowledged in the given time.
+    Timeout,
+    /// Message was not sent.
+    NotSent,
+}
+
+impl From<DSLabSendError> for SendError {
+    fn from(value: DSLabSendError) -> Self {
+        match value {
+            DSLabSendError::Timeout => Self::Timeout,
+            DSLabSendError::NotSent => Self::NotSent,
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+/// Represents result of [send][crate::Context::send] operation.
 pub type SendResult<T> = Result<T, SendError>;

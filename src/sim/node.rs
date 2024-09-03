@@ -11,9 +11,6 @@ use crate::common::process::Address;
 /// Represents node manager.
 ///
 /// WARNING: Node manager does not permit nodes and processes with names, contains `/`.
-/// Allowing this can potentially lead to problems with mapping to and from
-/// [`DSLab MP`](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
-/// process names in form of `node_name/process_name`.
 #[derive(Default)]
 pub struct NodeManager {
     name_to_address: HashMap<String, Address>,

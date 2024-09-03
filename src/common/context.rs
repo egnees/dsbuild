@@ -2,11 +2,13 @@
 
 use std::future::Future;
 
-use dslab_async_mp::network::result::SendResult;
+use crate::{real::context::RealContext, sim::context::VirtualContext, SendResult};
 
-use crate::{real::context::RealContext, sim::context::VirtualContext, storage::StorageResult};
-
-use super::{fs::File, message::Message, process::Address, tag::Tag};
+use super::{
+    fs::{File, FsResult},
+    message::{Message, Tag},
+    process::Address,
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -18,11 +20,16 @@ enum ContextVariant {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Handle which allows process to interact with outer world. For example,
-/// using context process can send network messages to other processes,
-/// set timers, manipulate with files and sent local messages to user.
-/// Context is passed to the process by the system on every request to handle
-/// the outer world event.
+/// Handle which allows process to interact with external environment.
+///
+/// If implemented system is running within the simulation now, then context allows to
+/// interact with simulation, else system is running in the real environment and context
+/// will interact with it. For example, using context process can send network messages to
+/// other processes, set timers, manipulate with files and sent local messages to user.
+/// Context is passed to the process by the system on every request to handle the outer
+/// world event.
+///
+/// For more details refer to [Process][crate::Process] documentation.
 #[derive(Clone)]
 pub struct Context {
     context_variant: ContextVariant,
@@ -69,7 +76,9 @@ impl Context {
     /// Allows to reliable send network message with specified [tag][Tag].
     /// On awaiting method will be blocked until the destination will not receive
     /// the message and send acknowledgment. If acknowledgment was not received for `timeout` seconds,
-    /// method will return with timeout error.
+    /// method will return with timeout error. Pay attention what receiver will not be explicitly
+    /// notified about message was tagged and its tag, so it is on user to additionaly pass tag within
+    /// the message if it is needed.
     pub async fn send_with_tag(
         &self,
         msg: Message,
@@ -88,6 +97,7 @@ impl Context {
     /// message with the same tag. On success, the received message will be returned.
     /// If message with provided tag will not be received in `timeout` seconds,
     /// method will retunr with timeout error.
+    /// See [send_with_tag][Context::send_with_tag] documentation for more details.
     pub async fn send_recv_with_tag(
         &self,
         msg: Message,
@@ -141,7 +151,7 @@ impl Context {
     ////////////////////////////////////////////////////////////////////////////////
 
     /// Allows to crate file. On success, created [file][File] will be returned.
-    pub async fn create_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
+    pub async fn create_file<'a>(&'a self, name: &'a str) -> FsResult<File> {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.create_file(name).await,
             ContextVariant::Virtual(ctx) => ctx.create_file(name).await,
@@ -149,7 +159,7 @@ impl Context {
     }
 
     /// Allows to check if file exists.
-    pub async fn file_exists<'a>(&'a self, name: &'a str) -> StorageResult<bool> {
+    pub async fn file_exists<'a>(&'a self, name: &'a str) -> FsResult<bool> {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.file_exists(name).await,
             ContextVariant::Virtual(ctx) => ctx.file_exists(name).await,
@@ -159,7 +169,7 @@ impl Context {
     /// Allows to opens file with specified name.
     /// On success, [file][File] with provided name will be returned.
     /// If file does not exists, method will return with the error.
-    pub async fn open_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
+    pub async fn open_file<'a>(&'a self, name: &'a str) -> FsResult<File> {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.open_file(name).await,
             ContextVariant::Virtual(ctx) => ctx.open_file(name).await,

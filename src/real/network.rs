@@ -1,4 +1,4 @@
-//! Definition of async network manager.
+//! Definition of asynchronous network manager.
 
 use log::{info, warn};
 use tokio::sync::mpsc::{Receiver, Sender};

@@ -16,14 +16,14 @@
 //! to communicate in network, use file system and time. The primitives provided by DSBuild
 //! guarantees their consistency in the real mode and simulation.
 //!
-//! **Simulation**. The main purpose of the simulation (a.k.a virtual mode) is to make easy process of testing and
+//! **Simulation**. The main purpose of the simulation is to make easy process of testing and
 //! debugging of distributed systems. Network, time and filesystem are mocked in the simulation. It allows user to get
 //! fine-grained control over them and set it's parameters according to the particular system specification. User can
 //! create few virtual nodes and run the implemented distributed system on them. The framework guarantees that behaviour
 //! of the system in the simulation will be approximately the same as in the real mode with respect to user settings of
 //! virtual environment. This approach allows to test and debug behaviour of the system in very complicated scenarios,
 //! which helps user to find the deepest bugs and significantly increase system's reliability. Also, as the sources of
-//! system's random behaviour are deterministically mocked in the simulation, it gurantees reproducibility of results
+//! system's random behaviour are deterministically mocked in the simulation, it guarantees reproducibility of results
 //! from launch to launch.
 //!
 //! **Node**. Node represents the unit of system. In simulation can be several nodes, communicating in the network.
@@ -65,15 +65,11 @@ pub use sim::system::Sim;
 
 mod common;
 
-pub use common::context;
-pub use common::fs;
-pub use common::storage;
-
 // Re-export public entities.
 pub use common::{
     context::Context,
-    message::Message,
+    fs::{File, FsError, FsResult},
+    message::{Message, Tag},
     network::{SendError, SendResult},
     process::{Address, Process, ProcessGuard, ProcessWrapper},
-    tag::Tag,
 };

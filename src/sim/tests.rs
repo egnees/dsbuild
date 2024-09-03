@@ -37,7 +37,7 @@ impl Process for StorageProc {
                     read_result
                         .push_str(std::str::from_utf8(&buf_slice[..read_bytes as usize]).unwrap());
                 }
-                ctx.send_local(Message::borrow_new("read_result", read_result).unwrap());
+                ctx.send_local(Message::new("read_result", &read_result).unwrap());
             });
         } else {
             ctx.clone().spawn(async move {
@@ -56,7 +56,7 @@ impl Process for StorageProc {
                     }
                     offset += appended;
                 }
-                ctx.send_local(Message::borrow_new("append_result", "ok").unwrap());
+                ctx.send_local(Message::new("append_result", &"ok").unwrap());
             });
         }
         Ok(())
@@ -80,9 +80,9 @@ fn storage_works() {
     sys.send_local_message(
         "storage_process",
         "node",
-        Message::borrow_new(
+        Message::new(
             "append",
-            AppendRequest {
+            &AppendRequest {
                 file: "file1".to_owned(),
                 data: "append1\n".to_owned(),
             },
@@ -95,9 +95,9 @@ fn storage_works() {
     sys.send_local_message(
         "storage_process",
         "node",
-        Message::borrow_new(
+        Message::new(
             "read",
-            ReadRequest {
+            &ReadRequest {
                 file: "file1".to_owned(),
             },
         )
@@ -132,9 +132,9 @@ fn storage_stress() {
             sys.send_local_message(
                 "storage_process",
                 "node",
-                Message::borrow_new(
+                Message::new(
                     "append",
-                    AppendRequest {
+                    &AppendRequest {
                         file: file.to_string(),
                         data: content,
                     },
@@ -150,9 +150,9 @@ fn storage_stress() {
         sys.send_local_message(
             "storage_process",
             "node",
-            Message::borrow_new(
+            Message::new(
                 "read",
-                ReadRequest {
+                &ReadRequest {
                     file: file.to_string(),
                 },
             )

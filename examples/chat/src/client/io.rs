@@ -69,7 +69,7 @@ impl From<ChatEvent> for Info {
 
 impl From<Info> for Message {
     fn from(value: Info) -> Self {
-        Message::borrow_new("INFO", value).unwrap()
+        Message::new("INFO", &value).unwrap()
     }
 }
 

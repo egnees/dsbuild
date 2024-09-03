@@ -5,17 +5,15 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use dslab_async_mp::storage::result::{StorageError, StorageResult};
 use tokio::{select, sync::oneshot};
 
 use crate::{
     common::{
         fs::File,
-        message::RoutedMessage,
+        message::{RoutedMessage, Tag},
         network::{SendError, SendResult},
-        tag::Tag,
     },
-    Address, Message,
+    Address, FsError, FsResult, Message,
 };
 
 use std::io::ErrorKind;
@@ -181,7 +179,7 @@ impl RealContext {
     }
 
     /// Check if file exists.
-    pub async fn file_exists(&self, name: &str) -> StorageResult<bool> {
+    pub async fn file_exists(&self, name: &str) -> FsResult<bool> {
         let s = self.mount_dir.clone() + "/" + name;
 
         let res = async_std::fs::OpenOptions::new()
@@ -194,17 +192,17 @@ impl RealContext {
             Ok(_) => Ok(true),
             Err(e) => match e.kind() {
                 ErrorKind::NotFound => Ok(false),
-                _ => Err(StorageError::Unavailable),
+                _ => Err(FsError::Unavailable),
             },
         }
     }
 
     /// Create file with specified name.
-    pub async fn create_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
+    pub async fn create_file<'a>(&'a self, name: &'a str) -> FsResult<File> {
         let mount_dir = self.mount_dir.clone();
 
         if self.file_exists(name).await? {
-            return Err(StorageError::AlreadyExists);
+            return Err(FsError::AlreadyExists);
         }
 
         async_std::fs::OpenOptions::new()
@@ -213,12 +211,12 @@ impl RealContext {
             .create(true)
             .open(mount_dir + "/" + name)
             .await
-            .map_err(|_| StorageError::Unavailable)
+            .map_err(|_| FsError::Unavailable)
             .map(File::from_real)
     }
 
     /// Open file with specified name.
-    pub async fn open_file<'a>(&'a self, name: &'a str) -> StorageResult<File> {
+    pub async fn open_file<'a>(&'a self, name: &'a str) -> FsResult<File> {
         let mount_dir = self.mount_dir.clone();
 
         async_std::fs::OpenOptions::new()
@@ -227,8 +225,8 @@ impl RealContext {
             .open(mount_dir + "/" + name)
             .await
             .map_err(|error| match error.kind() {
-                ErrorKind::NotFound => StorageError::NotFound,
-                _ => StorageError::Unavailable,
+                ErrorKind::NotFound => FsError::NotFound,
+                _ => FsError::Unavailable,
             })
             .map(File::from_real)
     }

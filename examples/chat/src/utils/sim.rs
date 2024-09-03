@@ -53,13 +53,12 @@ pub fn default_pass() -> String {
 }
 
 pub fn build_sim(sys: &mut Sim, clients: &[Address], server: Address, replica: Address) {
-    sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(0.5, 1.0);
-    sys.network().set_drop_rate(0.05);
+    sys.set_network_delays(0.5, 1.0);
+    sys.set_network_drop_rate(0.05);
 
     for client in clients {
         sys.add_node(&client.process_name, &client.host, client.port);
-        sys.network().connect_node(&client.process_name);
+        sys.connect_node_to_network(&client.process_name);
         sys.add_process(
             &client.process_name,
             ClientProcess::new_with_replica(
@@ -79,7 +78,7 @@ pub fn build_sim(sys: &mut Sim, clients: &[Address], server: Address, replica: A
     }
 
     sys.add_node_with_storage(&server.process_name, &server.host, server.port, 1 << 20);
-    sys.network().connect_node(&server.process_name);
+    sys.connect_node_to_network(&server.process_name);
     sys.add_process(
         &server.process_name,
         ServerProcess::new_with_replica(replica.clone()),
@@ -92,7 +91,7 @@ pub fn build_sim(sys: &mut Sim, clients: &[Address], server: Address, replica: A
     );
 
     sys.add_node_with_storage(&replica.process_name, &replica.host, replica.port, 1 << 20);
-    sys.network().connect_node(&replica.process_name);
+    sys.connect_node_to_network(&replica.process_name);
     sys.add_process(
         &replica.process_name,
         ServerProcess::new_with_replica(server.clone()),
@@ -106,13 +105,12 @@ pub fn build_sim(sys: &mut Sim, clients: &[Address], server: Address, replica: A
 }
 
 pub fn build_sim_without_replica(sys: &mut Sim, clients: &[Address], server: Address) {
-    sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(0.5, 1.0);
-    sys.network().set_drop_rate(0.05);
+    sys.set_network_delays(0.5, 1.0);
+    sys.set_network_drop_rate(0.05);
 
     for client in clients {
         sys.add_node(&client.process_name, &client.host, client.port);
-        sys.network().connect_node(&client.process_name);
+        sys.connect_node_to_network(&client.process_name);
         sys.add_process(
             &client.process_name,
             ClientProcess::new(
@@ -131,7 +129,7 @@ pub fn build_sim_without_replica(sys: &mut Sim, clients: &[Address], server: Add
     }
 
     sys.add_node_with_storage(&server.process_name, &server.host, server.port, 1 << 20);
-    sys.network().connect_node(&server.process_name);
+    sys.connect_node_to_network(&server.process_name);
     sys.add_process(
         &server.process_name,
         ServerProcess::default(),
@@ -159,7 +157,7 @@ pub fn rerun_server(
     } else {
         sys.rerun_node(server_node);
     }
-    sys.network().connect_node(server_node);
+    sys.connect_node_to_network(server_node);
     sys.add_process(
         &server_addr.process_name,
         ServerProcess::new_with_replica(replica_addr.clone()),

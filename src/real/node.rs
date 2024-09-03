@@ -1,4 +1,4 @@
-//! Definition of real node.
+//! Definition of node in real mode.
 
 use std::{
     collections::HashMap,
@@ -17,7 +17,22 @@ use super::{
     process::{FromSystemMessage, ProcessManager, ProcessManagerConfig, ToSystemMessage},
 };
 
-/// Represents real node.
+////////////////////////////////////////////////////////////////////////////////
+
+/// Represents node in real mode.
+///
+/// Node is intended to run user-defined [processes][crate::Process].
+/// Node manages network, time and file system. The whole network communication of processes,
+/// spawned on node, is managed by node. It particular, [network address][crate::Address] of
+/// every process is constructed from node listen host, port and process name.
+///
+/// To [construct][Node::new] node, user must specify it's listen host, port and directory of
+/// file system, in which processes will manipulate with files.
+///
+/// Also user can [spawn][Node::spawn] asynchronous activities on node, which will be executed
+/// together will user-defined processes.
+///
+/// After all processes and activities are spawned, user can [run][Node::run] execution.
 pub struct Node {
     scheduled: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
     process_senders: HashMap<String, Sender<FromSystemMessage>>,
@@ -32,8 +47,13 @@ pub struct Node {
 }
 
 impl Node {
-    /// Create new system with specified size of buffers, host and port.
-    pub fn new(max_buffer_size: usize, host: &str, port: u16, storage_mount: &str) -> Self {
+    /// Allows to create new node with specified listen host, port and dirrectory of file system mount.
+    ///
+    /// Every spawned on the node process will have the same host and port.
+    ///
+    /// Here `storage_mount` specifies dirrectory within which process can manipulate with files.
+    pub fn new(host: &str, port: u16, storage_mount: &str) -> Self {
+        let max_buffer_size = 4 << 10;
         let (messages_sender, network_receiver) = mpsc::channel(max_buffer_size);
 
         let (network_sender, messages_receiver) = mpsc::channel(max_buffer_size);
@@ -61,12 +81,17 @@ impl Node {
         system
     }
 
-    /// Schedule asynchronous activity on execution.
+    /// Allows to spawn asynchronous activity on the node.
+    ///
+    /// Spawned activity will be executed together with added processes after call to
+    /// [run][Node::run] method.
     pub fn spawn(&mut self, future: impl Future<Output = ()> + Send + 'static) {
         self.scheduled.push(Box::pin(future));
     }
 
-    /// Add process with specified name.
+    /// Allows to add process with specified name.
+    /// Refer to [node][crate::RealNode] and [process][crate::Process] documentation
+    /// for mode details.
     pub fn add_process<P: Process + 'static>(
         &mut self,
         process: P,
@@ -121,8 +146,8 @@ impl Node {
         io_process_wrapper
     }
 
-    /// Run all spawned async activities and all processes.
-    /// Blocks until all processes are done.
+    /// Run [spawned][crate::RealNode::spawn] asynchronous activities and [processes][crate::Process].
+    /// Method will be blocked until all processes are [stopped][crate::Context::stop].
     pub fn run(mut self) {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(4)

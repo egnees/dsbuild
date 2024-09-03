@@ -34,25 +34,25 @@ pub struct ReceiveEventsRequest {
 
 impl From<ReplicateRequest> for Message {
     fn from(value: ReplicateRequest) -> Self {
-        Message::borrow_new("replicate_request", value).unwrap()
+        Message::new("replicate_request", &value).unwrap()
     }
 }
 
 impl From<TotalSeqNumRequest> for Message {
     fn from(value: TotalSeqNumRequest) -> Self {
-        Message::borrow_new("total_seq_num_request", value).unwrap()
+        Message::new("total_seq_num_request", &value).unwrap()
     }
 }
 
 impl From<TotalSeqNumMsg> for Message {
     fn from(value: TotalSeqNumMsg) -> Self {
-        Message::borrow_new("total_seq_num_msg", value).unwrap()
+        Message::new("total_seq_num_msg", &value).unwrap()
     }
 }
 
 impl From<ReceiveEventsRequest> for Message {
     fn from(value: ReceiveEventsRequest) -> Self {
-        Message::borrow_new("receive_events_request", value).unwrap()
+        Message::new("receive_events_request", &value).unwrap()
     }
 }
 

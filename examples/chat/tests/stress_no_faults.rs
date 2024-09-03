@@ -9,9 +9,8 @@ use dsbuild::{Address, Sim};
 fn stress_no_faults_2_users() {
     let mut sys = Sim::new(12345);
 
-    sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(1.0, 3.0);
-    sys.network().set_drop_rate(0.05);
+    sys.set_network_delays(1.0, 3.0);
+    sys.set_network_drop_rate(0.05);
 
     let client1_addr = Address {
         host: "client1_host".into(),
@@ -32,13 +31,13 @@ fn stress_no_faults_2_users() {
     };
 
     sys.add_node("client1_node", &client1_addr.host, client1_addr.port);
-    sys.network().connect_node("client1_node");
+    sys.connect_node_to_network("client1_node");
 
     sys.add_node("client2_node", &client2_addr.host, client2_addr.port);
-    sys.network().connect_node("client2_node");
+    sys.connect_node_to_network("client2_node");
 
     sys.add_node_with_storage("server_node", &server_addr.host, server_addr.port, 1 << 20);
-    sys.network().connect_node("server_node");
+    sys.connect_node_to_network("server_node");
 
     sys.add_process(
         &client1_addr.process_name,
@@ -195,9 +194,8 @@ fn stress_no_faults_2_users() {
 fn stress_no_faults_10_users() {
     let mut sys = Sim::new(12345);
 
-    sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(1.0, 3.0);
-    sys.network().set_drop_rate(0.8);
+    sys.set_network_delays(1.0, 3.0);
+    sys.set_network_drop_rate(0.8);
 
     // Add server
     let server: &'static str = "server";
@@ -207,7 +205,7 @@ fn stress_no_faults_10_users() {
         process_name: server.into(),
     };
     sys.add_node_with_storage(server, &server_addr.host, server_addr.port, 1 << 20);
-    sys.network().connect_node(server);
+    sys.connect_node_to_network(server);
     sys.add_process(&server_addr.process_name, ServerProcess::default(), server);
 
     // Add clients
@@ -224,7 +222,7 @@ fn stress_no_faults_10_users() {
             &client_addr.host,
             client_addr.port,
         );
-        sys.network().connect_node(&client_addr.process_name);
+        sys.connect_node_to_network(&client_addr.process_name);
         sys.add_process(
             &client_addr.process_name,
             ClientProcess::new(

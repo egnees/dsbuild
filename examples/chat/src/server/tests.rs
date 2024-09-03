@@ -216,8 +216,8 @@ fn state_multiple_users() {
         );
     }
 
-    sys.network().set_delays(0.5, 1.0);
-    sys.network().set_drop_rate(0.05);
+    sys.set_network_delays(0.5, 1.0);
+    sys.set_network_drop_rate(0.05);
 
     sys.step_until_no_events();
 
@@ -353,10 +353,10 @@ fn replication_works() {
     sys.add_node_with_storage("server1", "server1", 0, 4096);
     sys.add_node_with_storage("server2", "server2", 0, 4096);
 
-    sys.network().connect_node("client1");
-    sys.network().connect_node("server1");
-    sys.network().connect_node("server2");
-    sys.network().set_delays(0.5, 1.0);
+    sys.connect_node_to_network("client1");
+    sys.connect_node_to_network("server1");
+    sys.connect_node_to_network("server2");
+    sys.set_network_delays(0.5, 1.0);
 
     sys.add_process(
         "server1",
@@ -413,7 +413,7 @@ fn replication_works() {
     );
 
     sys.add_node("client1", "client1", 0);
-    sys.network().connect_node("client1");
+    sys.connect_node_to_network("client1");
 
     sys.add_process(
         "client1",
@@ -450,7 +450,7 @@ fn replication_works() {
         ServerProcess::new_with_replica(Address::new_ref("server2", 0, "server2")),
         "server1",
     );
-    sys.network().connect_node("server1");
+    sys.connect_node_to_network("server1");
     sys.send_local_message(
         "server1",
         "server1",
@@ -481,7 +481,7 @@ fn replication_works() {
         ServerProcess::new_with_replica(Address::new_ref("server1", 0, "server1")),
         "server2",
     );
-    sys.network().connect_node("server2");
+    sys.connect_node_to_network("server2");
     sys.send_local_message(
         "server2",
         "server2",

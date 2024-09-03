@@ -1,12 +1,12 @@
-//! Simulation configuration.
+//! Simulation.
 
 use std::{
-    cell::{RefCell, RefMut},
+    cell::RefCell,
     rc::Rc,
     sync::{Arc, RwLock},
 };
 
-use dslab_async_mp::{network::model::Network, system::System as DSLabSimulation};
+use dslab_async_mp::system::System as DSLabSimulation;
 
 use super::{node::NodeManager, process::VirtualProcessWrapper};
 use crate::{
@@ -16,37 +16,79 @@ use crate::{
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Represents virtual system, which is responsible
-/// for interacting with user processes,
-/// time, network, and others.
+/// Represensts simulation of nodes, network, time and file system.
 ///
-/// [`Sim`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
-/// framework for simulating network, time, etc.
+/// Simulation is event-driven: in every moment there are pending events, ordered by time.
+/// Every event can cause other events and execute corresponding callbacks of the process-receiver.
+/// To make system to process events chain, user should call corresponding methods.
+/// See documentation of methods [step][Sim::step], [make_steps][Sim::make_steps],
+/// [step_until_no_events][Sim::step_until_no_events] for more details.
+///
+/// User can [add nodes][Sim::add_node] in simulation, connect and disconnect it from network.
+/// User can [add processes][Sim::add_process] on some nodes and then communicate with them by
+/// [sending][Sim::send_local_message] and [reading][Sim::read_local_messages] local messages.
+/// Also, user can [crash node][Sim::crash_node] and [recover][Sim::recover_node] them.
+///
+/// Simulation allows to configure network settings.
+/// For example, user can set up minimal and maximal delay of the network and its drop-rate.
 pub struct Sim {
     inner: DSLabSimulation,
     node_manager: Rc<RefCell<NodeManager>>,
 }
 
 impl Sim {
-    /// Create new [`Sim`] with provided `seed`.
+    /// Create new [Sim] with provided seed.
     pub fn new(seed: u64) -> Self {
+        let inner = DSLabSimulation::new(seed);
+        inner.network().set_corrupt_rate(0.0);
+        inner.network().set_drop_rate(0.0);
+        inner.network().set_delays(0.5, 1.0);
         Self {
-            inner: DSLabSimulation::new(seed),
+            inner,
             node_manager: Rc::new(RefCell::new(NodeManager::default())),
         }
     }
 
-    // Network ---------------------------------------------------
+    ////////////////////////////////////////////////////////////////////////////////
+    // Network
+    ////////////////////////////////////////////////////////////////////////////////
 
-    /// Returns a mutable reference to network.
-    pub fn network(&self) -> RefMut<Network> {
-        self.inner.network()
+    /// Set the fixed network delay.
+    pub fn set_network_delay(&self, delay: f64) {
+        self.inner.network().set_delay(delay)
     }
 
-    // Node ------------------------------------------------------
+    /// Set the minimum and maximum network delays.
+    pub fn set_network_delays(&self, min_delay: f64, max_delay: f64) {
+        self.inner.network().set_delays(min_delay, max_delay)
+    }
 
-    /// Adds a node to the DSLabSimulation.
-    /// Note that node names must be unique and does not contain `/` symbol.
+    /// Set drop rate of the network.
+    pub fn set_network_drop_rate(&self, drop_rate: f64) {
+        self.inner.network().set_drop_rate(drop_rate)
+    }
+
+    /// Connect node to the network
+    pub fn connect_node_to_network(&self, node: &str) {
+        self.inner.network().connect_node(node)
+    }
+
+    /// Disconnect node from the network
+    pub fn disconnect_node_from_network(&self, node: &str) {
+        self.inner.network().disconnect_node(node)
+    }
+
+    /// Allows to disable pairwise connections between groups.
+    pub fn split_network(&self, group1: &[&str], group2: &[&str]) {
+        self.inner.network().make_partition(group1, group2)
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Node
+    ////////////////////////////////////////////////////////////////////////////////
+
+    /// Adds a node to the simulation.
+    /// Node names must be unique and does not contain `/` symbol.
     ///
     /// # Panics
     ///
@@ -56,7 +98,7 @@ impl Sim {
         self.add_node_with_storage(name, host, port, 0);
     }
 
-    /// Adds a node with specified storage capacity to the DSLabSimulation.
+    /// Adds a node with specified storage capacity to the simulation.
     /// Note that node names must be unique and does not contain `/` symbol.
     ///
     /// # Panics
@@ -214,8 +256,6 @@ impl Sim {
             .unwrap();
         self.inner.received_message_count(&full_process_name)
     }
-
-    // DSLabSimulation -----------------------------------------------------
 
     /// Steps through the DSLabSimulation until there are no pending events left.
     pub fn step_until_no_events(&mut self) {

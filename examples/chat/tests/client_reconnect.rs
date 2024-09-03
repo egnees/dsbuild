@@ -59,7 +59,7 @@ fn client_reconnect() {
         ),
         "Client",
     );
-    sys.network().connect_node("Client");
+    sys.connect_node_to_network("Client");
     sys.step_until_no_events();
 
     sys.send_local_message(

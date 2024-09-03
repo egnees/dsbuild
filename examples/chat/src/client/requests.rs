@@ -84,14 +84,14 @@ impl fmt::Display for ClientRequestKind {
 /// Allows to create [`Message`] from [`ClientRequest`].
 impl From<ClientRequest> for Message {
     fn from(value: ClientRequest) -> Self {
-        Message::borrow_new("client_request", value).unwrap()
+        Message::new("client_request", &value).unwrap()
     }
 }
 
 /// Allows to create [`Message`] from [`ClientRequestKind`].
 impl From<ClientRequestKind> for Message {
     fn from(value: ClientRequestKind) -> Self {
-        Message::borrow_new("client_request_kind", value).unwrap()
+        Message::new("client_request_kind", &value).unwrap()
     }
 }
 

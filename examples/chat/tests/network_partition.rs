@@ -47,8 +47,7 @@ fn network_partition_works() {
     );
     sys.step_until_no_events();
 
-    sys.network()
-        .make_partition(&["Client1", "Primary"], &["Client2", "Replica"]);
+    sys.split_network(&["Client1", "Primary"], &["Client2", "Replica"]);
     sys.step_until_no_events();
 
     sys.send_local_message(
