@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["FromSystemMessage","ToSystemMessage"],"struct":["InteractionBlock","ProcessManager","ProcessManagerConfig"]};

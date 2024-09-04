@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ProcessState"],"struct":["Address","ProcessGuard","ProcessWrapper"],"trait":["Process"]};
