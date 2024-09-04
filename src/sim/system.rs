@@ -16,28 +16,29 @@ use crate::{
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Represensts simulation of nodes, network, time and file system.
+/// Represensts simulation of real world system environment: nodes, network, time and file system.
 ///
 /// Simulation is event-driven: in every moment there are pending events, ordered by time.
-/// Every event can cause other events and execute corresponding callbacks of the process-receiver.
-/// To make system to process events chain, user should call corresponding methods.
-/// See documentation of methods [step][Sim::step], [make_steps][Sim::make_steps],
-/// [step_until_no_events][Sim::step_until_no_events] for more details.
+/// Every event can cause other events and execute corresponding callback of the process-receiver.
+/// To make system to process event chain, user should call the following methods of simulation:
+/// [`step`][Sim::step], [`make_steps`][Sim::make_steps], [`step_until_no_events`][Sim::step_until_no_events].
 ///
-/// User can [add nodes][Sim::add_node] in simulation, connect and disconnect it from network.
+/// User can [add nodes][Sim::add_node] to simulation with specified configuration,
+/// connect and disconnect them from network.
 /// User can [add processes][Sim::add_process] on some nodes and then communicate with them by
 /// [sending][Sim::send_local_message] and [reading][Sim::read_local_messages] local messages.
-/// Also, user can [crash node][Sim::crash_node] and [recover][Sim::recover_node] them.
+/// Also, user can [crash][Sim::crash_node] nodes and [recover][Sim::recover_node] them.
 ///
 /// Simulation allows to configure network settings.
-/// For example, user can set up minimal and maximal delay of the network and its drop-rate.
+/// For example, user can set [delays][Sim::set_network_delays] of the network and its
+/// [drop-rate][Sim::set_network_drop_rate].
 pub struct Sim {
     inner: DSLabSimulation,
     node_manager: Rc<RefCell<NodeManager>>,
 }
 
 impl Sim {
-    /// Create new [Sim] with provided seed.
+    /// Create new simulation with provided seed.
     pub fn new(seed: u64) -> Self {
         let inner = DSLabSimulation::new(seed);
         inner.network().set_corrupt_rate(0.0);
@@ -87,8 +88,9 @@ impl Sim {
     // Node
     ////////////////////////////////////////////////////////////////////////////////
 
-    /// Adds a node to the simulation.
-    /// Node names must be unique and does not contain `/` symbol.
+    /// Add node to simulation.
+    ///
+    /// Node names must be unique and not contain `/` symbol.
     ///
     /// # Panics
     ///
@@ -98,8 +100,9 @@ impl Sim {
         self.add_node_with_storage(name, host, port, 0);
     }
 
-    /// Adds a node with specified storage capacity to the simulation.
-    /// Note that node names must be unique and does not contain `/` symbol.
+    /// Add node with specified storage capacity to simulation.
+    ///
+    /// Note that node names must be unique and not contain `/` symbol.
     ///
     /// # Panics
     ///
@@ -160,13 +163,13 @@ impl Sim {
 
     // Process ------------------------------------------------------
 
-    /// Adds a process to the [`Sim`].
+    /// Add process.
     ///
     /// # Panics
     ///
     /// - If node with such name `node_name` does not exists.
-    /// - If process with such `process name` is already exists on the node with `node_name`.
-    /// - If process name or node name is empty or contains `/` symbol.
+    /// - If process with such `process name` already exists on the node with name `node_name`.
+    /// - If `process name` or `node name` is empty or contains `/` symbol.
     pub fn add_process<P: Process + 'static>(
         &mut self,
         process_name: &str,
@@ -207,7 +210,7 @@ impl Sim {
         process_wrapper
     }
 
-    /// Returns the names of all processes in the system.
+    /// Get names of all processes in the system.
     pub fn process_names(&self) -> Vec<String> {
         self.inner.process_names()
     }
@@ -257,12 +260,12 @@ impl Sim {
         self.inner.received_message_count(&full_process_name)
     }
 
-    /// Steps through the DSLabSimulation until there are no pending events left.
+    /// Steps through the simulation until there are no pending events left.
     pub fn step_until_no_events(&mut self) {
         self.inner.step_until_no_events()
     }
 
-    /// Steps through the DSLabSimulation until there are no local messages.
+    /// Steps through the simulation until there are no local messages.
     pub fn step_until_local_message(
         &mut self,
         proc: &str,
@@ -280,7 +283,7 @@ impl Sim {
             .map(|v| v.into_iter().map(|m| m.into()).collect())
     }
 
-    /// Perform `steps` steps through the DSLabSimulation.
+    /// Perform specified number of steps through the simulation.
     pub fn make_steps(&mut self, steps: u32) {
         for _ in 0..steps {
             let something_happen = self.step();
@@ -290,7 +293,7 @@ impl Sim {
         }
     }
 
-    /// Perform single step through the DSLabSimulation.
+    /// Perform single step through the simulation.
     pub fn step(&mut self) -> bool {
         self.inner.step()
     }

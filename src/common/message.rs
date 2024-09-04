@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Represents message, which is user by [processes][crate::Process] to communicate
+/// Represents message, which is used by [processes][crate::Process] to communicate
 /// with each other by the network.
 #[derive(Serialize, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, Debug)]
 pub struct Message {
@@ -16,8 +16,8 @@ pub struct Message {
 
 /// Represents message tag.
 ///
-/// For more details, see [send_with_tag][crate::Context::send_with_tag] and
-/// [send_recv_with_tag][crate::Context::send_recv_with_tag] documentation.
+/// For more details, see [`send_with_tag`][crate::Context::send_with_tag] and
+/// [`send_recv_with_tag`][crate::Context::send_recv_with_tag] documentation.
 pub type Tag = u64;
 
 #[derive(Clone)]
@@ -51,12 +51,12 @@ impl Message {
         })
     }
 
-    /// Returns message's tip.
+    /// Get message's tip.
     pub fn get_tip(&self) -> &String {
         &self.tip
     }
 
-    /// Returns message's raw data.
+    /// Get message's raw data.
     pub fn get_raw_data(&self) -> &[u8] {
         &self.data
     }
@@ -70,6 +70,8 @@ impl Message {
         serde_json::from_slice::<'a, T>(self.data.as_slice()).map_err(|err| err.to_string())
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 use dslab_async_mp::network::message::Message as DSLabMessage;
 

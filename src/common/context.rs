@@ -22,14 +22,14 @@ enum ContextVariant {
 
 /// Handle which allows process to interact with external environment.
 ///
-/// If implemented system is running within the simulation now, then context allows to
-/// interact with simulation, else system is running in the real environment and context
-/// will interact with it. For example, using context process can send network messages to
+/// If implemented system is running within the simulation, then context allows to
+/// interact with simulation. Else, system is running in the real environment and context
+/// will interact with it. Using context process can send network messages to
 /// other processes, set timers, manipulate with files and sent local messages to user.
-/// Context is passed to the process by the system on every request to handle the outer
+/// Context is passed to the process by the system on every request to handle the external
 /// world event.
 ///
-/// For more details refer to [Process][crate::Process] documentation.
+/// For more details refer to [`Process`][crate::Process] documentation.
 #[derive(Clone)]
 pub struct Context {
     context_variant: ContextVariant,
@@ -49,12 +49,15 @@ impl Context {
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Network
+    // Network
     ////////////////////////////////////////////////////////////////////////////////
 
-    /// Allows to send network message to the specified process.
+    /// Allows to unreliable send network message to the specified process.
+    ///
     /// It is not guaranteed the message will be delivered to destination.
-    /// Simulation allows to configure delivery probability and delay.
+    ///
+    /// Simulation allows to configure delivery [probability][crate::Sim::set_network_drop_rate]
+    /// and [delay][crate::Sim::set_network_delays].
     pub fn send(&self, msg: Message, dst: Address) {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.send(msg, dst),
@@ -63,9 +66,12 @@ impl Context {
     }
 
     /// Allows to reliable send network message to the specified process.
-    /// On awaiting method will be blocked until the destination will not receive
-    /// the message and send acknowledgment. If acknowledgment was not received for `timeout` seconds,
-    /// method will return with timeout error.
+    ///
+    /// On awaiting method will be blocked until the destination will receive
+    /// message, send acknowledgment and it will be received by the sender's node.
+    ///
+    /// If acknowledgment was not received for `timeout` seconds,
+    /// method will return with [`Timeout`][crate::SendError::Timeout].
     pub async fn send_with_ack(&self, msg: Message, dst: Address, timeout: f64) -> SendResult<()> {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.send_with_ack(msg, dst, timeout).await,
@@ -74,10 +80,13 @@ impl Context {
     }
 
     /// Allows to reliable send network message with specified [tag][Tag].
+    ///
     /// On awaiting method will be blocked until the destination will not receive
-    /// the message and send acknowledgment. If acknowledgment was not received for `timeout` seconds,
-    /// method will return with timeout error. Pay attention what receiver will not be explicitly
-    /// notified about message was tagged and its tag, so it is on user to additionaly pass tag within
+    /// message and send acknowledgment. If acknowledgment was not received for `timeout` seconds,
+    /// method will return with [`Timeout`][crate::SendError::Timeout].
+    ///
+    /// Note that receiver will not be explicitly
+    /// notified about message was tagged, so it is on user to additionaly pass tag within
     /// the message if it is needed.
     pub async fn send_with_tag(
         &self,
@@ -92,12 +101,15 @@ impl Context {
         }
     }
 
-    /// Allows to reliable send network message with specified [tag][Tag].
-    /// On awaiting method will be blocked until process will not receive
+    /// Allows to reliable send network message with specified [tag][Tag] and wait for response.
+    ///
+    /// On awaiting method will be blocked until sender process will receive
     /// message with the same tag. On success, the received message will be returned.
+    ///
     /// If message with provided tag will not be received in `timeout` seconds,
-    /// method will retunr with timeout error.
-    /// See [send_with_tag][Context::send_with_tag] documentation for more details.
+    /// method will return with [`Timeout`][crate::SendError::Timeout].
+    ///
+    /// See [`send_with_tag`][Context::send_with_tag] documentation for more details.
     pub async fn send_recv_with_tag(
         &self,
         msg: Message,
@@ -112,7 +124,7 @@ impl Context {
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Local
+    // Local
     ////////////////////////////////////////////////////////////////////////////////
 
     /// Spawn asynchronous activity.
@@ -127,6 +139,7 @@ impl Context {
     }
 
     /// Allows to stop the process.
+    ///
     /// It is not guaranteed the process will be stopped immediately.
     pub fn stop(self) {
         match self.context_variant {
@@ -136,9 +149,12 @@ impl Context {
     }
 
     /// Allows process to send message to user.
-    /// User can read particular process messages in simulation using provided
-    /// [method][crate::Sim::read_local_messages]. In real mode user can read
-    /// process messages using [IOProcessWrapper][crate::real::io::IOProcessWrapper].
+    ///
+    /// User can read process local messages in simulation using provided
+    /// [method][crate::Sim::read_local_messages].
+    ///
+    /// In real mode user can read
+    /// process messages using [`IOProcessWrapper`][crate::real::io::IOProcessWrapper].
     pub fn send_local(&self, message: Message) {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.send_local(message),
@@ -147,10 +163,15 @@ impl Context {
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// File system
+    // File system
     ////////////////////////////////////////////////////////////////////////////////
 
-    /// Allows to crate file. On success, created [file][File] will be returned.
+    /// Allows to create file.
+    ///
+    /// On success, created [file][File] will be returned.
+    ///
+    /// If there is no enough space to create file,
+    /// [`BufferSizeExceed`][crate::FsError::BufferSizeExceed] error will be returned.
     pub async fn create_file<'a>(&'a self, name: &'a str) -> FsResult<File> {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.create_file(name).await,
@@ -166,9 +187,12 @@ impl Context {
         }
     }
 
-    /// Allows to opens file with specified name.
+    /// Allows to open file with specified name.
+    ///
     /// On success, [file][File] with provided name will be returned.
-    /// If file does not exists, method will return with the error.
+    ///
+    /// If file does not exists, method will return with [`NotFound`][crate::FsError::NotFound]
+    /// error.
     pub async fn open_file<'a>(&'a self, name: &'a str) -> FsResult<File> {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.open_file(name).await,
@@ -177,10 +201,10 @@ impl Context {
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Time
+    // Time
     ////////////////////////////////////////////////////////////////////////////////
 
-    /// Allows to get current system time process' node in seconds.
+    /// Allows to get current time on node in seconds.
     pub fn time(&self) -> f64 {
         match &self.context_variant {
             ContextVariant::Real(ctx) => ctx.time(),
@@ -188,7 +212,8 @@ impl Context {
         }
     }
 
-    /// Allows to set timer with specified name and delay.
+    /// Set timer with specified name and delay.
+    ///
     /// If timer with such name already exists, the delay will be override.
     pub fn set_timer(&self, name: &str, delay: f64) {
         match &self.context_variant {
@@ -197,7 +222,8 @@ impl Context {
         }
     }
 
-    /// Set timer with specified name and delay.
+    /// Set timer with specified name and delay once.
+    ///
     /// If such timer already exists, nothing happens.
     pub fn set_timer_once(&self, name: &str, delay: f64) {
         match &self.context_variant {

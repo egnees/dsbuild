@@ -32,7 +32,7 @@ use super::{
 /// Also user can [spawn][Node::spawn] asynchronous activities on node, which will be executed
 /// together will user-defined processes.
 ///
-/// After all processes and activities are spawned, user can [run][Node::run] execution.
+/// After all processes and activities are spawned, user can [run][Node::run] it.
 pub struct Node {
     scheduled: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
     process_senders: HashMap<String, Sender<FromSystemMessage>>,
@@ -49,7 +49,7 @@ pub struct Node {
 impl Node {
     /// Allows to create new node with specified listen host, port and dirrectory of file system mount.
     ///
-    /// Every spawned on the node process will have the same host and port.
+    /// Every process spawned on the node will have the same host and port.
     ///
     /// Here `storage_mount` specifies dirrectory within which process can manipulate with files.
     pub fn new(host: &str, port: u16, storage_mount: &str) -> Self {
@@ -90,7 +90,8 @@ impl Node {
     }
 
     /// Allows to add process with specified name.
-    /// Refer to [node][crate::RealNode] and [process][crate::Process] documentation
+    ///
+    /// Refer to [`Process`][crate::Process] documentation
     /// for mode details.
     pub fn add_process<P: Process + 'static>(
         &mut self,
@@ -147,6 +148,7 @@ impl Node {
     }
 
     /// Run [spawned][crate::RealNode::spawn] asynchronous activities and [processes][crate::Process].
+    ///
     /// Method will be blocked until all processes are [stopped][crate::Context::stop].
     pub fn run(mut self) {
         let runtime = tokio::runtime::Builder::new_multi_thread()

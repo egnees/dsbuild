@@ -20,8 +20,8 @@ enum FileVariant {
 /// Abstraction over the file.
 ///
 /// Process can create, open, read and write to file.
-/// To [create][crate::Context::create_file] or [open][crate::Context::open_file] the file
-/// refer to the corresponding context methods.
+/// To [create][crate::Context::create_file] or [open][crate::Context::open_file] file
+/// refer to the corresponding [`Context`][crate::Context] methods.
 pub struct File(FileVariant);
 
 impl File {
@@ -34,6 +34,7 @@ impl File {
     }
 
     /// Read into the specified buffer from the specified offset.
+    ///
     /// On success, the number of read bytes is returned.
     pub async fn read<'a>(&'a mut self, offset: u64, buf: &'a mut [u8]) -> FsResult<u64> {
         match &mut self.0 {
@@ -51,6 +52,7 @@ impl File {
     }
 
     /// Append passed data to the file.
+    ///
     /// On success, the number of appended bytes is returned.
     pub async fn append<'a>(&'a mut self, data: &'a [u8]) -> FsResult<u64> {
         match &mut self.0 {
@@ -75,7 +77,7 @@ impl File {
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Represents error types which can appear when [process][crate::Process]
-/// is interacting with file system.
+/// interacts with file system.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FsError {
     /// Resource can not be created, because it already exists.

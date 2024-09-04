@@ -22,18 +22,21 @@ pub enum ProcessState {
 
 /// Represents requirements for every user-defined process.
 ///
-/// When process receives local message from user, when timer is fired or when
-/// network message is received, the corresponding callback of process will be called.
-/// To interact with system, process can use passed [context][Context] object, which
+/// When process receives local message from user, timer is fired or
+/// network message is received, the corresponding process callback will be called.
+///
+/// To interact with system, process can use passed [`Context`] object, which
 /// represents proxy between process and external environment.
 pub trait Process: Send + Sync {
     /// Called when process receives local message from user.
-    /// See documentation of [IOProcessWrapper][crate::IOProcessWrapper] struct for real
+    ///
+    /// See documentation of [`IOProcessWrapper`][crate::IOProcessWrapper] struct for real
     /// mode and [corresponding method][crate::Sim::send_local_message] of simulation for
     /// more details.
     fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String>;
 
     /// Called when previously set timer is fired.
+    ///
     /// See [corresponding method][Context::set_timer] of context for more details.
     fn on_timer(&mut self, name: String, ctx: Context) -> Result<(), String>;
 
@@ -54,7 +57,7 @@ pub struct ProcessWrapper<P: Process + 'static> {
 
 /// Represents read access guard for user-defined [process][crate::Process].
 ///
-/// Holding guard will prevent concurrent access to user-defined process from the system.
+/// Holding guard will prevent concurrent access to process by the system.
 pub struct ProcessGuard<'a, P: Process + 'static> {
     pub(self) inner: RwLockReadGuard<'a, P>,
 }
@@ -88,13 +91,13 @@ impl<P: Process + 'static> ProcessWrapper<P> {
 /// [network messages][crate::Message].
 #[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq, serde::Deserialize, serde::Serialize)]
 pub struct Address {
-    /// Specifies host of the destination node.
+    /// Specifies listen host of the owner node.
     pub host: String,
 
-    /// Specifies listen port of the destination node.
+    /// Specifies listen port of the owner node.
     pub port: u16,
 
-    /// Specifies process name within the node.
+    /// Specifies process name within the owner node.
     pub process_name: String,
 }
 
@@ -108,7 +111,7 @@ impl Address {
         }
     }
 
-    /// Creates new address instance from string slices.
+    /// Creates new address instance from string slice.
     pub fn new_ref(host: &str, port: u16, process_name: &str) -> Self {
         Self::new(host.to_owned(), port, process_name.to_owned())
     }
