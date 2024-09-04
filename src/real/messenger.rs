@@ -6,8 +6,10 @@ use std::str::FromStr;
 use tokio::sync::mpsc::Sender;
 use tonic::transport::server::TcpIncoming;
 
-use crate::common::message::{Message, RoutedMessage};
-use crate::common::process::Address;
+use crate::common::{
+    message::{Message, RoutedMessage, Tag},
+    process::Address,
+};
 
 pub mod message_passing {
     tonic::include_proto!("message_passing");
@@ -18,8 +20,6 @@ use message_passing::message_passing_server::{MessagePassing, MessagePassingServ
 use message_passing::{SendMessageRequest, SendMessageResponse};
 
 use tonic::{transport::Server, Request, Response, Status};
-
-use crate::common::tag::Tag;
 
 pub struct ProcessSendRequest {
     /// Address of process, which sends request.

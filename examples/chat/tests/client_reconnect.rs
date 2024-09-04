@@ -3,11 +3,11 @@ use chat::{
     utils::sim::{build_sim_without_replica, default_pass, read_history_from_info},
     ClientProcess,
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 #[test]
 fn client_reconnect() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
     let primary_addr = Address::new_ref("primary", 0, "Primary");
 
@@ -59,7 +59,7 @@ fn client_reconnect() {
         ),
         "Client",
     );
-    sys.network().connect_node("Client");
+    sys.connect_node_to_network("Client");
     sys.step_until_no_events();
 
     sys.send_local_message(

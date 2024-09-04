@@ -54,7 +54,9 @@ pub enum ClientRequestKind {
 impl fmt::Display for ClientRequestKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ClientRequestKind::SendMessage(msg) => write!(f, "{}", msg.italic()),
+            ClientRequestKind::SendMessage(msg) => {
+                write!(f, "{}", msg.italic())
+            }
             ClientRequestKind::Create(chat) => {
                 write!(
                     f,
@@ -71,7 +73,9 @@ impl fmt::Display for ClientRequestKind {
                     chat.italic().underline().bold().green()
                 )
             }
-            ClientRequestKind::Disconnect => write!(f, "{}", "disconnect".italic()),
+            ClientRequestKind::Disconnect => {
+                write!(f, "{}", "disconnect".italic())
+            }
             ClientRequestKind::Status => write!(f, "{}", "status".italic()),
         }
     }
@@ -80,14 +84,14 @@ impl fmt::Display for ClientRequestKind {
 /// Allows to create [`Message`] from [`ClientRequest`].
 impl From<ClientRequest> for Message {
     fn from(value: ClientRequest) -> Self {
-        Message::borrow_new("client_request", value).unwrap()
+        Message::new("client_request", &value).unwrap()
     }
 }
 
 /// Allows to create [`Message`] from [`ClientRequestKind`].
 impl From<ClientRequestKind> for Message {
     fn from(value: ClientRequestKind) -> Self {
-        Message::borrow_new("client_request_kind", value).unwrap()
+        Message::new("client_request_kind", &value).unwrap()
     }
 }
 

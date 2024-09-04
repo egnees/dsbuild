@@ -1,14 +1,12 @@
-//! Definition of [`VirtualSystem`].
+//! Simulation.
 
 use std::{
-    cell::{RefCell, RefMut},
+    cell::RefCell,
     rc::Rc,
     sync::{Arc, RwLock},
 };
 
-use dslab_async_mp::{
-    network::model::Network, node::component::Node, system::System as DSLabSimulation,
-};
+use dslab_async_mp::system::System as DSLabSimulation;
 
 use super::{node::NodeManager, process::VirtualProcessWrapper};
 use crate::{
@@ -16,37 +14,83 @@ use crate::{
     Message,
 };
 
-/// Represents virtual system, which is responsible
-/// for interacting with user processes,
-/// time, network, and others.
+////////////////////////////////////////////////////////////////////////////////
+
+/// Represensts simulation of real world system environment: nodes, network, time and file system.
 ///
-/// [`System`] uses [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
-/// framework for simulating network, time, etc.
-pub struct System {
+/// Simulation is event-driven: in every moment there are pending events, ordered by time.
+/// Every event can cause other events and execute corresponding callback of the process-receiver.
+/// To make system to process event chain, user should call the following methods of simulation:
+/// [`step`][Sim::step], [`make_steps`][Sim::make_steps], [`step_until_no_events`][Sim::step_until_no_events].
+///
+/// User can [add nodes][Sim::add_node] to simulation with specified configuration,
+/// connect and disconnect them from network.
+/// User can [add processes][Sim::add_process] on some nodes and then communicate with them by
+/// [sending][Sim::send_local_message] and [reading][Sim::read_local_messages] local messages.
+/// Also, user can [crash][Sim::crash_node] nodes and [recover][Sim::recover_node] them.
+///
+/// Simulation allows to configure network settings.
+/// For example, user can set [delays][Sim::set_network_delays] of the network and its
+/// [drop-rate][Sim::set_network_drop_rate].
+pub struct Sim {
     inner: DSLabSimulation,
     node_manager: Rc<RefCell<NodeManager>>,
 }
 
-impl System {
-    /// Create new [`System`] with provided `seed`.
+impl Sim {
+    /// Create new simulation with provided seed.
     pub fn new(seed: u64) -> Self {
+        let inner = DSLabSimulation::new(seed);
+        inner.network().set_corrupt_rate(0.0);
+        inner.network().set_drop_rate(0.0);
+        inner.network().set_delays(0.5, 1.0);
         Self {
-            inner: DSLabSimulation::new(seed),
+            inner,
             node_manager: Rc::new(RefCell::new(NodeManager::default())),
         }
     }
 
-    // Network ---------------------------------------------------
+    ////////////////////////////////////////////////////////////////////////////////
+    // Network
+    ////////////////////////////////////////////////////////////////////////////////
 
-    /// Returns a mutable reference to network.
-    pub fn network(&self) -> RefMut<Network> {
-        self.inner.network()
+    /// Set the fixed network delay.
+    pub fn set_network_delay(&self, delay: f64) {
+        self.inner.network().set_delay(delay)
     }
 
-    // Node ------------------------------------------------------
+    /// Set the minimum and maximum network delays.
+    pub fn set_network_delays(&self, min_delay: f64, max_delay: f64) {
+        self.inner.network().set_delays(min_delay, max_delay)
+    }
 
-    /// Adds a node to the DSLabSimulation.
-    /// Note that node names must be unique and does not contain `/` symbol.
+    /// Set drop rate of the network.
+    pub fn set_network_drop_rate(&self, drop_rate: f64) {
+        self.inner.network().set_drop_rate(drop_rate)
+    }
+
+    /// Connect node to the network
+    pub fn connect_node_to_network(&self, node: &str) {
+        self.inner.network().connect_node(node)
+    }
+
+    /// Disconnect node from the network
+    pub fn disconnect_node_from_network(&self, node: &str) {
+        self.inner.network().disconnect_node(node)
+    }
+
+    /// Allows to disable pairwise connections between groups.
+    pub fn split_network(&self, group1: &[&str], group2: &[&str]) {
+        self.inner.network().make_partition(group1, group2)
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Node
+    ////////////////////////////////////////////////////////////////////////////////
+
+    /// Add node to simulation.
+    ///
+    /// Node names must be unique and not contain `/` symbol.
     ///
     /// # Panics
     ///
@@ -56,8 +100,9 @@ impl System {
         self.add_node_with_storage(name, host, port, 0);
     }
 
-    /// Adds a node with specified storage capacity to the DSLabSimulation.
-    /// Note that node names must be unique and does not contain `/` symbol.
+    /// Add node with specified storage capacity to simulation.
+    ///
+    /// Note that node names must be unique and not contain `/` symbol.
     ///
     /// # Panics
     ///
@@ -111,15 +156,6 @@ impl System {
         self.inner.rerun_node(node_name);
     }
 
-    /// Returns a mutable reference to the node.
-    ///
-    /// Can not make method public because
-    /// process names on dslab nodes are not the same as in the framework.
-    #[allow(dead_code)]
-    fn get_mut_node(&self, name: &str) -> Option<RefMut<Node>> {
-        self.inner.get_mut_node(name)
-    }
-
     /// Checks if the node is crashed.
     pub fn is_node_crashed(&self, node: &str) -> bool {
         self.inner.node_is_crashed(node)
@@ -127,13 +163,13 @@ impl System {
 
     // Process ------------------------------------------------------
 
-    /// Adds a process to the [`System`].
+    /// Add process.
     ///
     /// # Panics
     ///
     /// - If node with such name `node_name` does not exists.
-    /// - If process with such `process name` is already exists on the node with `node_name`.
-    /// - If process name or node name is empty or contains `/` symbol.
+    /// - If process with such `process name` already exists on the node with name `node_name`.
+    /// - If `process name` or `node name` is empty or contains `/` symbol.
     pub fn add_process<P: Process + 'static>(
         &mut self,
         process_name: &str,
@@ -174,7 +210,7 @@ impl System {
         process_wrapper
     }
 
-    /// Returns the names of all processes in the system.
+    /// Get names of all processes in the system.
     pub fn process_names(&self) -> Vec<String> {
         self.inner.process_names()
     }
@@ -224,14 +260,12 @@ impl System {
         self.inner.received_message_count(&full_process_name)
     }
 
-    // DSLabSimulation -----------------------------------------------------
-
-    /// Steps through the DSLabSimulation until there are no pending events left.
+    /// Steps through the simulation until there are no pending events left.
     pub fn step_until_no_events(&mut self) {
         self.inner.step_until_no_events()
     }
 
-    /// Steps through the DSLabSimulation until there are no local messages.
+    /// Steps through the simulation until there are no local messages.
     pub fn step_until_local_message(
         &mut self,
         proc: &str,
@@ -249,7 +283,7 @@ impl System {
             .map(|v| v.into_iter().map(|m| m.into()).collect())
     }
 
-    /// Perform `steps` steps through the DSLabSimulation.
+    /// Perform specified number of steps through the simulation.
     pub fn make_steps(&mut self, steps: u32) {
         for _ in 0..steps {
             let something_happen = self.step();
@@ -259,7 +293,7 @@ impl System {
         }
     }
 
-    /// Perform single step through the DSLabSimulation.
+    /// Perform single step through the simulation.
     pub fn step(&mut self) -> bool {
         self.inner.step()
     }

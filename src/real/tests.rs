@@ -50,7 +50,7 @@ fn local_messages_works() {
         process_name: "proc2".to_owned(),
     };
 
-    let mut system = RealNode::new(1024, "127.0.0.1", 11123, "storage_mount".into());
+    let mut system = RealNode::new("127.0.0.1", 11123, "storage_mount");
 
     let proc1 = LocalProcess {};
     let mut wrapper1 = system.add_process(proc1, "proc1".to_owned());
@@ -63,9 +63,9 @@ fn local_messages_works() {
         wrapper1
             .sender
             .send(
-                Message::borrow_new(
+                Message::new(
                     "",
-                    LocalMessage {
+                    &LocalMessage {
                         info: "message from the first process".to_owned(),
                         other: second_addr,
                     },
@@ -87,9 +87,9 @@ fn local_messages_works() {
         wrapper2
             .sender
             .send(
-                Message::borrow_new(
+                Message::new(
                     "",
-                    LocalMessage {
+                    &LocalMessage {
                         info: "message from the second process".to_owned(),
                         other: first_addr,
                     },
@@ -209,7 +209,7 @@ impl Process for SendRecvProcess {
 
 #[test]
 fn send_recv_works() {
-    let mut sys = RealNode::new(1024, "127.0.0.1", 10092, "/tmp/");
+    let mut sys = RealNode::new("127.0.0.1", 10092, "/tmp/");
     let addr1 = Address::new_ref("127.0.0.1", 10092, "proc1");
     let addr2 = Address::new_ref("127.0.0.1", 10092, "proc2");
     let mut proc1_io = sys.add_process(
@@ -236,5 +236,5 @@ fn send_recv_works() {
     sys.run();
 
     let got_message = flag_event_receiver.blocking_recv().unwrap();
-    assert_eq!(got_message, true);
+    assert!(got_message);
 }

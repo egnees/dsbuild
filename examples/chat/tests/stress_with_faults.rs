@@ -5,11 +5,11 @@ use chat::{
         sim::{build_sim, read_history_from_info, rerun_server, stop_server},
     },
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 #[test]
 fn stress_with_faults_2_users() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
     let client1_addr = Address {
         host: "client1".into(),

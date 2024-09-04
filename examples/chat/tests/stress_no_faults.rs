@@ -3,15 +3,14 @@ use chat::{
     server::process::ServerProcess,
     ClientProcess,
 };
-use dsbuild::{Address, VirtualSystem};
+use dsbuild::{Address, Sim};
 
 #[test]
 fn stress_no_faults_2_users() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
-    sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(1.0, 3.0);
-    sys.network().set_drop_rate(0.05);
+    sys.set_network_delays(1.0, 3.0);
+    sys.set_network_drop_rate(0.05);
 
     let client1_addr = Address {
         host: "client1_host".into(),
@@ -32,13 +31,13 @@ fn stress_no_faults_2_users() {
     };
 
     sys.add_node("client1_node", &client1_addr.host, client1_addr.port);
-    sys.network().connect_node("client1_node");
+    sys.connect_node_to_network("client1_node");
 
     sys.add_node("client2_node", &client2_addr.host, client2_addr.port);
-    sys.network().connect_node("client2_node");
+    sys.connect_node_to_network("client2_node");
 
     sys.add_node_with_storage("server_node", &server_addr.host, server_addr.port, 1 << 20);
-    sys.network().connect_node("server_node");
+    sys.connect_node_to_network("server_node");
 
     sys.add_process(
         &client1_addr.process_name,
@@ -48,7 +47,7 @@ fn stress_no_faults_2_users() {
             "client1".into(),
             "pass123".into(),
         ),
-        "client1_node".into(),
+        "client1_node",
     );
 
     sys.add_process(
@@ -59,7 +58,7 @@ fn stress_no_faults_2_users() {
             "client2".into(),
             "pass123".into(),
         ),
-        "client2_node".into(),
+        "client2_node",
     );
 
     sys.add_process(
@@ -193,11 +192,10 @@ fn stress_no_faults_2_users() {
 
 #[test]
 fn stress_no_faults_10_users() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
 
-    sys.network().set_corrupt_rate(0.0);
-    sys.network().set_delays(1.0, 3.0);
-    sys.network().set_drop_rate(0.8);
+    sys.set_network_delays(1.0, 3.0);
+    sys.set_network_drop_rate(0.8);
 
     // Add server
     let server: &'static str = "server";
@@ -207,16 +205,13 @@ fn stress_no_faults_10_users() {
         process_name: server.into(),
     };
     sys.add_node_with_storage(server, &server_addr.host, server_addr.port, 1 << 20);
-    sys.network().connect_node(server);
+    sys.connect_node_to_network(server);
     sys.add_process(&server_addr.process_name, ServerProcess::default(), server);
 
     // Add clients
-    let clients: Vec<String> = (1..=10)
-        .into_iter()
-        .map(|id| format!("client_{}", id))
-        .collect();
+    let clients: Vec<String> = (1..=10).map(|id| format!("client_{}", id)).collect();
 
-    for client in clients.as_slice().into_iter() {
+    for client in clients.as_slice().iter() {
         let client_addr = Address {
             host: client.clone(),
             port: 1000,
@@ -227,7 +222,7 @@ fn stress_no_faults_10_users() {
             &client_addr.host,
             client_addr.port,
         );
-        sys.network().connect_node(&client_addr.process_name);
+        sys.connect_node_to_network(&client_addr.process_name);
         sys.add_process(
             &client_addr.process_name,
             ClientProcess::new(
@@ -250,7 +245,7 @@ fn stress_no_faults_10_users() {
     sys.step_until_no_events();
 
     // All clients connect to created chat.
-    for client in clients.as_slice().into_iter() {
+    for client in clients.as_slice().iter() {
         sys.send_local_message(
             client,
             client,
@@ -262,7 +257,7 @@ fn stress_no_faults_10_users() {
     // All clients will send random messages.
     let iters = 100;
     for iter in 0..iters {
-        for client in clients.as_slice().into_iter() {
+        for client in clients.as_slice().iter() {
             sys.send_local_message(
                 client,
                 client,
@@ -278,7 +273,7 @@ fn stress_no_faults_10_users() {
     let ref_history = sys.read_local_messages(&clients[0], &clients[0]).unwrap();
     assert!(ref_history.len() >= iters * clients.len());
 
-    for client in clients.as_slice().into_iter().skip(1) {
+    for client in clients.as_slice().iter().skip(1) {
         let history = sys.read_local_messages(client, client).unwrap();
         assert_eq!(history, ref_history);
     }

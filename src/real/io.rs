@@ -4,13 +4,13 @@ use crate::{Message, Process, ProcessGuard, ProcessWrapper};
 
 use super::process::ToSystemMessage;
 
-/// Represents process wrapper around user-defined [`process`][crate::Process],
-/// which allows to send and receive local messages from the process.
+/// Wrapper around user-defined [process][crate::Process],
+/// which allows to send and receive local messages from it in real mode.
 pub struct IOProcessWrapper<P: Process + 'static> {
     pub(crate) wrapper: ProcessWrapper<P>,
-    /// Allows to send local messages to the process.
+    /// Allows to send local messages to process.
     pub sender: Sender<Message>,
-    /// Allows to receive local messages from the process.
+    /// Allows to receive local messages from process.
     pub receiver: Receiver<Message>,
 
     pub(crate) system_sender: Option<Sender<ToSystemMessage>>,
@@ -18,7 +18,10 @@ pub struct IOProcessWrapper<P: Process + 'static> {
 }
 
 impl<P: Process + 'static> IOProcessWrapper<P> {
-    /// Allows to stop the process.
+    /// Allows to stop process.
+    ///
+    /// This method returns when process receives stop request.
+    /// After this, it is not guaranteed the process will be stopped immediately.
     pub async fn stop_process(&mut self) {
         self.system_sender
             .take()
@@ -29,6 +32,8 @@ impl<P: Process + 'static> IOProcessWrapper<P> {
     }
 
     /// Returns read access guard to user-defined process.
+    ///
+    /// See [ProcessGuard][ProcessGuard] documentation for more details.
     pub fn read(&self) -> ProcessGuard<'_, P> {
         self.wrapper.read()
     }

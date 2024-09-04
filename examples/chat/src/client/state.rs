@@ -207,7 +207,9 @@ impl State {
                     .add_to_user_info_vec(self.drain_and_filter_pending_server_messages()),
             },
             ClientRequestKind::Status => match request_result {
-                Ok(_) => panic!("there should not be ok response on status request"),
+                Ok(_) => {
+                    panic!("there should not be ok response on status request")
+                }
                 Err(connected_chat) => {
                     let info = if connected_chat.is_empty() {
                         "user not connected to chat".to_string()

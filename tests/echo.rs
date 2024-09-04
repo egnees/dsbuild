@@ -1,7 +1,6 @@
 use std::thread;
 
 use dsbuild::{Address, Context, Message, Process};
-use dslab_async_mp::log::init::enable_console_log;
 
 struct EchoServer {}
 
@@ -47,15 +46,11 @@ impl Process for EchoClient {
 
 #[test]
 fn message_returns_virtual() {
-    // tracing
-    enable_console_log();
-
-    let mut sys = dsbuild::VirtualSystem::new(123);
+    let mut sys = dsbuild::Sim::new(123);
 
     // configure network
-    sys.network().set_delays(0.5, 1.5);
-    sys.network().set_drop_rate(0.05);
-    sys.network().set_dupl_rate(0.05);
+    sys.set_network_delays(0.5, 1.5);
+    sys.set_network_drop_rate(0.05);
 
     // add echo server
     sys.add_node("echo_server", "echo.server.ru", 80);
@@ -84,11 +79,11 @@ fn message_returns_virtual() {
 #[test]
 fn message_returns_real() {
     // create echo server node on host 127.0.0.1:10024
-    let mut server = dsbuild::RealNode::new(128, "127.0.0.1", 10024, "/tmp");
+    let mut server = dsbuild::RealNode::new("127.0.0.1", 10024, "/tmp");
     let mut server_io = server.add_process(EchoServer {}, "p".into());
 
     // create echo client node on host 127.0.0.1:10025
-    let mut client = dsbuild::RealNode::new(128, "127.0.0.1", 10025, "/tmp");
+    let mut client = dsbuild::RealNode::new("127.0.0.1", 10025, "/tmp");
     let mut client_io = client.add_process(
         EchoClient {
             server: Address::new_ref("127.0.0.1", 10024, "p"),
@@ -136,18 +131,17 @@ fn message_returns_real() {
 
 #[test]
 fn server_fault_virtual() {
-    let mut sys = dsbuild::VirtualSystem::new(321);
+    let mut sys = dsbuild::Sim::new(321);
 
-    sys.network().set_delays(0.5, 1.5);
-    sys.network().set_drop_rate(0.05);
-    sys.network().set_dupl_rate(0.05);
+    sys.set_network_delays(0.5, 1.5);
+    sys.set_network_drop_rate(0.05);
 
     sys.add_node("echo_server", "echo.server.ru", 80);
-    sys.network().connect_node("echo_server");
+    sys.connect_node_to_network("echo_server");
     sys.add_process("p", EchoServer {}, "echo_server");
 
     sys.add_node("echo_client", "echo.client.ru", 80);
-    sys.network().connect_node("echo_client");
+    sys.connect_node_to_network("echo_client");
     sys.add_process(
         "p",
         EchoClient {

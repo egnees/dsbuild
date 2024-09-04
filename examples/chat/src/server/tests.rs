@@ -4,7 +4,7 @@ use rand::{distributions::Alphanumeric, seq::SliceRandom, Rng};
 use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
 
-use dsbuild::{Address, Context, Message, Process, VirtualSystem};
+use dsbuild::{Address, Context, Message, Process, Sim};
 
 use crate::{
     client::requests::{ClientRequest, ClientRequestKind},
@@ -76,7 +76,7 @@ impl Process for ClientStub {
 
 #[test]
 fn state_works() {
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
     let server_addr = Address {
         host: "server".to_owned(),
         port: 12345,
@@ -184,10 +184,10 @@ fn state_works() {
 
 #[test]
 fn state_multiple_users() {
-    let mut chats = vec!["chat1", "chat2", "chat3", "chat4", "chat5"];
-    let clients = vec!["client1", "client2", "client3", "client4", "client5"];
+    let mut chats = ["chat1", "chat2", "chat3", "chat4", "chat5"];
+    let clients = ["client1", "client2", "client3", "client4", "client5"];
 
-    let mut sys = VirtualSystem::new(12345);
+    let mut sys = Sim::new(12345);
     let server_addr = Address {
         host: "server".to_owned(),
         port: 12345,
@@ -216,8 +216,8 @@ fn state_multiple_users() {
         );
     }
 
-    sys.network().set_delays(0.5, 1.0);
-    sys.network().set_drop_rate(0.05);
+    sys.set_network_delays(0.5, 1.0);
+    sys.set_network_drop_rate(0.05);
 
     sys.step_until_no_events();
 
@@ -347,16 +347,16 @@ impl Process for ReplicaNotifiedClientStub {
 
 #[test]
 fn replication_works() {
-    let mut sys = VirtualSystem::new(543210);
+    let mut sys = Sim::new(543210);
 
     sys.add_node("client", "client", 0);
     sys.add_node_with_storage("server1", "server1", 0, 4096);
     sys.add_node_with_storage("server2", "server2", 0, 4096);
 
-    sys.network().connect_node("client1");
-    sys.network().connect_node("server1");
-    sys.network().connect_node("server2");
-    sys.network().set_delays(0.5, 1.0);
+    sys.connect_node_to_network("client1");
+    sys.connect_node_to_network("server1");
+    sys.connect_node_to_network("server2");
+    sys.set_network_delays(0.5, 1.0);
 
     sys.add_process(
         "server1",
@@ -413,7 +413,7 @@ fn replication_works() {
     );
 
     sys.add_node("client1", "client1", 0);
-    sys.network().connect_node("client1");
+    sys.connect_node_to_network("client1");
 
     sys.add_process(
         "client1",
@@ -450,7 +450,7 @@ fn replication_works() {
         ServerProcess::new_with_replica(Address::new_ref("server2", 0, "server2")),
         "server1",
     );
-    sys.network().connect_node("server1");
+    sys.connect_node_to_network("server1");
     sys.send_local_message(
         "server1",
         "server1",
@@ -481,7 +481,7 @@ fn replication_works() {
         ServerProcess::new_with_replica(Address::new_ref("server1", 0, "server1")),
         "server2",
     );
-    sys.network().connect_node("server2");
+    sys.connect_node_to_network("server2");
     sys.send_local_message(
         "server2",
         "server2",

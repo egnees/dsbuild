@@ -15,7 +15,7 @@ pub fn test_message_basic() {
         .expect("Can not extract data from message");
     assert_eq!(deserialized_data, message_data);
 
-    let message_1 = Message::borrow_new("message_type_1", format!("format_str_{}", 1))
+    let message_1 = Message::new("message_type_1", &format!("format_str_{}", 1))
         .expect("Can not create new message");
     assert_eq!(
         message_1.get_data::<String>().expect("Can not fetch data"),

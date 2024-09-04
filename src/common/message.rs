@@ -2,19 +2,26 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Represents message,
-/// which can be used by [`processes`][`crate::Process`] to communicate with each other.
-///
-/// In message data can be stored any data types, which implements [`Serialize`] and [`Deserialize`] traits.
+////////////////////////////////////////////////////////////////////////////////
+
+/// Represents message, which is used by [processes][crate::Process] to communicate
+/// with each other by the network.
 #[derive(Serialize, Clone, Eq, Hash, PartialEq, PartialOrd, Ord, Debug)]
 pub struct Message {
     tip: String,
     data: Vec<u8>,
 }
 
-/// Represents routed message.
+////////////////////////////////////////////////////////////////////////////////
+
+/// Represents message tag.
+///
+/// For more details, see [`send_with_tag`][crate::Context::send_with_tag] and
+/// [`send_recv_with_tag`][crate::Context::send_recv_with_tag] documentation.
+pub type Tag = u64;
+
 #[derive(Clone)]
-pub struct RoutedMessage {
+pub(crate) struct RoutedMessage {
     pub msg: Message,
     pub from: Address,
     pub to: Address,
@@ -22,24 +29,18 @@ pub struct RoutedMessage {
 }
 
 impl Message {
-    /// Create a new message with specified tip and data, which will be copied inside of [`Message`].
-    ///
-    /// # Returns
-    ///
-    /// [`Result<Message, String>`] which is:
-    /// - [`Ok`] if message was created successfully,
-    /// - [`Err`] if message was not created successfully with corresponded error message
+    /// Create a new message with specified tip and data, which will be serialized and passed
+    /// inside of the message.
     pub fn new<T>(tip: &str, data: &T) -> Result<Self, String>
     where
         T: Serialize,
     {
-        let data_serialized = serde_json::to_vec(data)
-            .map_err(|err| "Can not create message: ".to_owned() + err.to_string().as_str())?;
-
-        Ok(Self {
-            tip: tip.to_string(),
-            data: data_serialized,
-        })
+        serde_json::to_vec(data)
+            .map_err(|err| "Can not create message: ".to_owned() + err.to_string().as_str())
+            .map(|data| Self {
+                tip: tip.to_string(),
+                data,
+            })
     }
 
     /// Create a new message with specified tip and raw data.
@@ -50,26 +51,12 @@ impl Message {
         })
     }
 
-    /// Create a new message with specified tip and data, which will be borrowed by message.
-    pub fn borrow_new<T>(tip: &str, data: T) -> Result<Self, String>
-    where
-        T: Serialize,
-    {
-        let data_serialized = serde_json::to_vec(&data)
-            .map_err(|err| "Can not serialize data: ".to_owned() + err.to_string().as_str())?;
-
-        Ok(Self {
-            tip: tip.to_string(),
-            data: data_serialized,
-        })
-    }
-
-    /// Returns reference to message's tip.
+    /// Get message's tip.
     pub fn get_tip(&self) -> &String {
         &self.tip
     }
 
-    /// Returns reference to message's raw data.
+    /// Get message's raw data.
     pub fn get_raw_data(&self) -> &[u8] {
         &self.data
     }
@@ -80,18 +67,15 @@ impl Message {
     where
         T: Deserialize<'a>,
     {
-        let data_deserialized =
-            serde_json::from_slice::<'a, T>(self.data.as_slice()).map_err(|err| err.to_string())?;
-
-        Ok(data_deserialized)
+        serde_json::from_slice::<'a, T>(self.data.as_slice()).map_err(|err| err.to_string())
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 use dslab_async_mp::network::message::Message as DSLabMessage;
 
 use crate::Address;
-
-use super::tag::Tag;
 
 impl From<DSLabMessage> for Message {
     fn from(msg: DSLabMessage) -> Self {
@@ -113,12 +97,12 @@ impl From<Message> for DSLabMessage {
 
 impl From<String> for Message {
     fn from(value: String) -> Self {
-        Message::borrow_new("info", value).unwrap()
+        Message::new("info", &value).unwrap()
     }
 }
 
 impl From<&str> for Message {
     fn from(value: &str) -> Self {
-        Message::borrow_new("info", value).unwrap()
+        Message::new("info", &value).unwrap()
     }
 }

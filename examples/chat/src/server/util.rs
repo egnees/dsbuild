@@ -3,7 +3,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
 };
 
-use dsbuild::{storage::StorageError, Address, Context};
+use dsbuild::{Address, Context, FsError};
 
 use crate::{client::requests::ClientRequest, server::event::ChatEventKind};
 
@@ -282,7 +282,7 @@ pub async fn get_client_chat(ctx: Context, client: String) -> Option<String> {
         .open_file(&file_name)
         .await
         .map_err(|e| match e {
-            StorageError::NotFound => e,
+            FsError::NotFound => e,
             _ => panic!("storage unavailable"),
         })
         .ok()?;
@@ -431,7 +431,7 @@ pub async fn get_client_address(ctx: Context, client: String) -> Option<Address>
         .open_file(&file_name)
         .await
         .map_err(|e| match e {
-            StorageError::NotFound => e,
+            FsError::NotFound => e,
             _ => panic!("storage unavailable"),
         })
         .ok()?;
