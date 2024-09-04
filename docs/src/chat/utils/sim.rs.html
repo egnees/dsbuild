@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `examples/chat/src/utils/sim.rs`."><title>sim.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="chat" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../chat/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `examples/chat/src/utils/sim.rs`."><title>sim.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="chat" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -171,9 +169,7 @@
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>dsbuild::{Address, VirtualSystem};
+</pre></div><pre class="rust"><code><span class="kw">use </span>dsbuild::{Address, Sim};
 
 <span class="kw">use crate</span>::{
     client::{io::Info, requests::ClientRequestKind},
@@ -183,7 +179,7 @@
 
 <span class="kw">use </span><span class="kw">super</span>::server::check_replica_request;
 
-<span class="kw">pub fn </span>read_history(sys: <span class="kw-2">&amp;mut </span>VirtualSystem, node: <span class="kw-2">&amp;</span>str, proc: <span class="kw-2">&amp;</span>str) -&gt; Vec&lt;ChatEvent&gt; {
+<span class="kw">pub fn </span>read_history(sys: <span class="kw-2">&amp;mut </span>Sim, node: <span class="kw-2">&amp;</span>str, proc: <span class="kw-2">&amp;</span>str) -&gt; Vec&lt;ChatEvent&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>events = sys
         .read_local_messages(proc, node)
         .unwrap()
@@ -203,7 +199,7 @@
     events
 }
 
-<span class="kw">pub fn </span>read_history_from_info(sys: <span class="kw-2">&amp;mut </span>VirtualSystem, node: <span class="kw-2">&amp;</span>str, proc: <span class="kw-2">&amp;</span>str) -&gt; Vec&lt;ChatEvent&gt; {
+<span class="kw">pub fn </span>read_history_from_info(sys: <span class="kw-2">&amp;mut </span>Sim, node: <span class="kw-2">&amp;</span>str, proc: <span class="kw-2">&amp;</span>str) -&gt; Vec&lt;ChatEvent&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>events = sys
         .read_local_messages(proc, node)
         .unwrap()
@@ -227,14 +223,13 @@
     <span class="string">"pass123"</span>.to_owned()
 }
 
-<span class="kw">pub fn </span>build_sim(sys: <span class="kw-2">&amp;mut </span>VirtualSystem, clients: <span class="kw-2">&amp;</span>[Address], server: Address, replica: Address) {
-    sys.network().set_corrupt_rate(<span class="number">0.0</span>);
-    sys.network().set_delays(<span class="number">0.5</span>, <span class="number">1.0</span>);
-    sys.network().set_drop_rate(<span class="number">0.05</span>);
+<span class="kw">pub fn </span>build_sim(sys: <span class="kw-2">&amp;mut </span>Sim, clients: <span class="kw-2">&amp;</span>[Address], server: Address, replica: Address) {
+    sys.set_network_delays(<span class="number">0.5</span>, <span class="number">1.0</span>);
+    sys.set_network_drop_rate(<span class="number">0.05</span>);
 
     <span class="kw">for </span>client <span class="kw">in </span>clients {
         sys.add_node(<span class="kw-2">&amp;</span>client.process_name, <span class="kw-2">&amp;</span>client.host, client.port);
-        sys.network().connect_node(<span class="kw-2">&amp;</span>client.process_name);
+        sys.connect_node_to_network(<span class="kw-2">&amp;</span>client.process_name);
         sys.add_process(
             <span class="kw-2">&amp;</span>client.process_name,
             ClientProcess::new_with_replica(
@@ -254,7 +249,7 @@
     }
 
     sys.add_node_with_storage(<span class="kw-2">&amp;</span>server.process_name, <span class="kw-2">&amp;</span>server.host, server.port, <span class="number">1 </span>&lt;&lt; <span class="number">20</span>);
-    sys.network().connect_node(<span class="kw-2">&amp;</span>server.process_name);
+    sys.connect_node_to_network(<span class="kw-2">&amp;</span>server.process_name);
     sys.add_process(
         <span class="kw-2">&amp;</span>server.process_name,
         ServerProcess::new_with_replica(replica.clone()),
@@ -267,7 +262,7 @@
     );
 
     sys.add_node_with_storage(<span class="kw-2">&amp;</span>replica.process_name, <span class="kw-2">&amp;</span>replica.host, replica.port, <span class="number">1 </span>&lt;&lt; <span class="number">20</span>);
-    sys.network().connect_node(<span class="kw-2">&amp;</span>replica.process_name);
+    sys.connect_node_to_network(<span class="kw-2">&amp;</span>replica.process_name);
     sys.add_process(
         <span class="kw-2">&amp;</span>replica.process_name,
         ServerProcess::new_with_replica(server.clone()),
@@ -280,14 +275,13 @@
     );
 }
 
-<span class="kw">pub fn </span>build_sim_without_replica(sys: <span class="kw-2">&amp;mut </span>VirtualSystem, clients: <span class="kw-2">&amp;</span>[Address], server: Address) {
-    sys.network().set_corrupt_rate(<span class="number">0.0</span>);
-    sys.network().set_delays(<span class="number">0.5</span>, <span class="number">1.0</span>);
-    sys.network().set_drop_rate(<span class="number">0.05</span>);
+<span class="kw">pub fn </span>build_sim_without_replica(sys: <span class="kw-2">&amp;mut </span>Sim, clients: <span class="kw-2">&amp;</span>[Address], server: Address) {
+    sys.set_network_delays(<span class="number">0.5</span>, <span class="number">1.0</span>);
+    sys.set_network_drop_rate(<span class="number">0.05</span>);
 
     <span class="kw">for </span>client <span class="kw">in </span>clients {
         sys.add_node(<span class="kw-2">&amp;</span>client.process_name, <span class="kw-2">&amp;</span>client.host, client.port);
-        sys.network().connect_node(<span class="kw-2">&amp;</span>client.process_name);
+        sys.connect_node_to_network(<span class="kw-2">&amp;</span>client.process_name);
         sys.add_process(
             <span class="kw-2">&amp;</span>client.process_name,
             ClientProcess::new(
@@ -306,7 +300,7 @@
     }
 
     sys.add_node_with_storage(<span class="kw-2">&amp;</span>server.process_name, <span class="kw-2">&amp;</span>server.host, server.port, <span class="number">1 </span>&lt;&lt; <span class="number">20</span>);
-    sys.network().connect_node(<span class="kw-2">&amp;</span>server.process_name);
+    sys.connect_node_to_network(<span class="kw-2">&amp;</span>server.process_name);
     sys.add_process(
         <span class="kw-2">&amp;</span>server.process_name,
         ServerProcess::default(),
@@ -314,7 +308,7 @@
     );
 }
 
-<span class="kw">pub fn </span>stop_server(sys: <span class="kw-2">&amp;mut </span>VirtualSystem, server_node: <span class="kw-2">&amp;</span>str, with_crash: bool) {
+<span class="kw">pub fn </span>stop_server(sys: <span class="kw-2">&amp;mut </span>Sim, server_node: <span class="kw-2">&amp;</span>str, with_crash: bool) {
     <span class="kw">if </span>with_crash {
         sys.crash_node(server_node);
     } <span class="kw">else </span>{
@@ -323,7 +317,7 @@
 }
 
 <span class="kw">pub fn </span>rerun_server(
-    sys: <span class="kw-2">&amp;mut </span>VirtualSystem,
+    sys: <span class="kw-2">&amp;mut </span>Sim,
     server_node: <span class="kw-2">&amp;</span>str,
     server_addr: <span class="kw-2">&amp;</span>Address,
     replica_addr: <span class="kw-2">&amp;</span>Address,
@@ -334,7 +328,7 @@
     } <span class="kw">else </span>{
         sys.rerun_node(server_node);
     }
-    sys.network().connect_node(server_node);
+    sys.connect_node_to_network(server_node);
     sys.add_process(
         <span class="kw-2">&amp;</span>server_addr.process_name,
         ServerProcess::new_with_replica(replica_addr.clone()),

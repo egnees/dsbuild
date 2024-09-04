@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/common/process.rs`."><title>process.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="dsbuild" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../dsbuild/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/common/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="dsbuild" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -123,27 +121,6 @@
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-<a href="#140" id="140">140</a>
-<a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a>
-<a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Definition of trait [`Process`] and struct [`ProcessWrapper`].
 
 </span><span class="kw">use </span>std::{
@@ -153,7 +130,9 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::common::{context::Context, message::Message};
 
-<span class="doccomment">/// Represents possible states of the user processes inside of the system.
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="doccomment">/// Represents possible states of the user processes inside of the system.
 </span><span class="attr">#[derive(Copy, Clone, Debug, PartialEq)]
 </span><span class="kw">pub enum </span>ProcessState {
     <span class="doccomment">/// Corresponds running process.
@@ -162,57 +141,46 @@
     </span>Stopped,
 }
 
-<span class="doccomment">/// Represents requirements for every user-defined process.
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="doccomment">/// Represents requirements for every user-defined process.
 ///
-/// Every user-defined process must satisfy the following requirements:
-/// - It must implement the [`Process`] trait.
+/// When process receives local message from user, timer is fired or
+/// network message is received, the corresponding process callback will be called.
 ///
-/// Ideologically every process must be created by the user,
-/// and after that passed to the system (real or virtual), which will own the process.
-/// But technically process got static lifetime when being passed to the system,
-/// so system not holds the process.
-/// However, only system has write access to the process.
-///
-/// The reason for such behavior is that process can be used by user after the system is dropped,
-/// so system can not hold the process.
-/// So, for system every process' lifetime is static.
-///
-/// To interact with system, process can use context [`Context`] object.
-/// It allows [send messages][`Context::send`], [set timers][`Context::set_timer`], [work with file system][`Context::create_file`], etc.
+/// To interact with system, process can use passed [`Context`] object, which
+/// represents proxy between process and external environment.
 </span><span class="kw">pub trait </span>Process: Send + Sync {
-    <span class="doccomment">/// Called when process starts interaction with system.
+    <span class="doccomment">/// Called when process receives local message from user.
+    ///
+    /// See documentation of [`IOProcessWrapper`][crate::IOProcessWrapper] struct for real
+    /// mode and [corresponding method][crate::Sim::send_local_message] of simulation for
+    /// more details.
     </span><span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt;;
 
     <span class="doccomment">/// Called when previously set timer is fired.
+    ///
+    /// See [corresponding method][Context::set_timer] of context for more details.
     </span><span class="kw">fn </span>on_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt;;
 
-    <span class="doccomment">/// Called when process receives message.
+    <span class="doccomment">/// Called when process receives network message from other process.
     </span><span class="kw">fn </span>on_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, from: Address, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt;;
 }
 
-<span class="doccomment">/// Represents wrapper around user-defined [`process`][crate::Process],
-/// which returns to user when he passes [`process`][crate::Process] to [`real`][crate::RealNode] or [`virtual`][crate::VirtualSystem] system.
-///
-/// Wrapper holds reference to user-defined process, which implements [`Process`] trait,
-/// and allows user to get read access to it.
-///
-/// User process inside of [`ProcessWrapper`] is protected with [lock][`RwLock`],
-/// which prevents concurrent read-write access to the process.
-/// It allows multiple readers or only one writer in the same time.
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="doccomment">/// Represents wrapper around user-defined [process][crate::Process] which provides
+/// read access to it.
 </span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>ProcessWrapper&lt;P: Process + <span class="lifetime">'static</span>&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) process_ref: Arc&lt;RwLock&lt;P&gt;&gt;,
 }
 
-<span class="doccomment">/// Represents guard for user-defined [`process`][`crate::Process`].
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="doccomment">/// Represents read access guard for user-defined [process][crate::Process].
 ///
-/// While user hold [`guard`][`ProcessGuard`] on the process, system can not get access to it.
-/// In this case system thread will be blocked until guard won't be dropped.
-///
-/// Technically, for now both real and virtual systems works with process in the same thread as user does,
-/// but as process with static lifetime can not be owned by system[^note], [Rust](https://www.rust-lang.org/) requires it to be guarded with [lock][`RwLock`].
-///
-/// [^note]: in [Rust](https://www.rust-lang.org/) every variable with static lifetime must be guarded with some lock like [`std::sync::Mutex`] or [`std::sync::RwLock`].
+/// Holding guard will prevent concurrent access to process by the system.
 </span><span class="kw">pub struct </span>ProcessGuard&lt;<span class="lifetime">'a</span>, P: Process + <span class="lifetime">'static</span>&gt; {
     <span class="kw">pub</span>(<span class="self">self</span>) inner: RwLockReadGuard&lt;<span class="lifetime">'a</span>, P&gt;,
 }
@@ -225,17 +193,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;P: Process + <span class="lifetime">'static</span>&gt; ProcessWrapper&lt;P&gt; {
-    <span class="doccomment">/// Returns guard for read access to user-defined process.
-    /// Holding guard will prevent concurrent access to user-defined process.
-    ///
-    /// Is is allowed to have multiple guards on the same process in the same time,
-    /// because [`ProcessWrapper`] gives only read access to the process.
-    /// Note what having multiple readers in the same time not violates [Rust](https://www.rust-lang.org/) memory management rules.
-    ///
-    /// # Panics
-    ///
-    /// - If panicked thread in which runtime was launched. For more information see [`std::sync::RwLock#poisoning`] documentation.
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="kw">impl</span>&lt;P: Process + <span class="lifetime">'static</span>&gt; ProcessWrapper&lt;P&gt; {
+    <span class="doccomment">/// Returns [guard][ProcessGuard] for read access to user-defined process.
+    /// See [guard][ProcessGuard] documentation for more details.
     </span><span class="kw">pub fn </span>read(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProcessGuard&lt;<span class="lifetime">'_</span>, P&gt; {
         <span class="kw">let </span>read_guard = <span class="self">self
             </span>.process_ref
@@ -246,25 +208,19 @@
     }
 }
 
-<span class="doccomment">/// Represents [`process`][`crate::Process`] address, which is used in
-/// [`real node`][`crate::RealNode`] and [`virtual system`][`crate::VirtualSystem`]
-///  to route [`network messages`][crate::Message].
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="doccomment">/// [Process][crate::Process] address, which is used to route
+/// [network messages][crate::Message].
 </span><span class="attr">#[derive(Clone, Debug, PartialEq, PartialOrd, Hash, Eq, serde::Deserialize, serde::Serialize)]
 </span><span class="kw">pub struct </span>Address {
-    <span class="doccomment">/// Specifies host,
-    /// which is used to deliver messages
-    /// to the [real node][`crate::real::system::System`] instance
-    /// through the network.
+    <span class="doccomment">/// Specifies listen host of the owner node.
     </span><span class="kw">pub </span>host: String,
 
-    <span class="doccomment">/// Specifies port,
-    /// which is used to deliver messages
-    /// to the [real node][`crate::real::system::System`] instance
-    /// through the network.
+    <span class="doccomment">/// Specifies listen port of the owner node.
     </span><span class="kw">pub </span>port: u16,
 
-    <span class="doccomment">/// Specifies process name
-    /// inside of the [real node][`crate::real::system::System`] instance.
+    <span class="doccomment">/// Specifies process name within the owner node.
     </span><span class="kw">pub </span>process_name: String,
 }
 
@@ -278,14 +234,14 @@
         }
     }
 
-    <span class="doccomment">/// Creates new address instance from string slices.
+    <span class="doccomment">/// Creates new address instance from string slice.
     </span><span class="kw">pub fn </span>new_ref(host: <span class="kw-2">&amp;</span>str, port: u16, process_name: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::new(host.to_owned(), port, process_name.to_owned())
     }
 
     <span class="doccomment">/// Creates new node address instance with empty process name.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new_node_address(host: String, port: u16) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>::new(host, port, <span class="string">""</span>.to_owned())
+        <span class="self">Self</span>::new(host, port, String::new())
     }
 }
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"type":["SendError","SendResult"]};
+window.SIDEBAR_ITEMS = {"enum":["SendError"],"type":["SendResult"]};

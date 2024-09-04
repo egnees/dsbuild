@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/lib.rs`."><title>lib.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="dsbuild" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../dsbuild/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/lib.rs`."><title>lib.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="dsbuild" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -32,36 +30,122 @@
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
 <a href="#32" id="32">32</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Framework for building distributed systems with support for
-//! [DSLab MP](https://osukhoroslov.github.io/dslab/docs/dslab_mp/index.html)
-//! simulation-based testing.
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
+<a href="#49" id="49">49</a>
+<a href="#50" id="50">50</a>
+<a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+</pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
-</span><span class="comment">// Add warnings for missing public documentation.
-</span><span class="attr">#![warn(missing_docs)]
+</span><span class="doccomment">//! DSbuild is a high-level framework aimed to provide foundation for building
+//! distributed systems with support for simulation-based testing. The framework
+//! guarantees system behaviour will be consistent in both virtual and real
+//! modes, which can significantly simplify testing and debugging.
+//!
+//! ## Basic concepts
+//!
+//! DSbuild supports building aribitary distributed systems which are composed of
+//! user-defined _processes_. Processes can interact with _network_, _file system_, _time_ and user.
+//! Using framework, the implemented systems can run in the real word environment on
+//! the single work station (_real mode_) or on multiple virtual _nodes_ within the _simulation_.
+//!
+//! **Real mode**. Using real mode, system can run in the real world environment with ability
+//! to communicate in network, use file system and time. The primitives provided by DSBuild
+//! guarantees system behaviour consistency in real mode and simulation.
+//!
+//! **Simulation**. The main purpose of simulation is to make process of testing distributed systems easy.
+//! Network, time and file system are mocked in the simulation. It allows user to get
+//! fine-grained control over them and set it's parameters according to the particular system specification.
+//! User can create few virtual nodes and run the implemented distributed system on them. Framework guarantees
+//! that behaviour of system in simulation will be the same as in real mode with respect to user settings of
+//! virtual environment. This approach allows to test and debug system in very complicated scenarios
+//! which can help user to find deep bugs and significantly increase system reliability. Also, as the sources of
+//! system random behaviour are deterministically mocked in simulation, it guarantees reproducibility of results
+//! from launch to launch.
+//!
+//! **Node**. Node hosts processes and manages network, file system and time. In simulation there can be several
+//! nodes communicating in the network. User can disconnect it from network or crash. In the real mode there is only
+//! one node corresponding to user's work station. It both modes processes on the same node share access to network,
+//! file system and time.
+//!
+//! **Network**. In simulation, network represents abstraction other the nodes' communication environment.
+//! User can control delay and drop rate of network. Also, simulation allows to make network partitions
+//! or disconnect nodes from it.
+//!
+//! **File system**. File system represents abstraction over node's storage. In real mode it allows to
+//! manipulate with files in the specified dirrectory. In virtual mode file system is simulated and allows
+//! user to configure bandwith and other settings of the node storage.
+//!
+//! **Process**. Processes implemented by user define behaviour of the system. In particular, user can specify
+//! response of process on previously set timer fired event or when process receives message from other
+//! process via network. Process can interact with the outside world (simulation or real environment).
+//! It particular, process can exchange messages with other processes using network,
+//! request read or write to the node's file system, set timers and send local messages to user.
+//! DSBuild allows processes to use both callbacks and asynchronous programming approach to cope with the
+//! tasks listed above.
 
-</span><span class="comment">// Add warnings for missing in private documentation (disabled for now).
-// #![warn(clippy::missing_docs_in_private_items)]
-
+</span><span class="comment">////////////////////////////////////////////////////////////////////////////////
 </span><span class="kw">mod </span>real;
 
 <span class="comment">// Re-export public entities.
 </span><span class="kw">pub use </span>real::io::IOProcessWrapper;
 <span class="kw">pub use </span>real::node::Node <span class="kw">as </span>RealNode;
 
-<span class="kw">mod </span>virt;
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="kw">mod </span>sim;
 
 <span class="comment">// Re-export public entities.
-</span><span class="kw">pub use </span>virt::system::System <span class="kw">as </span>VirtualSystem;
+</span><span class="kw">pub use </span>sim::system::Sim;
 
-<span class="kw">mod </span>common;
-<span class="kw">pub use </span>common::storage;
+<span class="comment">////////////////////////////////////////////////////////////////////////////////
+
+</span><span class="kw">mod </span>common;
 
 <span class="comment">// Re-export public entities.
 </span><span class="kw">pub use </span>common::{
     context::Context,
-    message::Message,
+    fs::{File, FsError, FsResult},
+    message::{Message, Tag},
     network::{SendError, SendResult},
     process::{Address, Process, ProcessGuard, ProcessWrapper},
-    tag::Tag,
 };
 </code></pre></div></section></main></body></html>

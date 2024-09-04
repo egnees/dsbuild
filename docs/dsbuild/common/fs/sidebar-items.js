@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FileVariant","FsError"],"struct":["File"],"type":["FsResult"]};
