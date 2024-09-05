@@ -79,7 +79,7 @@ pub fn parse_request(req: &str) -> Result<ClientRequestKind, ParseError> {
         bad_syntax("request must start with /")
     } else {
         let keys = req
-            .split(|c| c == ' ' || c == '\n')
+            .split([' ', '\n'])
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>();
 
