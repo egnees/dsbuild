@@ -27,16 +27,16 @@
 //! from launch to launch.
 //!
 //! **Node**. Node hosts processes and manages network, file system and time. In simulation there can be several
-//! nodes communicating in the network. User can disconnect it from network or crash. In the real mode there is only
-//! one node corresponding to user's work station. It both modes processes on the same node share access to network,
-//! file system and time.
+//! nodes communicating in the virtual network, which are launched withing the single OS thread. User can disconnect it
+//! from network or crash. In the real mode nodes can be launched on different physical hosts and communicate
+//! in the real network. It both modes processes on the same node share access to network, file system and time.
 //!
 //! **Network**. In simulation, network represents abstraction other the nodes' communication environment.
 //! User can control delay and drop rate of network. Also, simulation allows to make network partitions
 //! or disconnect nodes from it.
 //!
 //! **File system**. File system represents abstraction over node's storage. In real mode it allows to
-//! manipulate with files in the specified dirrectory. In virtual mode file system is simulated and allows
+//! manipulate with files in the specified dirrectory. In simulation file system is virtual and allows
 //! user to configure bandwith and other settings of the node storage.
 //!
 //! **Process**. Processes implemented by user define behaviour of the system. In particular, user can specify
