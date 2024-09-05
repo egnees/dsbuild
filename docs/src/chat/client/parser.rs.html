@@ -212,7 +212,7 @@
         bad_syntax(<span class="string">"request must start with /"</span>)
     } <span class="kw">else </span>{
         <span class="kw">let </span>keys = req
-            .split(|c| c == <span class="string">' ' </span>|| c == <span class="string">'\n'</span>)
+            .split([<span class="string">' '</span>, <span class="string">'\n'</span>])
             .filter(|s| !s.is_empty())
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
