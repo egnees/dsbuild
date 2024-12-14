@@ -113,6 +113,18 @@ where
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
+/// Allows to rewrite file.
+/// If file does not exists, it will be created.
+/// Panics in case of I/O failure.
+pub async fn rewrite_file<T>(file_path: &'static str, content: Vec<T>, ctx: Context)
+where
+    T: Serialize,
+{
+    
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
 #[cfg(test)]
 mod tests {
     use std::{fmt::Debug, marker::PhantomData};
