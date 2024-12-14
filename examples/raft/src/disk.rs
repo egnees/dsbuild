@@ -120,7 +120,18 @@ pub async fn rewrite_file<T>(file_path: &'static str, content: Vec<T>, ctx: Cont
 where
     T: Serialize,
 {
-    
+    // if file already exists, remove it
+    if ctx.file_exists(file_path).await.unwrap() {
+        ctx.delete_file(file_path).await.unwrap();
+    }
+
+    // create file
+    ctx.create_file(file_path).await.unwrap();
+
+    // append values one by one
+    for value in content {
+        append_value(file_path, value, ctx.clone()).await;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +145,7 @@ mod tests {
 
     use crate::disk::{append_value, read_last_value};
 
-    use super::read_all_values;
+    use super::{read_all_values, rewrite_file};
 
     //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -143,6 +154,7 @@ mod tests {
     const APPEND: &str = "append";
     const READ: &str = "read";
     const READ_ALL: &str = "read_all";
+    const REWRITE: &str = "rewrite";
     const FILE_PATH: &str = "file_path";
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -166,6 +178,9 @@ mod tests {
                     let read_values = read_all_values::<T>(FILE_PATH, ctx).await;
                     let true_values = msg.get_data::<Vec<T>>().unwrap();
                     assert_eq!(true_values, read_values);
+                } else if msg.get_tip() == REWRITE {
+                    let new_value = msg.get_data::<Vec<T>>().unwrap();
+                    rewrite_file(FILE_PATH, new_value, ctx).await;
                 } else {
                     let value = msg.get_data::<T>().unwrap();
                     append_value(FILE_PATH, value, ctx).await;
@@ -191,15 +206,19 @@ mod tests {
     //////////////////////////////////////////////////////////////////////////////////////////
 
     fn send_append_request<'a, T: Serialize + Deserialize<'a>>(sim: &mut Sim, x: &'a T) {
-        sim.send_local_message(PROCESS, NODE, Message::new(APPEND, &x).unwrap());
+        sim.send_local_message(PROCESS, NODE, Message::new(APPEND, x).unwrap());
     }
 
     fn send_read_request<'a, T: Serialize + Deserialize<'a>>(sim: &mut Sim, x: &'a T) {
-        sim.send_local_message(PROCESS, NODE, Message::new(READ, &x).unwrap());
+        sim.send_local_message(PROCESS, NODE, Message::new(READ, x).unwrap());
     }
 
     fn send_read_all_request<'a, T: Serialize + Deserialize<'a>>(sim: &mut Sim, x: &'a Vec<T>) {
-        sim.send_local_message(PROCESS, NODE, Message::new(READ_ALL, &x).unwrap());
+        sim.send_local_message(PROCESS, NODE, Message::new(READ_ALL, x).unwrap());
+    }
+
+    fn send_rewrite_request<'a, T: Serialize + Deserialize<'a>>(sim: &mut Sim, x: &'a Vec<T>) {
+        sim.send_local_message(PROCESS, NODE, Message::new(REWRITE, x).unwrap());
     }
 
     fn wait(sim: &mut Sim) {
@@ -342,6 +361,8 @@ mod tests {
         wait(&mut sim);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     #[test]
     fn read_all_works() {
         let mut sim = make_sim::<i64>(1 << 10);
@@ -353,4 +374,27 @@ mod tests {
         send_read_all_request(&mut sim, &(0..100).collect::<Vec<i64>>());
         wait(&mut sim);
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    
+    #[test]
+    fn rewrite_works() {
+        let mut sim = make_sim::<i64>(1 << 15);
+        for i in 0..100i64 {
+            send_append_request(&mut sim, &i);
+        }
+        wait(&mut sim);
+
+        let v1 = (0..75i64).map(|x| x * x).collect::<Vec<i64>>();
+        send_rewrite_request(&mut sim, &v1);
+        wait(&mut sim);
+
+        send_read_all_request(&mut sim, &v1);
+        wait(&mut sim);
+
+        let v2 = (0..125i64).map(|x| x * 2).collect::<Vec<i64>>();
+        send_rewrite_request(&mut sim, &v2);
+        wait(&mut sim);
+    }
+
 }
