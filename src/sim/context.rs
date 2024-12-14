@@ -151,6 +151,17 @@ impl VirtualContext {
         SendFuture::from_future(future)
     }
 
+    /// Delete file with specified name.
+    pub fn delete_file<'a>(&'a self, name: &'a str) -> Sf<'a, FsResult<()>> {
+            let future = async move {
+                Ok(self
+                    .dslab_ctx
+                    .delete_file(name)?)
+            };
+    
+            SendFuture::from_future(future)
+        }
+
     /// Check if file exists.
     pub fn file_exists<'a>(&'a self, name: &'a str) -> Sf<'a, FsResult<bool>> {
         SendFuture::from_future(async move { Ok(self.dslab_ctx.file_exists(name)?) })

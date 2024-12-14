@@ -179,6 +179,19 @@ impl Context {
         }
     }
 
+    /// Allows to delete file.
+    ///
+    /// If [`NotFound`][`crate::FsError::NotFound`] error is returned,
+    /// file was not found. Note, that the inverse is not true. If file not exists,
+    /// its removal may fail for a numbers of reasons, such as not sufficient
+    /// permissions.
+    pub async fn delete_file<'a>(&'a self, name: &'a str) -> FsResult<()> {
+        match &self.context_variant {
+            ContextVariant::Real(ctx) => ctx.delete_file(name).await,
+            ContextVariant::Virtual(ctx) => ctx.delete_file(name).await,
+        }
+    }
+
     /// Allows to check if file exists.
     pub async fn file_exists<'a>(&'a self, name: &'a str) -> FsResult<bool> {
         match &self.context_variant {
