@@ -1,4 +1,5 @@
 use dsbuild::Context;
+use serde::{Deserialize, Serialize};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -7,7 +8,7 @@ use dsbuild::Context;
 /// If no values present in file or file not exists, returns [None].
 pub async fn read_last_value<T>(file_path: &'static str, ctx: Context) -> Option<T>
 where
-    for<'a> T: serde::Deserialize<'a>,
+    for<'a> T: Deserialize<'a>,
 {
     if !ctx.file_exists(file_path).await.unwrap() {
         return None;
@@ -42,11 +43,51 @@ where
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
+/// Allows to read all values from file.
+/// Panics in case of I/O failure.
+pub async fn read_all_values<T>(file_path: &'static str, ctx: Context) -> Vec<T>
+where
+    for<'a> T: Deserialize<'a>,
+{
+    if !ctx.file_exists(file_path).await.unwrap() {
+        return Default::default();
+    }
+
+    let mut res = Vec::new();
+    let mut file = ctx.open_file(file_path).await.unwrap();
+
+    let mut offset = 0;
+    let mut buffer = [0u8; 4096];
+    let mut last_one = Vec::new();
+
+    loop {
+        let bytes = file.read(offset, &mut buffer).await.unwrap();
+        if bytes == 0 {
+            break;
+        }
+        offset += bytes;
+        for c in buffer[..bytes as usize].iter().copied() {
+            if c == b'\n' {
+                let current_value: T = serde_json::from_slice(last_one.as_slice()).unwrap();
+                res.push(current_value);
+                last_one.clear();
+            } else {
+                last_one.push(c);
+            }
+        }
+    }
+
+    res
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
 /// Allows to append value in the file.
 /// If file not present, it will be created.
+/// Panics in case of I/O failure.
 pub async fn append_value<T>(file_path: &'static str, value: T, ctx: Context)
 where
-    T: serde::Serialize,
+    T: Serialize,
 {
     let mut file = if ctx.file_exists(file_path).await.unwrap() {
         ctx.open_file(file_path).await.unwrap()
@@ -78,12 +119,15 @@ mod tests {
 
     use crate::disk::{append_value, read_last_value};
 
+    use super::read_all_values;
+
     //////////////////////////////////////////////////////////////////////////////////////////
 
     const NODE: &str = "node";
     const PROCESS: &str = "process";
     const APPEND: &str = "append";
     const READ: &str = "read";
+    const READ_ALL: &str = "read_all";
     const FILE_PATH: &str = "file_path";
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -98,13 +142,17 @@ mod tests {
         T: Send + Sync + for<'a> Deserialize<'a> + Serialize + PartialEq + Debug + 'static,
     {
         fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
-            let value = msg.get_data::<T>().unwrap();
-            let read_request = msg.get_tip() == READ;
             ctx.clone().spawn(async move {
-                if read_request {
+                if msg.get_tip() == READ {
                     let read_value = read_last_value::<T>(FILE_PATH, ctx).await.unwrap();
-                    assert_eq!(value, read_value);
+                    let true_value = msg.get_data::<T>().unwrap();
+                    assert_eq!(true_value, read_value);
+                } else if msg.get_tip() == READ_ALL {
+                    let read_values = read_all_values::<T>(FILE_PATH, ctx).await;
+                    let true_values = msg.get_data::<Vec<T>>().unwrap();
+                    assert_eq!(true_values, read_values);
                 } else {
+                    let value = msg.get_data::<T>().unwrap();
                     append_value(FILE_PATH, value, ctx).await;
                 }
             });
@@ -133,6 +181,10 @@ mod tests {
 
     fn send_read_request<'a, T: Serialize + Deserialize<'a>>(sim: &mut Sim, x: &'a T) {
         sim.send_local_message(PROCESS, NODE, Message::new(READ, &x).unwrap());
+    }
+
+    fn send_read_all_request<'a, T: Serialize + Deserialize<'a>>(sim: &mut Sim, x: &'a Vec<T>) {
+        sim.send_local_message(PROCESS, NODE, Message::new(READ_ALL, &x).unwrap());
     }
 
     fn wait(sim: &mut Sim) {
@@ -272,6 +324,18 @@ mod tests {
         wait(&mut sim);
 
         send_read_request(&mut sim, &custom2);
+        wait(&mut sim);
+    }
+
+    #[test]
+    fn read_all_works() {
+        let mut sim = make_sim::<i64>(1 << 10);
+        for i in 0..100i64 {
+            send_append_request(&mut sim, &i);
+        }
+        wait(&mut sim);
+
+        send_read_all_request(&mut sim, &(0..100).collect::<Vec<i64>>());
         wait(&mut sim);
     }
 }
