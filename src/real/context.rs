@@ -215,6 +215,23 @@ impl RealContext {
             .map(File::from_real)
     }
 
+    /// Delete file with specified name.
+    pub async fn delete_file<'a>(&'a self, name: &'a str) -> FsResult<()> {
+        let mount_dir = self.mount_dir.clone();
+
+        if !self.file_exists(name).await? {
+            return Err(FsError::NotFound);
+        }
+
+        async_std::fs::remove_file(mount_dir + "/" + name)
+            .await
+            .map_err(|e| match e.kind() {
+                ErrorKind::NotFound => FsError::NotFound,
+                _ => FsError::Unavailable,
+            })
+            .map(|_| ())
+    }
+
     /// Open file with specified name.
     pub async fn open_file<'a>(&'a self, name: &'a str) -> FsResult<File> {
         let mount_dir = self.mount_dir.clone();
