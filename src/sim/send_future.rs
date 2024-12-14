@@ -28,7 +28,7 @@ where
     }
 }
 
-impl<'a, T> Future for SendFuture<'a, T>
+impl<T> Future for SendFuture<'_, T>
 where
     T: Send,
 {
@@ -44,7 +44,7 @@ where
 
 /// Formally implementation of [`Send`] trait,
 /// besides [`SendFuture`] will not be shared between threads.
-unsafe impl<'a, T> Send for SendFuture<'a, T> where T: Send {}
+unsafe impl<T> Send for SendFuture<'_, T> where T: Send {}
 
 /// Represents alias on [`Send`] future.
 pub type Sf<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
