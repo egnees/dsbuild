@@ -3,18 +3,17 @@ use serde::{Deserialize, Serialize};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-/// Allows to read last value from file.
+/// Allows to read values from file and invoke provided method for them.
 /// Panics in case of I/O failure.
-/// If no values present in file or file not exists, returns [None].
-pub async fn read_last_value<T>(file_path: &'static str, ctx: Context) -> Option<T>
+/// In case file does not exists do nothing.
+async fn read_values<T>(file_path: &'static str, mut f: impl FnMut(T), ctx: Context)
 where
     for<'a> T: Deserialize<'a>,
 {
     if !ctx.file_exists(file_path).await.unwrap() {
-        return None;
+        return;
     }
 
-    let mut res = Option::default();
     let mut file = ctx.open_file(file_path).await.unwrap();
 
     let mut offset = 0;
@@ -30,13 +29,34 @@ where
         for c in buffer[..bytes as usize].iter().copied() {
             if c == b'\n' {
                 let current_value: T = serde_json::from_slice(last_one.as_slice()).unwrap();
-                res.replace(current_value);
+                f(current_value);
                 last_one.clear();
             } else {
                 last_one.push(c);
             }
         }
     }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+/// Allows to read last value from file.
+/// Panics in case of I/O failure.
+/// If no values present in file or file not exists, returns [None].
+pub async fn read_last_value<T>(file_path: &'static str, ctx: Context) -> Option<T>
+where
+    for<'a> T: Deserialize<'a>,
+{
+    let mut res = Option::default();
+
+    read_values::<T>(
+        file_path,
+        |value| {
+            res.replace(value);
+        },
+        ctx,
+    )
+    .await;
 
     res
 }
@@ -49,33 +69,16 @@ pub async fn read_all_values<T>(file_path: &'static str, ctx: Context) -> Vec<T>
 where
     for<'a> T: Deserialize<'a>,
 {
-    if !ctx.file_exists(file_path).await.unwrap() {
-        return Default::default();
-    }
-
     let mut res = Vec::new();
-    let mut file = ctx.open_file(file_path).await.unwrap();
 
-    let mut offset = 0;
-    let mut buffer = [0u8; 4096];
-    let mut last_one = Vec::new();
-
-    loop {
-        let bytes = file.read(offset, &mut buffer).await.unwrap();
-        if bytes == 0 {
-            break;
-        }
-        offset += bytes;
-        for c in buffer[..bytes as usize].iter().copied() {
-            if c == b'\n' {
-                let current_value: T = serde_json::from_slice(last_one.as_slice()).unwrap();
-                res.push(current_value);
-                last_one.clear();
-            } else {
-                last_one.push(c);
-            }
-        }
-    }
+    read_values::<T>(
+        file_path,
+        |value| {
+            res.push(value);
+        },
+        ctx,
+    )
+    .await;
 
     res
 }
