@@ -15,13 +15,22 @@ pub struct ReadValueRequest {
     pub min_commit_id: Option<usize>,
 }
 
-const READ_VALUE_REQUEST: &str = "read_value_request";
+pub const READ_VALUE_REQUEST: &str = "read_value_request";
+
+impl From<Message> for ReadValueRequest {
+    fn from(message: Message) -> Self {
+        assert_eq!(message.get_tip(), READ_VALUE_REQUEST);
+        message.get_data::<ReadValueRequest>().unwrap()
+    }
+}
 
 impl From<ReadValueRequest> for Message {
     fn from(request: ReadValueRequest) -> Self {
         Message::new(READ_VALUE_REQUEST, &request).unwrap()
     }
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////
 
 /// Represents response on reading value
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
@@ -36,7 +45,7 @@ pub struct ReadValueResponse {
     pub redirected_to: Option<usize>,
 }
 
-const READ_VALUE_RESPONSE: &str = "read_value_response";
+pub const READ_VALUE_RESPONSE: &str = "read_value_response";
 
 impl From<Message> for ReadValueResponse {
     fn from(message: Message) -> Self {

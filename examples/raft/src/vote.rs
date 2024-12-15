@@ -21,7 +21,7 @@ pub struct VoteRequest {
     pub last_log_term: i64,
 }
 
-const VOTE_REQUEST: &str = "vote_request";
+pub const VOTE_REQUEST: &str = "vote_request";
 
 impl From<Message> for VoteRequest {
     fn from(msg: Message) -> Self {
@@ -53,7 +53,7 @@ pub struct VoteResponse {
     pub vote_granted: bool,
 }
 
-const VOTE_RESPONSE: &str = "vote_response";
+pub const VOTE_RESPONSE: &str = "vote_response";
 
 impl From<Message> for VoteResponse {
     fn from(msg: Message) -> Self {

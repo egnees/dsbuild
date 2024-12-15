@@ -31,7 +31,7 @@ pub struct AppendEntriesRequest {
     pub leaders_commit: i64,
 }
 
-const APPEND_ENTRIES_REQUEST: &str = "append_entries_request";
+pub const APPEND_ENTRIES_REQUEST: &str = "append_entries_request";
 
 impl From<Message> for AppendEntriesRequest {
     fn from(msg: Message) -> Self {
@@ -68,7 +68,7 @@ pub struct AppendEntriesResponse {
     pub commit_index: i64,
 }
 
-const APPEND_ENTRIES_RESPONSE: &str = "append_entries_response";
+pub const APPEND_ENTRIES_RESPONSE: &str = "append_entries_response";
 
 impl From<Message> for AppendEntriesResponse {
     fn from(msg: Message) -> Self {

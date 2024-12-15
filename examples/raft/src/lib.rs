@@ -1,9 +1,10 @@
 mod append;
-mod cmd;
+pub mod cmd;
 mod db;
 mod disk;
-mod local;
+pub mod local;
 mod log;
+pub mod proc;
 mod role;
 mod state;
 mod vote;

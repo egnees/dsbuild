@@ -51,7 +51,7 @@ impl Command {
     }
 }
 
-const COMMAND: &str = "command";
+pub const COMMAND: &str = "command";
 
 impl From<Message> for Command {
     fn from(message: Message) -> Self {
@@ -91,7 +91,7 @@ impl Reply {
     }
 }
 
-const COMMAND_REPLY: &str = "command_reply";
+pub const COMMAND_REPLY: &str = "command_reply";
 
 impl From<Message> for Reply {
     fn from(message: Message) -> Self {

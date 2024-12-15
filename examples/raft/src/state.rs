@@ -1,5 +1,3 @@
-use std::ops::Div;
-
 use dsbuild::{Address, Context, Message};
 
 use crate::{
@@ -47,8 +45,8 @@ pub struct RaftState {
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-const ELECTION_TIMER_NAME: &str = "election_timer";
-const HEARTBEAT_TIMER_NAME: &str = "heartbeat_timer";
+pub const ELECTION_TIMER_NAME: &str = "election_timer";
+pub const HEARTBEAT_TIMER_NAME: &str = "heartbeat_timer";
 
 const VOTE_FOR_FILENAME: &str = "vote_for.txt";
 const CURRENT_TERM_FILENAME: &str = "current_term.txt";
@@ -58,13 +56,17 @@ const LOG_FILENAME: &str = "log.txt";
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
+pub const INITIALIZE_REQUEST: &str = "initialize_request";
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
 impl RaftState {
     pub fn new(nodes: Vec<Address>, my_id: usize, net_rtt: f64) -> Self {
         Self {
             nodes,
             my_id,
             election_timeout: net_rtt * 20.,
-            heartbeat_timeout: net_rtt * 4.,
+            heartbeat_timeout: net_rtt * 2.,
             net_rtt,
             vote_for: None,
             current_term: 0,
@@ -320,7 +322,7 @@ impl RaftState {
         if let Role::Candidate(mut votes_granted) = self.role {
             votes_granted += 1;
             self.role = Role::Candidate(votes_granted);
-            if votes_granted >= self.nodes.len().div(2) + 1 {
+            if votes_granted > self.nodes.len() / 2 {
                 self.transit_to_leader(ctx);
             }
         }
@@ -350,7 +352,7 @@ impl RaftState {
         self.set_heartbeat_timer(ctx);
 
         // here we should start transfer logs to other replicas
-        todo!("transfer logs to other replicas")
+        // which will be done after replicas response on heartbeats
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -399,7 +401,7 @@ impl RaftState {
 
         // candidate's log should be at least up-to-date as mine
         (vote_request.last_log_term, vote_request.last_log_index)
-            >= (self.get_last_log_term(), self.get_last_log_index())
+            >= (self.last_log_term(), self.last_log_index())
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -415,7 +417,7 @@ impl RaftState {
             append_request.term,
         );
         self.current_term == term
-            && self.get_last_log_index() >= log_index
+            && self.last_log_index() >= log_index
             && self.get_log_term(log_index) == log_term
     }
 
@@ -424,7 +426,7 @@ impl RaftState {
         // find number of equal elements
         let mut equals_cnt = 0;
         let prev_index = request.prev_log_index;
-        let last_index = self.get_last_log_index();
+        let last_index = self.last_log_index();
         while prev_index + equals_cnt <= last_index && equals_cnt < request.entries.len() as i64 {
             equals_cnt += 1;
         }
@@ -489,11 +491,30 @@ impl RaftState {
 
     // i send append entries as responses on heartbeats's responses
     fn send_append_entries_request(&self, receiver_id: usize, ctx: Context) {
-        todo!()
+        // get index of log entry to send
+        let next_index = if let Role::Leader(info) = &self.role {
+            info.next_index[receiver_id]
+        } else {
+            panic!("only leader can send append entries requests")
+        };
+
+        // next index must be >= 0
+        assert!(next_index >= 0 && next_index <= self.last_log_index() + 1);
+
+        // create request and send it
+        let request = self.make_append_request(next_index - 1);
+        self.send_async_message(request.into(), receiver_id, ctx);
     }
 
-    fn try_forward_commit_index(&self) {
-        todo!()
+    // allows to increase commit index on leader according to 'majority' rule
+    fn try_forward_commit_index(&mut self) {
+        if let Role::Leader(info) = &mut self.role {
+            let new_commit_index = info.commit_index();
+            assert!(new_commit_index <= self.commit_index);
+            self.commit_index = new_commit_index;
+        } else {
+            panic!("only leader can forward commit index according to majority rule")
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -510,12 +531,12 @@ impl RaftState {
     }
 
     /// Returns index of the last log (or -1 if there are no logs)
-    fn get_last_log_index(&self) -> i64 {
+    fn last_log_index(&self) -> i64 {
         self.log.len() as i64 - 1
     }
 
     /// Returns term of the last log (or -1 if there are no logs)
-    fn get_last_log_term(&self) -> i64 {
+    fn last_log_term(&self) -> i64 {
         self.log.last().map(|e| e.term as i64).unwrap_or(-1)
     }
 
@@ -570,7 +591,7 @@ impl RaftState {
             term: self.current_term,
             success: match_index.is_some(),
             match_index: match_index.unwrap_or(-1),
-            commit_index: self.commit_index
+            commit_index: self.commit_index,
         }
     }
 
