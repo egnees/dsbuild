@@ -1,7 +1,7 @@
 use dsbuild::Message;
 use serde::{Deserialize, Serialize};
 
-use crate::{log::LogEntries, vote::VoteRequest};
+use crate::log::LogEntries;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 

@@ -2,7 +2,8 @@ use dsbuild::{Address, Context, Message};
 
 use crate::{
     append::{AppendEntriesRequest, AppendEntriesResponse},
-    disk::{append_value, read_all_values, read_last_value},
+    db::DataBase,
+    disk::{append_value, read_all_values, read_last_value, rewrite_file},
     log::{LogEntries, LogEntry},
     role::{LeaderInfo, Role},
     vote::{VoteRequest, VoteResponse},
@@ -35,6 +36,9 @@ pub struct RaftState {
     /// should increase while last_applied < commit_index
     /// (0-indexing)
     last_applied: i64,
+
+    /// Instance of maintaining database
+    db: DataBase,
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -64,6 +68,7 @@ impl RaftState {
             role: Role::Follower(None),
             commit_index: -1,
             last_applied: -1,
+            db: Default::default(),
         }
     }
 
@@ -309,7 +314,8 @@ impl RaftState {
             && self.get_log_term(log_index) == log_term
     }
 
-    pub async fn update_log(&mut self, request: &AppendEntriesRequest) {
+    pub async fn update_log(&mut self, request: &AppendEntriesRequest, ctx: Context) {
+        // find number of equal elements
         let mut equals_cnt = 0;
         let prev_index = request.prev_log_index;
         let last_index = self.get_last_log_index();
@@ -319,14 +325,40 @@ impl RaftState {
 
         // then not all elements matches and we need extend log (with rewriting maybe)
         if equals_cnt != request.entries.len() as i64 {
+            // remove conflicts
             let new_len = prev_index + equals_cnt + 1;
-            let need_rewrite_file = new_len != self.log.len() as i64;
+            let mut need_rewrite_file = false;
             while self.log.len() as i64 != new_len {
+                need_rewrite_file = true;
                 self.log.pop();
             }
-            self.log
-                .append(&mut request.entries[..equals_cnt as usize].to_vec());
-            if need_rewrite_file {}
+
+            // if there is some inconsistency with leader's log,
+            // i need solve conflicts by rewriting file with only non-conflict part.
+            if need_rewrite_file {
+                rewrite_file(LOG_FILENAME, self.log.clone(), ctx.clone()).await;
+            }
+
+            // get entries which must be appended
+            let mut entries_to_append = request.entries[..equals_cnt as usize].to_vec();
+
+            // append them in file and in ram log
+            for entry in entries_to_append.iter() {
+                append_value(LOG_FILENAME, entry.clone(), ctx.clone()).await;
+            }
+            self.log.append(&mut entries_to_append);
+        }
+    }
+
+    pub fn update_commit_index_and_apply_commands(&mut self, request: &AppendEntriesRequest) {
+        if self.commit_index < request.leaders_commit {
+            self.commit_index = request.leaders_commit;
+        }
+        while self.last_applied < self.commit_index {
+            self.last_applied += 1;
+            let reply = self
+                .db
+                .apply_command(self.log[self.last_applied as usize].command.clone());
         }
     }
 

@@ -376,7 +376,7 @@ mod tests {
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
-    
+
     #[test]
     fn rewrite_works() {
         let mut sim = make_sim::<i64>(1 << 15);
@@ -396,5 +396,4 @@ mod tests {
         send_rewrite_request(&mut sim, &v2);
         wait(&mut sim);
     }
-
 }
