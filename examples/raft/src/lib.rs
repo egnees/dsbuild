@@ -2,6 +2,7 @@ mod append;
 mod cmd;
 mod db;
 mod disk;
+mod local;
 mod log;
 mod role;
 mod state;

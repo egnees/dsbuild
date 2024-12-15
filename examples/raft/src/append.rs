@@ -60,6 +60,12 @@ pub struct AppendEntriesResponse {
     /// True if follower contained logs matching passed
     /// [`AppendEntriesRequest::prev_log_index`] and [`AppendEntriesRequest::prev_log_term`]
     pub success: bool,
+
+    /// Represents last index matched in leader's and responder's logs
+    pub match_index: i64,
+
+    /// Commit index of the respondent
+    pub commit_index: i64,
 }
 
 const APPEND_ENTRIES_RESPONSE: &str = "append_entries_response";

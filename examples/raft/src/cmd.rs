@@ -1,15 +1,30 @@
+use dsbuild::Message;
 use serde::{Deserialize, Serialize};
 
 pub type KeyType = String;
 pub type ValueType = String;
 
-/// Allows to get async reply
-pub type RequestToken = usize;
-
 //////////////////////////////////////////////////////////////////////////////////////////
 
-/// Composed of server id and command seq number
-pub type CommandId = (usize, usize);
+/// Composed of server id and command sequence number
+///
+/// Every command repsonsible server, which is current leader.
+/// In case of server fail, client can not get response on
+/// committed command.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct CommandId(pub usize, pub usize);
+
+impl CommandId {
+    pub fn responsible_server(&self) -> usize {
+        self.0
+    }
+
+    pub fn sequence_number(&self) -> usize {
+        self.1
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
 
 /// Represents commands
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
@@ -32,10 +47,22 @@ pub struct Command {
 
 impl Command {
     pub fn new(tp: CommandType, id: CommandId) -> Self {
-        Self {
-            tp, 
-            id
-        }
+        Self { tp, id }
+    }
+}
+
+const COMMAND: &str = "command";
+
+impl From<Message> for Command {
+    fn from(message: Message) -> Self {
+        assert_eq!(message.get_tip(), COMMAND);
+        message.get_data::<Command>().unwrap()
+    }
+}
+
+impl From<Command> for Message {
+    fn from(command: Command) -> Self {
+        Message::new(COMMAND, &command).unwrap()
     }
 }
 
@@ -59,7 +86,22 @@ impl Reply {
         Self {
             status,
             info: info.to_owned(),
-            command_id
+            command_id,
         }
+    }
+}
+
+const COMMAND_REPLY: &str = "command_reply";
+
+impl From<Message> for Reply {
+    fn from(message: Message) -> Self {
+        assert_eq!(message.get_tip(), COMMAND_REPLY);
+        message.get_data::<Reply>().unwrap()
+    }
+}
+
+impl From<Reply> for Message {
+    fn from(reply: Reply) -> Self {
+        Message::new(COMMAND_REPLY, &reply).unwrap()
     }
 }
