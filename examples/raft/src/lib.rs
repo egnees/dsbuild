@@ -6,5 +6,6 @@ pub mod local;
 mod log;
 pub mod proc;
 mod role;
+pub mod sim;
 mod state;
 mod vote;

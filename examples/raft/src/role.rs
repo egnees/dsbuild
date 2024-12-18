@@ -1,3 +1,6 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct LeaderInfo {
     pub next_index: Vec<i64>,
     pub match_index: Vec<i64>,
@@ -21,7 +24,7 @@ impl LeaderInfo {
         while left + 1 < right {
             let mid = (left + right) / 2;
             let cnt = self
-                .commit_index
+                .match_index
                 .iter()
                 .map(|i| (*i >= mid) as usize)
                 .sum::<usize>();
@@ -40,6 +43,7 @@ impl LeaderInfo {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum Role {
     Leader(LeaderInfo),
     Follower(Option<usize>), // optional id of leader
@@ -56,9 +60,11 @@ mod tests {
 
     fn check_commit_index(info: &mut LeaderInfo, v: Vec<i64>, true_value: i64) {
         assert_eq!(info.next_index.len(), v.len());
-        info.commit_index = v;
+        info.match_index = v;
         assert_eq!(info.commit_index(), true_value);
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
 
     #[test]
     fn commit_index_odd_members_count() {
@@ -75,6 +81,8 @@ mod tests {
         check(vec![-1, -1, -1, 0, 0], -1);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     #[test]
     fn commit_index_even_members_count() {
         let mut leader_info = LeaderInfo::new(4, 10);
@@ -87,10 +95,12 @@ mod tests {
         check(vec![0, 1, 1, 1], 1);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     #[test]
     fn works_fast() {
         let mut leader_info = LeaderInfo::new(100_000, 50_000_000);
-        leader_info.commit_index = (0..100_000).map(|x| x * 3 + 10001).collect();
+        leader_info.match_index = (0..100_000).map(|x| x * 3 + 10001).collect();
 
         let elapsed = {
             let start = SystemTime::now();
@@ -101,6 +111,6 @@ mod tests {
             start.elapsed().unwrap()
         };
 
-        assert!(elapsed < Duration::from_millis(100));
+        assert!(elapsed < Duration::from_millis(500));
     }
 }

@@ -1,11 +1,13 @@
 use dsbuild::{Address, Context, Message};
+use log::info;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     append::{AppendEntriesRequest, AppendEntriesResponse},
     cmd::Command,
     db::DataBase,
     disk::{append_value, read_all_values, read_last_value, rewrite_file},
-    local::{ReadValueRequest, ReadValueResponse},
+    local::{InitializeResponse, LocalResponse, LocalResponseType, ReadValueRequest},
     log::{LogEntries, LogEntry},
     role::{LeaderInfo, Role},
     vote::{VoteRequest, VoteResponse},
@@ -17,6 +19,7 @@ pub struct RaftState {
     my_id: usize, // id of node in nodes list
     election_timeout: f64,
     heartbeat_timeout: f64,
+    dump_state_timeout: f64,
     net_rtt: f64, // round trip time in network
 
     /// Index of candidate node voted for in current term
@@ -54,9 +57,11 @@ const CURRENT_TERM_FILENAME: &str = "current_term.txt";
 /// File of [`LogEntries`]
 const LOG_FILENAME: &str = "log.txt";
 
+const SEQ_NUM_FILENAME: &str = "seq_num.txt";
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
-pub const INITIALIZE_REQUEST: &str = "initialize_request";
+pub const DUMP_STATE_TIMER_NAME: &str = "dump_state_timer";
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -65,8 +70,9 @@ impl RaftState {
         Self {
             nodes,
             my_id,
-            election_timeout: net_rtt * 20.,
+            election_timeout: net_rtt * 10.,
             heartbeat_timeout: net_rtt * 2.,
+            dump_state_timeout: net_rtt,
             net_rtt,
             vote_for: None,
             current_term: 0,
@@ -83,6 +89,9 @@ impl RaftState {
     //////////////////////////////////////////////////////////////////////////////////////////
 
     pub async fn initialize(&mut self, ctx: Context) {
+        // first set dump state timer
+        self.set_dump_state_timeout(ctx.clone());
+
         let last_term = read_last_value(CURRENT_TERM_FILENAME, ctx.clone()).await;
         if let Some(last_term) = last_term {
             self.current_term = last_term;
@@ -95,7 +104,19 @@ impl RaftState {
 
         self.log = read_all_values::<LogEntry>(LOG_FILENAME, ctx.clone()).await;
 
-        self.transit_to_follower(None, ctx);
+        info!("initialized proc[{}], log={:?}", self.my_id, self.log);
+
+        self.transit_to_follower(None, ctx.clone());
+
+        // finish initialization and response with last seq num
+        ctx.send_local(
+            InitializeResponse {
+                seq_num: read_last_value(SEQ_NUM_FILENAME, ctx.clone())
+                    .await
+                    .unwrap_or(0),
+            }
+            .into(),
+        );
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -117,35 +138,86 @@ impl RaftState {
         self.log.push(log_entry);
     }
 
+    async fn change_seq_num(&mut self, new_seq_num: usize, ctx: Context) {
+        append_value(SEQ_NUM_FILENAME, new_seq_num, ctx).await;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////
     // Hanlders for external events
     //////////////////////////////////////////////////////////////////////////////////////////
 
     pub async fn on_command_request(&mut self, command: Command, ctx: Context) {
-        self.append_log(LogEntry::new(self.current_term, command), ctx)
+        // if i am leader, i must increase my match index by one
+        let last_log_index = self.last_log_index();
+        let is_leader = if let Role::Leader(info) = &mut self.role {
+            info.match_index[self.my_id] = last_log_index + 1; // for the folowing append
+            true
+        } else {
+            false
+        };
+
+        // update sequence number
+        self.change_seq_num(command.id.sequence_number(), ctx.clone())
             .await;
+
+        // leader can append log entry
+        if is_leader {
+            self.append_log(LogEntry::new(self.current_term, command), ctx.clone())
+                .await;
+            self.forward_commit_index();
+            self.apply_commands(ctx);
+        } else {
+            // any other node must redirect command to leader (if it is known)
+            let response_tp = match &self.role {
+                Role::Leader(_) => panic!("impossible, as is_leader=false"),
+                Role::Candidate(_) | Role::Follower(None) => LocalResponseType::Unavailable(),
+                Role::Follower(Some(leader_id)) => {
+                    LocalResponseType::RedirectedTo(*leader_id, None)
+                }
+            };
+            ctx.send_local(LocalResponse::new(command.id, response_tp).into());
+        }
     }
 
-    pub fn on_read_value_request(&mut self, request: ReadValueRequest, ctx: Context) {
+    pub async fn on_read_value_request(&mut self, request: ReadValueRequest, ctx: Context) {
         let request_id = request.request_id;
-        let response = match self.role {
-            Role::Leader(_) => ReadValueResponse {
-                value: self.db.read_value(&request.key),
-                request_id,
-                redirected_to: None,
-            },
-            Role::Candidate(_) | Role::Follower(None) => ReadValueResponse {
-                value: None,
-                request_id,
-                redirected_to: Some(self.my_id),
-            },
-            Role::Follower(Some(leader_id)) => ReadValueResponse {
-                value: None,
-                request_id,
-                redirected_to: Some(leader_id),
-            },
+        self.change_seq_num(request_id.sequence_number(), ctx.clone())
+            .await;
+
+        let tp = match &self.role {
+            Role::Leader(_) => {
+                let replica = self.select_fresh_node(request_id.sequence_number());
+                if replica == self.my_id {
+                    LocalResponseType::ReadValue(self.db.read_value(&request.key))
+                } else {
+                    LocalResponseType::RedirectedTo(replica, Some(self.commit_index))
+                }
+            }
+            Role::Candidate(_) | Role::Follower(None) => LocalResponseType::Unavailable(),
+            Role::Follower(Some(leader_id)) => {
+                // follower which knows leader can answer the request
+                match request.min_commit_id {
+                    None => LocalResponseType::RedirectedTo(*leader_id, None),
+                    Some(idx) if idx <= self.commit_index => {
+                        LocalResponseType::ReadValue(self.db.read_value(&request.key))
+                    }
+                    Some(_) => LocalResponseType::RedirectedTo(*leader_id, None),
+                }
+            }
         };
+        let response = LocalResponse::new(request_id, tp);
         ctx.send_local(response.into());
+    }
+
+    fn select_fresh_node(&self, shift: usize) -> usize {
+        let node_cnt = self.nodes.len();
+        match &self.role {
+            Role::Leader(info) => (0..node_cnt)
+                .map(|i| (i + shift) % node_cnt)
+                .find(|node| info.commit_index[*node] == self.commit_index)
+                .unwrap(),
+            _ => panic!("only leader can select fresh node"),
+        }
     }
 
     pub async fn on_election_timeout(&mut self, ctx: Context) {
@@ -166,10 +238,11 @@ impl RaftState {
                 // vote for noone
                 self.change_vote_for(None, ctx.clone()).await;
 
-                // vote for myself
-                self.on_vote_request(self.make_vote_request(), ctx).await;
+                // broadcast vote request
+                self.broadcast_vote_request(ctx.clone());
 
-                // election timer still persists
+                // reset election timer
+                self.set_election_timer(ctx);
             }
         }
     }
@@ -196,12 +269,18 @@ impl RaftState {
                 });
             });
 
-        // heatbeat timer still persists
+        // reset heartbeat timer
+        self.set_heartbeat_timer(ctx);
     }
 
     // i must send answer on every append entries,
     // because leader send append entries as responses on heartbeats
     pub async fn on_append_entries_request(&mut self, request: AppendEntriesRequest, ctx: Context) {
+        info!(
+            "APPEND REQUEST:  id={},  term={},  request={:?}",
+            self.my_id, self.current_term, request
+        );
+
         // transit to follower if received message from future term
         self.check_term_and_mb_become_follower(request.term, ctx.clone())
             .await;
@@ -225,6 +304,7 @@ impl RaftState {
         }
 
         // here i can be only in follower role
+        self.reset_election_timer(ctx.clone());
 
         // try to apply logs
         let can_append_entries = self.can_append_entries(&request);
@@ -247,8 +327,17 @@ impl RaftState {
         response: AppendEntriesResponse,
         ctx: Context,
     ) {
+        info!(
+            "APPEND RESPONSE:  id={},  term={},  response={:?}",
+            self.my_id, self.current_term, response
+        );
+
         // here term can not be greater than my current term
         assert!(response.term <= self.current_term);
+
+        // if commit index is greater we need to increase it
+        self.check_commit_index(response.commit_index, ctx.clone())
+            .await;
 
         // do something only if i am leader
         let is_leader = if let Role::Leader(info) = &mut self.role {
@@ -264,7 +353,7 @@ impl RaftState {
                 // may update match index
                 if response.match_index > info.match_index[respondent_id] {
                     info.match_index[respondent_id] = response.match_index;
-                    info.next_index[respondent_id] = response.match_index;
+                    info.next_index[respondent_id] = response.match_index + 1;
                 }
             } else {
                 // if next_index was zero, then we must match
@@ -282,12 +371,14 @@ impl RaftState {
 
         // i can try foward commit index if i am leader
         if is_leader {
-            self.try_forward_commit_index();
+            self.forward_commit_index();
             self.apply_commands(ctx);
         }
     }
 
     pub async fn on_vote_request(&mut self, request: VoteRequest, ctx: Context) {
+        info!("VOTE_REQUEST: id={}, request={:?}", self.my_id, request);
+
         // if term in request is greater than current term,
         // i must transit to follower
         self.check_term_and_mb_become_follower(request.term, ctx.clone())
@@ -306,14 +397,20 @@ impl RaftState {
     }
 
     pub async fn on_vote_response(&mut self, response: VoteResponse, ctx: Context) {
+        info!("VOTE_RESPONSE: id={}, response={:?}", self.my_id, response);
+
         // if term in request is greater than current term,
         // i must transit to follower
         self.check_term_and_mb_become_follower(response.term, ctx.clone())
             .await;
 
+        // check commit index in case its greater than mine
+        self.check_commit_index(response.commit_index, ctx.clone())
+            .await;
+
         // outdated message
         // in can not be greater
-        if response.term != self.current_term {
+        if response.term != self.current_term || !response.vote_granted {
             return;
         }
 
@@ -346,12 +443,23 @@ impl RaftState {
     /// Change role from candidate to leader
     /// when majority of votes are for me in current term
     fn transit_to_leader(&mut self, ctx: Context) {
-        let info = LeaderInfo::new(self.nodes.len(), self.log.len());
+        info!("p[{}] transit to leader", self.my_id);
+
+        // create leader info and set match index for myself to mine log size
+        let mut info = LeaderInfo::new(self.nodes.len(), self.log.len());
+        info.match_index[self.my_id] = self.last_log_index();
+        info.commit_index[self.my_id] = self.commit_index;
+
         self.role = Role::Leader(info);
         self.remove_election_timer(ctx.clone());
-        self.set_heartbeat_timer(ctx);
+        self.set_heartbeat_timer(ctx.clone());
 
-        // here we should start transfer logs to other replicas
+        // forward commit index according to majority rule
+        // and apply commands
+        self.forward_commit_index();
+        self.apply_commands(ctx);
+
+        // as leader we should transfer logs to other replicas
         // which will be done after replicas response on heartbeats
     }
 
@@ -424,43 +532,44 @@ impl RaftState {
     // returns last matching index
     async fn update_log(&mut self, request: &AppendEntriesRequest, ctx: Context) -> i64 {
         // find number of equal elements
-        let mut equals_cnt = 0;
+        let mut equals_cnt: usize = 0;
         let prev_index = request.prev_log_index;
         let last_index = self.last_log_index();
-        while prev_index + equals_cnt <= last_index && equals_cnt < request.entries.len() as i64 {
+        while prev_index + (equals_cnt as i64) < last_index
+            && equals_cnt < request.entries.len()
+            && self.log[(prev_index + 1) as usize + equals_cnt] == request.entries[equals_cnt]
+        {
             equals_cnt += 1;
         }
 
         // then not all elements matches and we need extend log (with rewriting maybe)
-        if equals_cnt != request.entries.len() as i64 {
+        if equals_cnt != request.entries.len() {
             // remove conflicts
-            let new_len = prev_index + equals_cnt + 1;
-            let mut need_rewrite_file = false;
-            while self.log.len() as i64 != new_len {
-                need_rewrite_file = true;
+            let mut removed = false;
+            while self.log.len() > (prev_index + 1) as usize {
                 self.log.pop();
+                removed = true;
             }
 
-            // if there is some inconsistency with leader's log,
-            // i need solve conflicts by rewriting file with only non-conflict part.
-            if need_rewrite_file {
-                rewrite_file(LOG_FILENAME, self.log.clone(), ctx.clone()).await;
+            self.log.extend_from_slice(&request.entries);
+            if removed {
+                // rewrite log
+                rewrite_file(LOG_FILENAME, self.log.clone(), ctx).await;
+            } else {
+                // just append in the end
+                for value in request
+                    .entries
+                    .iter()
+                    .rev()
+                    .take(request.entries.len() - equals_cnt)
+                    .rev()
+                {
+                    append_value(LOG_FILENAME, value, ctx.clone()).await;
+                }
             }
-
-            // get entries which must be appended
-            let mut entries_to_append = request.entries[..equals_cnt as usize].to_vec();
-
-            // append them in file and in ram log
-            for entry in entries_to_append.iter() {
-                append_value(LOG_FILENAME, entry.clone(), ctx.clone()).await;
-            }
-            self.log.append(&mut entries_to_append);
-
-            // shrinked or extended to new_len,
-            // so new_len-1 is last match index
-            new_len - 1
+            self.last_log_index()
         } else {
-            prev_index + equals_cnt
+            prev_index + (equals_cnt as i64)
         }
     }
 
@@ -470,7 +579,7 @@ impl RaftState {
         ctx: Context,
     ) {
         if self.commit_index < request.leaders_commit {
-            self.commit_index = request.leaders_commit;
+            self.update_commit_index(request.leaders_commit);
         }
         self.apply_commands(ctx);
     }
@@ -481,8 +590,17 @@ impl RaftState {
             let reply = self
                 .db
                 .apply_command(self.log[self.last_applied as usize].command.clone());
+
+            info!(
+                "APPLY_COMAMNDS: proc[{}] applied command[{}]={:?}",
+                self.my_id, self.last_applied, self.log[self.last_applied as usize].command
+            );
+
             if reply.command_id.responsible_server() == self.my_id {
-                ctx.send_local(reply.into());
+                let response_id = reply.command_id;
+                let response_tp = LocalResponseType::Command(reply);
+                let response = LocalResponse::new(response_id, response_tp);
+                ctx.send_local(response.into());
             }
         }
     }
@@ -501,25 +619,55 @@ impl RaftState {
         // next index must be >= 0
         assert!(next_index >= 0 && next_index <= self.last_log_index() + 1);
 
+        info!(
+            "id={}, sending append entries to={}, next_index={}, last_index={}",
+            self.my_id,
+            receiver_id,
+            next_index,
+            self.last_log_index()
+        );
+
         // create request and send it
         let request = self.make_append_request(next_index - 1);
         self.send_async_message(request.into(), receiver_id, ctx);
     }
 
     // allows to increase commit index on leader according to 'majority' rule
-    fn try_forward_commit_index(&mut self) {
+    fn forward_commit_index(&mut self) {
         if let Role::Leader(info) = &mut self.role {
             let new_commit_index = info.commit_index();
-            assert!(new_commit_index <= self.commit_index);
-            self.commit_index = new_commit_index;
+
+            // info may be inconsistent for new leaders
+            if new_commit_index > self.commit_index {
+                self.update_commit_index(new_commit_index);
+            }
         } else {
-            panic!("only leader can forward commit index according to majority rule")
+            panic!("only leader can forward commit index")
+        }
+    }
+
+    // allows to update commit index
+    fn update_commit_index(&mut self, new_commit_index: i64) {
+        assert!(new_commit_index >= self.commit_index);
+
+        // commit index could be greater than last
+        // log index in cases of consistency delay (???)
+        self.commit_index = new_commit_index.min(self.last_log_index());
+        if let Role::Leader(info) = &mut self.role {
+            info.commit_index[self.my_id] = self.commit_index;
         }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
     // Helpers for requests and responses
     //////////////////////////////////////////////////////////////////////////////////////////
+
+    async fn check_commit_index(&mut self, mb_commit_index: i64, ctx: Context) {
+        if self.commit_index < mb_commit_index {
+            self.update_commit_index(mb_commit_index);
+        }
+        self.apply_commands(ctx);
+    }
 
     /// Allows to get term for log on provided index
     fn get_log_term(&self, index: i64) -> i64 {
@@ -554,6 +702,7 @@ impl RaftState {
             responder_id: self.my_id,
             term: self.current_term,
             vote_granted,
+            commit_index: self.commit_index,
         }
     }
 
@@ -563,7 +712,7 @@ impl RaftState {
         } else {
             self.log[prev_log_index as usize].term as i64
         };
-        let entries = self.log[(prev_log_term + 1) as usize..].to_vec();
+        let entries = self.log[(prev_log_index + 1) as usize..].to_vec();
         AppendEntriesRequest {
             term: self.current_term,
             leader_id: self.my_id,
@@ -596,11 +745,23 @@ impl RaftState {
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////
+    // Election utility
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    fn broadcast_vote_request(&self, ctx: Context) {
+        let message: Message = self.make_vote_request().into();
+        for id in 0..self.nodes.len() {
+            self.send_async_message(message.clone(), id, ctx.clone());
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
     // Timer utilities
     //////////////////////////////////////////////////////////////////////////////////////////
 
     fn set_election_timer(&self, ctx: Context) {
-        ctx.set_timer(ELECTION_TIMER_NAME, self.election_timeout);
+        let ratio = 1. + (self.my_id as f64) / (self.nodes.len() as f64);
+        ctx.set_timer(ELECTION_TIMER_NAME, self.election_timeout * ratio);
     }
 
     fn set_heartbeat_timer(&self, ctx: Context) {
@@ -613,5 +774,57 @@ impl RaftState {
 
     fn remove_hearbeat_timer(&self, ctx: Context) {
         ctx.cancel_timer(HEARTBEAT_TIMER_NAME);
+    }
+
+    fn reset_election_timer(&self, ctx: Context) {
+        self.set_election_timer(ctx);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // Debug utility
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    fn state_info(&self) -> StateInfo {
+        StateInfo {
+            role: self.role.clone(),
+            current_term: self.current_term,
+            last_applied: self.last_applied,
+            commit_index: self.commit_index,
+        }
+    }
+
+    fn set_dump_state_timeout(&self, ctx: Context) {
+        ctx.set_timer(DUMP_STATE_TIMER_NAME, self.dump_state_timeout);
+    }
+
+    pub fn on_dump_state_timeout(&self, ctx: Context) {
+        let state_info = self.state_info();
+        ctx.send_local(state_info.into());
+        self.set_dump_state_timeout(ctx);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub struct StateInfo {
+    pub role: Role,
+    pub current_term: usize,
+    pub last_applied: i64,
+    pub commit_index: i64,
+}
+
+pub const STATE_INFO: &str = "state_info";
+
+impl From<StateInfo> for Message {
+    fn from(info: StateInfo) -> Self {
+        Message::new(STATE_INFO, &info).unwrap()
+    }
+}
+
+impl From<Message> for StateInfo {
+    fn from(message: Message) -> Self {
+        assert_eq!(message.get_tip(), STATE_INFO);
+        message.get_data::<StateInfo>().unwrap()
     }
 }

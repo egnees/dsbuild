@@ -9,8 +9,8 @@ use crate::{
         APPEND_ENTRIES_RESPONSE,
     },
     cmd::{Command, COMMAND},
-    local::{ReadValueRequest, READ_VALUE_REQUEST},
-    state::{RaftState, ELECTION_TIMER_NAME, HEARTBEAT_TIMER_NAME, INITIALIZE_REQUEST},
+    local::{ReadValueRequest, INITIALIZE_REQUEST, READ_VALUE_REQUEST},
+    state::{RaftState, DUMP_STATE_TIMER_NAME, ELECTION_TIMER_NAME, HEARTBEAT_TIMER_NAME},
     vote::{VoteRequest, VoteResponse, VOTE_REQUEST, VOTE_RESPONSE},
 };
 
@@ -56,7 +56,7 @@ impl RaftProcess {
     fn on_read_value_request(&self, request: ReadValueRequest, ctx: Context) {
         self.call_async(
             move |state, ctx| async move {
-                state.lock().await.on_read_value_request(request, ctx);
+                state.lock().await.on_read_value_request(request, ctx).await;
             },
             ctx,
         );
@@ -126,6 +126,19 @@ impl RaftProcess {
             ctx,
         );
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // Debug utility
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    fn on_dump_state_timeout(&self, ctx: Context) {
+        self.call_async(
+            |s, c| async move {
+                s.lock().await.on_dump_state_timeout(c);
+            },
+            ctx,
+        );
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -145,6 +158,7 @@ impl Process for RaftProcess {
         match name.as_str() {
             ELECTION_TIMER_NAME => self.on_election_timeout(ctx),
             HEARTBEAT_TIMER_NAME => self.on_heartbeat_timeout(ctx),
+            DUMP_STATE_TIMER_NAME => self.on_dump_state_timeout(ctx),
             _ => panic!("unexpected timer name"),
         }
         Ok(())

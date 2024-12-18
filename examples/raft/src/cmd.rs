@@ -2,7 +2,10 @@ use dsbuild::Message;
 use serde::{Deserialize, Serialize};
 
 pub type KeyType = String;
+pub type KeyTypeRef = str;
+
 pub type ValueType = String;
+pub type ValueTypeRef = str;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -11,7 +14,9 @@ pub type ValueType = String;
 /// Every command repsonsible server, which is current leader.
 /// In case of server fail, client can not get response on
 /// committed command.
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+///
+/// (responsible_server, sequence_number)
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CommandId(pub usize, pub usize);
 
 impl CommandId {
@@ -34,6 +39,24 @@ pub enum CommandType {
     Update(KeyType, ValueType),
     Delete(KeyType),
     Cas(KeyType, ValueType, ValueType), // compare (with $2) and swap (with $3)
+}
+
+impl CommandType {
+    pub fn create(key: &KeyTypeRef) -> Self {
+        Self::Create(key.to_owned())
+    }
+
+    pub fn update(key: &KeyTypeRef, value: &ValueTypeRef) -> Self {
+        Self::Update(key.to_owned(), value.to_owned())
+    }
+
+    pub fn delete(key: &KeyTypeRef) -> Self {
+        Self::Delete(key.to_owned())
+    }
+
+    pub fn cas(key: &KeyTypeRef, compare: &ValueTypeRef, swap: &ValueTypeRef) -> Self {
+        Self::Cas(key.to_owned(), compare.to_owned(), swap.to_owned())
+    }
 }
 
 /// Represents command requested by user
@@ -70,7 +93,7 @@ impl From<Command> for Message {
 
 /// Represents reply on command
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
-pub struct Reply {
+pub struct CommandReply {
     /// Corresponds to http status codes
     pub status: u16,
 
@@ -81,7 +104,7 @@ pub struct Reply {
     pub command_id: CommandId,
 }
 
-impl Reply {
+impl CommandReply {
     pub fn new(status: u16, info: &str, command_id: CommandId) -> Self {
         Self {
             status,
@@ -91,17 +114,14 @@ impl Reply {
     }
 }
 
-pub const COMMAND_REPLY: &str = "command_reply";
+//////////////////////////////////////////////////////////////////////////////////////////
 
-impl From<Message> for Reply {
-    fn from(message: Message) -> Self {
-        assert_eq!(message.get_tip(), COMMAND_REPLY);
-        message.get_data::<Reply>().unwrap()
-    }
-}
+pub const CREATED_CODE: u16 = 201;
+pub const ALREADY_EXISTS_CODE: u16 = 409;
+pub const UPDATED_CODE: u16 = 202;
+pub const NOT_FOUND_CODE: u16 = 404;
 
-impl From<Reply> for Message {
-    fn from(reply: Reply) -> Self {
-        Message::new(COMMAND_REPLY, &reply).unwrap()
-    }
-}
+/// Accepted but not updated (on cas)
+pub const NOT_UPDATED_CODE: u16 = 202;
+
+pub const DELETED_CODE: u16 = 204;

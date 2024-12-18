@@ -51,6 +51,10 @@ pub struct VoteResponse {
 
     /// Vote granted flag
     pub vote_granted: bool,
+
+    /// Requester needs commit index
+    /// to be able to update his log
+    pub commit_index: i64,
 }
 
 pub const VOTE_RESPONSE: &str = "vote_response";
