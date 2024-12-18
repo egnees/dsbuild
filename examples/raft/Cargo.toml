@@ -14,3 +14,7 @@ tokio = { version = "1.42.0", features = ["sync"]}
 [lib]
 name = "raft"
 path = "src/lib.rs"
+
+[[bin]]
+name = "sim"
+path = "sim/run.rs"
