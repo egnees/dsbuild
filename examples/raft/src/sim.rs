@@ -434,7 +434,7 @@ impl SimWrapper {
             .split_network(group1_ref.as_slice(), group2_ref.as_slice());
     }
 
-    /// Allows to repair remove network split
+    /// Allows to remove network split
     pub fn repair_network(&mut self) {
         for node in 0..self.node_cnt {
             let node = Self::node_name(node);
