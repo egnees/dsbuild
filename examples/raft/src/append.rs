@@ -66,6 +66,9 @@ pub struct AppendEntriesResponse {
 
     /// Commit index of the respondent
     pub commit_index: i64,
+
+    /// Check if heartbeat
+    pub heartbeat: bool,
 }
 
 pub const APPEND_ENTRIES_RESPONSE: &str = "append_entries_response";

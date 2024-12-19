@@ -217,7 +217,7 @@ fn reelection() {
     // check leader reelection five times
     for _ in 0..5 {
         sim.shutdown_node(current_leader);
-        sim.make_steps(200);
+        sim.make_steps(150);
         let next_term = sim.current_term().unwrap();
         assert!(next_term > current_term);
         let next_leader = sim.current_leader().unwrap();

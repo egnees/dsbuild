@@ -104,8 +104,6 @@ impl RaftState {
 
         self.log = read_all_values::<LogEntry>(LOG_FILENAME, ctx.clone()).await;
 
-        info!("initialized proc[{}], log={:?}", self.my_id, self.log);
-
         self.transit_to_follower(None, ctx.clone());
 
         // finish initialization and response with last seq num
@@ -198,7 +196,7 @@ impl RaftState {
                 // follower which knows leader can answer the request
                 match request.min_commit_id {
                     None => LocalResponseType::RedirectedTo(*leader_id, None),
-                    Some(idx) if idx <= self.commit_index => {
+                    Some(idx) if idx == self.commit_index => {
                         LocalResponseType::ReadValue(self.db.read_value(&request.key))
                     }
                     Some(_) => LocalResponseType::RedirectedTo(*leader_id, None),
@@ -252,22 +250,26 @@ impl RaftState {
         assert!(matches!(self.role, Role::Leader(_)));
 
         // make heartbeat
-        let heartbeat: Message = self.make_heartbeat().into();
+        // let heartbeat: Message = self.make_heartbeat().into();
 
         // send heartbeats for all nodes (except of me)
-        self.nodes
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| *i != self.my_id)
-            .for_each(|(_, addr)| {
-                let ctx = ctx.clone();
-                let hb = heartbeat.clone();
-                let addr = addr.clone();
-                let timeout = self.net_rtt;
-                ctx.clone().spawn(async move {
-                    let _ = ctx.send_with_ack(hb, addr, timeout).await;
+        if let Role::Leader(info) = &self.role {
+            self.nodes
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i != self.my_id)
+                .for_each(|(node, addr)| {
+                    let ctx = ctx.clone();
+                    let prev_index = info.next_index[node] - 1;
+                    let message = self.make_append_request(prev_index).into();
+                    // let hb = heartbeat.clone();
+                    let addr = addr.clone();
+                    let timeout = self.net_rtt;
+                    ctx.clone().spawn(async move {
+                        let _ = ctx.send_with_ack(message, addr, timeout).await;
+                    });
                 });
-            });
+        }
 
         // reset heartbeat timer
         self.set_heartbeat_timer(ctx);
@@ -276,10 +278,15 @@ impl RaftState {
     // i must send answer on every append entries,
     // because leader send append entries as responses on heartbeats
     pub async fn on_append_entries_request(&mut self, request: AppendEntriesRequest, ctx: Context) {
-        info!(
-            "APPEND REQUEST:  id={},  term={},  request={:?}",
-            self.my_id, self.current_term, request
-        );
+        let heartbeat = if !request.entries.is_empty() {
+            info!(
+                "APPEND REQUEST:  id={},  term={},  request={:?}",
+                self.my_id, self.current_term, request
+            );
+            false
+        } else {
+            true
+        };
 
         // transit to follower if received message from future term
         self.check_term_and_mb_become_follower(request.term, ctx.clone())
@@ -287,7 +294,7 @@ impl RaftState {
 
         // if message outdated, i do not accept request
         if request.term != self.current_term {
-            let reply = self.make_append_response(None);
+            let reply = self.make_append_response(None, heartbeat);
             self.send_async_message(reply.into(), request.leader_id, ctx);
             return;
         }
@@ -317,7 +324,7 @@ impl RaftState {
         };
 
         // reply
-        let reply = self.make_append_response(match_index);
+        let reply = self.make_append_response(match_index, heartbeat);
         self.send_async_message(reply.into(), request.leader_id, ctx);
     }
 
@@ -327,10 +334,12 @@ impl RaftState {
         response: AppendEntriesResponse,
         ctx: Context,
     ) {
-        info!(
-            "APPEND RESPONSE:  id={},  term={},  response={:?}",
-            self.my_id, self.current_term, response
-        );
+        if !response.heartbeat {
+            info!(
+                "APPEND RESPONSE:  id={},  term={},  response={:?}",
+                self.my_id, self.current_term, response
+            );
+        }
 
         // here term can not be greater than my current term
         assert!(response.term <= self.current_term);
@@ -362,7 +371,7 @@ impl RaftState {
             }
 
             // may send append entries again
-            self.send_append_entries_request(respondent_id, ctx.clone());
+            // self.send_append_entries_request(respondent_id, ctx.clone());
 
             true
         } else {
@@ -443,7 +452,10 @@ impl RaftState {
     /// Change role from candidate to leader
     /// when majority of votes are for me in current term
     fn transit_to_leader(&mut self, ctx: Context) {
-        info!("p[{}] transit to leader", self.my_id);
+        info!(
+            "TRANSIT_TO_LEADER: process {:?} transit to leader",
+            self.my_id
+        );
 
         // create leader info and set match index for myself to mine log size
         let mut info = LeaderInfo::new(self.nodes.len(), self.log.len());
@@ -592,7 +604,7 @@ impl RaftState {
                 .apply_command(self.log[self.last_applied as usize].command.clone());
 
             info!(
-                "APPLY_COMAMNDS: proc[{}] applied command[{}]={:?}",
+                "APPLY_COMMANDS: proc[{}] applied command[{}]={:?}",
                 self.my_id, self.last_applied, self.log[self.last_applied as usize].command
             );
 
@@ -608,29 +620,21 @@ impl RaftState {
     //////////////////////////////////////////////////////////////////////////////////////////
 
     // i send append entries as responses on heartbeats's responses
-    fn send_append_entries_request(&self, receiver_id: usize, ctx: Context) {
-        // get index of log entry to send
-        let next_index = if let Role::Leader(info) = &self.role {
-            info.next_index[receiver_id]
-        } else {
-            panic!("only leader can send append entries requests")
-        };
+    // fn send_append_entries_request(&self, receiver_id: usize, ctx: Context) {
+    //     // get index of log entry to send
+    //     let next_index = if let Role::Leader(info) = &self.role {
+    //         info.next_index[receiver_id]
+    //     } else {
+    //         panic!("only leader can send append entries requests")
+    //     };
 
-        // next index must be >= 0
-        assert!(next_index >= 0 && next_index <= self.last_log_index() + 1);
+    //     // next index must be >= 0
+    //     assert!(next_index >= 0 && next_index <= self.last_log_index() + 1);
 
-        info!(
-            "id={}, sending append entries to={}, next_index={}, last_index={}",
-            self.my_id,
-            receiver_id,
-            next_index,
-            self.last_log_index()
-        );
-
-        // create request and send it
-        let request = self.make_append_request(next_index - 1);
-        self.send_async_message(request.into(), receiver_id, ctx);
-    }
+    //     // create request and send it
+    //     let request = self.make_append_request(next_index - 1);
+    //     self.send_async_message(request.into(), receiver_id, ctx);
+    // }
 
     // allows to increase commit index on leader according to 'majority' rule
     fn forward_commit_index(&mut self) {
@@ -723,24 +727,29 @@ impl RaftState {
         }
     }
 
-    fn make_heartbeat(&self) -> AppendEntriesRequest {
-        AppendEntriesRequest {
-            term: self.current_term,
-            leader_id: self.my_id,
-            prev_log_index: -1,
-            prev_log_term: -1,
-            entries: Vec::new(),
-            leaders_commit: self.commit_index,
-        }
-    }
+    // fn make_heartbeat(&self) -> AppendEntriesRequest {
+    //     AppendEntriesRequest {
+    //         term: self.current_term,
+    //         leader_id: self.my_id,
+    //         prev_log_index: -1,
+    //         prev_log_term: -1,
+    //         entries: Vec::new(),
+    //         leaders_commit: self.commit_index,
+    //     }
+    // }
 
-    fn make_append_response(&self, match_index: Option<i64>) -> AppendEntriesResponse {
+    fn make_append_response(
+        &self,
+        match_index: Option<i64>,
+        heartbeat: bool,
+    ) -> AppendEntriesResponse {
         AppendEntriesResponse {
             respondent_id: self.my_id,
             term: self.current_term,
             success: match_index.is_some(),
             match_index: match_index.unwrap_or(-1),
             commit_index: self.commit_index,
+            heartbeat,
         }
     }
 
@@ -760,11 +769,13 @@ impl RaftState {
     //////////////////////////////////////////////////////////////////////////////////////////
 
     fn set_election_timer(&self, ctx: Context) {
+        self.remove_election_timer(ctx.clone());
         let ratio = 1. + (self.my_id as f64) / (self.nodes.len() as f64);
         ctx.set_timer(ELECTION_TIMER_NAME, self.election_timeout * ratio);
     }
 
     fn set_heartbeat_timer(&self, ctx: Context) {
+        self.remove_hearbeat_timer(ctx.clone());
         ctx.set_timer(HEARTBEAT_TIMER_NAME, self.heartbeat_timeout);
     }
 
