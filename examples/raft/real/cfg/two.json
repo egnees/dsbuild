@@ -1,0 +1,4 @@
+{
+    "inner_net": ["localhost:10093", "localhost:10094"],
+    "listen_net": ["localhost:10096", "localhost:10097"]
+}

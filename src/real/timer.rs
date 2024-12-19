@@ -28,6 +28,9 @@ impl TimerManager {
         if !overwrite && self.pending_timers.contains_key(&name) {
             return;
         }
+        if overwrite {
+            self.cancel_timer(&name);
+        }
         let name_clone = name.clone();
         let sender = self.sender.clone();
         let handler = tokio::spawn(async move {
