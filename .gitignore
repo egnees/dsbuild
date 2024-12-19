@@ -4,3 +4,4 @@
 /examples/chat/.tmp
 /examples/chat/cfg/server-hse-1.yml
 /examples/raft/cfg/.system
+.DS_Store
