@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["INITIALIZE_REQUEST","INITIALIZE_RESPONSE","LOCAL_RESPONSE","READ_VALUE_REQUEST"],"enum":["LocalResponseType"],"struct":["InitializeRequest","InitializeResponse","LocalResponse","ReadValueRequest"]};

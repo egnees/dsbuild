@@ -53,7 +53,10 @@
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a></pre></div><pre class="rust"><code><span class="doccomment">//! Definition of time management objects.
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a></pre></div><pre class="rust"><code><span class="doccomment">//! Definition of time management objects.
 
 </span><span class="kw">use </span>std::collections::HashMap;
 
@@ -82,6 +85,9 @@
     </span><span class="kw">pub fn </span>set_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String, delay: f64, overwrite: bool) {
         <span class="kw">if </span>!overwrite &amp;&amp; <span class="self">self</span>.pending_timers.contains_key(<span class="kw-2">&amp;</span>name) {
             <span class="kw">return</span>;
+        }
+        <span class="kw">if </span>overwrite {
+            <span class="self">self</span>.cancel_timer(<span class="kw-2">&amp;</span>name);
         }
         <span class="kw">let </span>name_clone = name.clone();
         <span class="kw">let </span>sender = <span class="self">self</span>.sender.clone();
