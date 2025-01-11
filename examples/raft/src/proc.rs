@@ -144,27 +144,25 @@ impl RaftProcess {
 //////////////////////////////////////////////////////////////////////////////////////////
 
 impl Process for RaftProcess {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         match msg.get_tip().as_str() {
             READ_VALUE_REQUEST => self.on_read_value_request(msg.into(), ctx),
             COMMAND => self.on_command_request(msg.into(), ctx),
             INITIALIZE_REQUEST => self.on_initialize_request(ctx),
             _ => panic!("unsupported local message type"),
         }
-        Ok(())
     }
 
-    fn on_timer(&mut self, name: String, ctx: Context) -> Result<(), String> {
+    fn on_timer(&mut self, name: String, ctx: Context) {
         match name.as_str() {
             ELECTION_TIMER_NAME => self.on_election_timeout(ctx),
             HEARTBEAT_TIMER_NAME => self.on_heartbeat_timeout(ctx),
             DUMP_STATE_TIMER_NAME => self.on_dump_state_timeout(ctx),
             _ => panic!("unexpected timer name"),
         }
-        Ok(())
     }
 
-    fn on_message(&mut self, msg: Message, _from: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, _from: Address, ctx: Context) {
         match msg.get_tip().as_str() {
             APPEND_ENTRIES_REQUEST => self.on_append_entries_request(msg.into(), ctx),
             APPEND_ENTRIES_RESPONSE => self.on_append_entries_response(msg.into(), ctx),
@@ -172,6 +170,5 @@ impl Process for RaftProcess {
             VOTE_RESPONSE => self.on_vote_response(msg.into(), ctx),
             _ => panic!("unexpected message type"),
         }
-        Ok(())
     }
 }

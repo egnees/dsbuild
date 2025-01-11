@@ -71,7 +71,9 @@ impl<P: Process + 'static> DSLabProcess for VirtualProcessWrapper<P> {
         self.user_process
             .write()
             .expect("Can not write in process, probably datarace appeared")
-            .on_message(msg.into(), from_address, Context::new_virt(virt_ctx))
+            .on_message(msg.into(), from_address, Context::new_virt(virt_ctx));
+
+        Ok(())
     }
 
     fn on_local_message(&mut self, msg: DSLabMessage, ctx: DSLabContext) -> Result<(), String> {
@@ -80,7 +82,9 @@ impl<P: Process + 'static> DSLabProcess for VirtualProcessWrapper<P> {
         self.user_process
             .write()
             .expect("Can not write in process, probably datarace appeared")
-            .on_local_message(msg.into(), Context::new_virt(virt_ctx))
+            .on_local_message(msg.into(), Context::new_virt(virt_ctx));
+
+        Ok(())
     }
 
     fn on_timer(&mut self, timer: String, ctx: DSLabContext) -> Result<(), String> {
@@ -93,6 +97,8 @@ impl<P: Process + 'static> DSLabProcess for VirtualProcessWrapper<P> {
         self.user_process
             .write()
             .expect("Can not write in process, probably datarace appeared")
-            .on_timer(timer, Context::new_virt(virt_ctx))
+            .on_timer(timer, Context::new_virt(virt_ctx));
+
+        Ok(())
     }
 }

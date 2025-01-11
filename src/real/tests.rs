@@ -19,20 +19,16 @@ struct LocalMessage {
 }
 
 impl Process for LocalProcess {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         let other = msg.get_data::<LocalMessage>().unwrap().other.clone();
         ctx.send(msg, other);
-        Ok(())
     }
 
-    fn on_timer(&mut self, _: String, _: Context) -> Result<(), String> {
-        Err("no timers should be".into())
-    }
+    fn on_timer(&mut self, _: String, _: Context) {}
 
-    fn on_message(&mut self, msg: Message, _: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, _: Address, ctx: Context) {
         ctx.send_local(msg.clone());
         ctx.stop();
-        Ok(())
     }
 }
 
@@ -178,7 +174,7 @@ struct SendRecvProcess {
 }
 
 impl Process for SendRecvProcess {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         let tag = msg.get_data::<Tag>().unwrap();
         let to = self.pair.clone();
         ctx.clone().spawn(async move {
@@ -189,21 +185,18 @@ impl Process for SendRecvProcess {
             ctx.send_local(got_msg);
             ctx.stop();
         });
-        Ok(())
     }
 
-    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+    fn on_timer(&mut self, _name: String, _ctx: Context) {
         unreachable!()
     }
 
-    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) {
         let tag = msg.get_data::<Tag>().unwrap();
         ctx.clone().spawn(async move {
             ctx.send_with_tag(msg, tag, from, 5.0).await.unwrap();
             ctx.stop();
         });
-
-        Ok(())
     }
 }
 
