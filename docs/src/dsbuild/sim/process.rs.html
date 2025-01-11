@@ -96,7 +96,13 @@
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
 <a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a></pre></div><pre class="rust"><code><span class="doccomment">//! Definition of [`process wrapper`][`VirtualProcessWrapper`] which is used in the virtual system.
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a></pre></div><pre class="rust"><code><span class="doccomment">//! Definition of [`process wrapper`][`VirtualProcessWrapper`] which is used in the virtual system.
 
 </span><span class="kw">use </span>std::{
     cell::RefCell,
@@ -169,7 +175,9 @@
         </span><span class="self">self</span>.user_process
             .write()
             .expect(<span class="string">"Can not write in process, probably datarace appeared"</span>)
-            .on_message(msg.into(), from_address, Context::new_virt(virt_ctx))
+            .on_message(msg.into(), from_address, Context::new_virt(virt_ctx));
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: DSLabMessage, ctx: DSLabContext) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
@@ -178,7 +186,9 @@
         <span class="self">self</span>.user_process
             .write()
             .expect(<span class="string">"Can not write in process, probably datarace appeared"</span>)
-            .on_local_message(msg.into(), Context::new_virt(virt_ctx))
+            .on_local_message(msg.into(), Context::new_virt(virt_ctx));
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>on_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, timer: String, ctx: DSLabContext) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
@@ -191,7 +201,9 @@
         <span class="self">self</span>.user_process
             .write()
             .expect(<span class="string">"Can not write in process, probably datarace appeared"</span>)
-            .on_timer(timer, Context::new_virt(virt_ctx))
+            .on_timer(timer, Context::new_virt(virt_ctx));
+
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div></section></main></body></html>

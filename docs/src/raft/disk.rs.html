@@ -391,13 +391,7 @@
 <a href="#390" id="390">390</a>
 <a href="#391" id="391">391</a>
 <a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a></pre></div><pre class="rust"><code><span class="kw">use </span>dsbuild::Context;
+<a href="#393" id="393">393</a></pre></div><pre class="rust"><code><span class="kw">use </span>dsbuild::Context;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="comment">//////////////////////////////////////////////////////////////////////////////////////////
@@ -567,7 +561,7 @@
     <span class="kw">where
         </span>T: Send + Sync + <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; Deserialize&lt;<span class="lifetime">'a</span>&gt; + Serialize + PartialEq + Debug + <span class="lifetime">'static</span>,
     {
-        <span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
+        <span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, ctx: Context) {
             ctx.clone().spawn(<span class="kw">async move </span>{
                 <span class="kw">if </span>msg.get_tip() == READ {
                     <span class="kw">let </span>read_value = read_last_value::&lt;T&gt;(FILE_PATH, ctx).<span class="kw">await</span>.unwrap();
@@ -585,19 +579,13 @@
                     append_value(FILE_PATH, value, ctx).<span class="kw">await</span>;
                 }
             });
-            <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="kw">fn </span>on_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _name: String, _ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
+        <span class="kw">fn </span>on_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _name: String, _ctx: Context) {
             <span class="macro">unimplemented!</span>()
         }
 
-        <span class="kw">fn </span>on_message(
-            <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-            _msg: Message,
-            _from: Address,
-            _ctx: Context,
-        ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
+        <span class="kw">fn </span>on_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _msg: Message, _from: Address, _ctx: Context) {
             <span class="macro">unimplemented!</span>()
         }
     }

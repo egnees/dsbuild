@@ -156,15 +156,15 @@
     /// See documentation of [`IOProcessWrapper`][crate::IOProcessWrapper] struct for real
     /// mode and [corresponding method][crate::Sim::send_local_message] of simulation for
     /// more details.
-    </span><span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt;;
+    </span><span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, ctx: Context);
 
     <span class="doccomment">/// Called when previously set timer is fired.
     ///
     /// See [corresponding method][Context::set_timer] of context for more details.
-    </span><span class="kw">fn </span>on_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt;;
+    </span><span class="kw">fn </span>on_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: String, ctx: Context);
 
     <span class="doccomment">/// Called when process receives network message from other process.
-    </span><span class="kw">fn </span>on_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, from: Address, ctx: Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt;;
+    </span><span class="kw">fn </span>on_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, from: Address, ctx: Context);
 }
 
 <span class="comment">////////////////////////////////////////////////////////////////////////////////
