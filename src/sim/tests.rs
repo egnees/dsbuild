@@ -19,7 +19,7 @@ struct AppendRequest {
 }
 
 impl Process for StorageProc {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         if msg.get_tip() == "read" {
             ctx.clone().spawn(async move {
                 let read_request = msg.get_data::<ReadRequest>().unwrap();
@@ -59,14 +59,13 @@ impl Process for StorageProc {
                 ctx.send_local(Message::new("append_result", &"ok").unwrap());
             });
         }
-        Ok(())
     }
 
-    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+    fn on_timer(&mut self, _name: String, _ctx: Context) {
         unreachable!()
     }
 
-    fn on_message(&mut self, _msg: Message, _from: Address, _ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, _msg: Message, _from: Address, _ctx: Context) {
         unreachable!()
     }
 }

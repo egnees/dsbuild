@@ -168,7 +168,7 @@ mod tests {
     where
         T: Send + Sync + for<'a> Deserialize<'a> + Serialize + PartialEq + Debug + 'static,
     {
-        fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+        fn on_local_message(&mut self, msg: Message, ctx: Context) {
             ctx.clone().spawn(async move {
                 if msg.get_tip() == READ {
                     let read_value = read_last_value::<T>(FILE_PATH, ctx).await.unwrap();
@@ -186,19 +186,13 @@ mod tests {
                     append_value(FILE_PATH, value, ctx).await;
                 }
             });
-            Ok(())
         }
 
-        fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+        fn on_timer(&mut self, _name: String, _ctx: Context) {
             unimplemented!()
         }
 
-        fn on_message(
-            &mut self,
-            _msg: Message,
-            _from: Address,
-            _ctx: Context,
-        ) -> Result<(), String> {
+        fn on_message(&mut self, _msg: Message, _from: Address, _ctx: Context) {
             unimplemented!()
         }
     }

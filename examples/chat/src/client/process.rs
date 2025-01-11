@@ -94,31 +94,29 @@ impl ClientProcess {
 }
 
 impl Process for ClientProcess {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         let request_kind = msg.get_data::<ClientRequestKind>().unwrap();
         let request = self.request_builder.build_with_kind(request_kind);
         let update_result = self.state_machine.apply_client_request(request);
         self.handle_state_update(update_result, ctx);
-        Ok(())
     }
 
-    fn on_timer(&mut self, _: String, _: Context) -> Result<(), String> {
+    fn on_timer(&mut self, _: String, _: Context) {
         unreachable!("no timers in client")
     }
 
-    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) {
         if from != self.server_1_address {
             if let Some(server_2) = &self.server_2_address {
                 if from != *server_2 {
-                    return Ok(());
+                    return;
                 }
             } else {
-                return Ok(());
+                return;
             }
         }
         let server_msg = msg.get_data::<ServerMessage>().unwrap();
         let update_result = self.state_machine.apply_server_msg(server_msg);
         self.handle_state_update(update_result, ctx);
-        Ok(())
     }
 }

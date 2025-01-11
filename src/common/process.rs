@@ -33,15 +33,15 @@ pub trait Process: Send + Sync {
     /// See documentation of [`IOProcessWrapper`][crate::IOProcessWrapper] struct for real
     /// mode and [corresponding method][crate::Sim::send_local_message] of simulation for
     /// more details.
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String>;
+    fn on_local_message(&mut self, msg: Message, ctx: Context);
 
     /// Called when previously set timer is fired.
     ///
     /// See [corresponding method][Context::set_timer] of context for more details.
-    fn on_timer(&mut self, name: String, ctx: Context) -> Result<(), String>;
+    fn on_timer(&mut self, name: String, ctx: Context);
 
     /// Called when process receives network message from other process.
-    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String>;
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

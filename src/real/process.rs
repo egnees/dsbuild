@@ -2,7 +2,6 @@
 
 use std::sync::{Arc, Mutex, RwLock};
 
-use log::warn;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use crate::{
@@ -120,18 +119,10 @@ impl ProcessManager {
     }
 
     fn handle_local_message(&mut self, msg: Message) {
-        let result = self
-            .process
+        self.process
             .write()
             .unwrap()
             .on_local_message(msg.clone(), self.create_context());
-
-        if let Err(info) = result {
-            warn!(
-                "Error on process {}: handle local message {:?}; error: {}",
-                self.address.process_name, msg, info
-            );
-        }
     }
 
     fn handle_message(&mut self, mut msg: RoutedMessage) {
@@ -147,32 +138,17 @@ impl ProcessManager {
             }
         }
 
-        let result = self.process.write().unwrap().on_message(
+        self.process.write().unwrap().on_message(
             msg.msg.clone(),
             msg.from.clone(),
             self.create_context(),
         );
-
-        if let Err(info) = result {
-            warn!(
-                "Error on process {}: handle message {:?} from {:?}; error: {}",
-                self.address.process_name, msg.msg, msg.from, info
-            );
-        }
     }
 
     fn handle_timer_fired(&mut self, timer_name: String) {
-        let result = self
-            .process
+        self.process
             .write()
             .unwrap()
             .on_timer(timer_name.clone(), self.create_context());
-
-        if let Err(info) = result {
-            warn!(
-                "Error on process {}: handle timer {:?}; error: {}",
-                self.address.process_name, timer_name, info
-            );
-        }
     }
 }

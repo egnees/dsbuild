@@ -196,21 +196,15 @@ mod tests {
         struct LocalEchoer {}
 
         impl Process for LocalEchoer {
-            fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+            fn on_local_message(&mut self, msg: Message, ctx: Context) {
                 ctx.send_local(msg);
-                Ok(())
             }
 
-            fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+            fn on_timer(&mut self, _name: String, _ctx: Context) {
                 unimplemented!()
             }
 
-            fn on_message(
-                &mut self,
-                _msg: Message,
-                _from: Address,
-                _ctx: Context,
-            ) -> Result<(), String> {
+            fn on_message(&mut self, _msg: Message, _from: Address, _ctx: Context) {
                 unimplemented!()
             }
         }

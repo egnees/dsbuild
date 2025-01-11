@@ -5,19 +5,18 @@ use dsbuild::{Address, Context, Message, Process};
 struct EchoServer {}
 
 impl Process for EchoServer {
-    fn on_local_message(&mut self, _msg: Message, _ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, _msg: Message, _ctx: Context) {
         unreachable!()
     }
 
-    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+    fn on_timer(&mut self, _name: String, _ctx: Context) {
         unreachable!()
     }
 
-    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) {
         ctx.clone().spawn(async move {
             let _ = ctx.send_with_ack(msg, from, 5.0).await;
         });
-        Ok(())
     }
 }
 
@@ -26,21 +25,19 @@ struct EchoClient {
 }
 
 impl Process for EchoClient {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         let dst = self.server.clone();
         ctx.clone().spawn(async move {
             let _ = ctx.send_with_ack(msg, dst, 5.0).await;
         });
-        Ok(())
     }
 
-    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+    fn on_timer(&mut self, _name: String, _ctx: Context) {
         unreachable!()
     }
 
-    fn on_message(&mut self, msg: Message, _from: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, _from: Address, ctx: Context) {
         ctx.send_local(msg);
-        Ok(())
     }
 }
 

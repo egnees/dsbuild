@@ -45,7 +45,7 @@ impl ClientStub {
 }
 
 impl Process for ClientStub {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         let kind = msg.get_data::<ClientRequestKind>().unwrap();
         let req = ClientRequest {
             id: self.req_id,
@@ -60,17 +60,15 @@ impl Process for ClientStub {
         ctx.clone().spawn(async move {
             let _ = ctx.send_with_ack(req.into(), to, 5.0).await;
         });
-        Ok(())
     }
 
-    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+    fn on_timer(&mut self, _name: String, _ctx: Context) {
         unreachable!()
     }
 
-    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) {
         assert_eq!(from, self.server);
         ctx.send_local(msg);
-        Ok(())
     }
 }
 
@@ -311,7 +309,7 @@ impl ReplicaNotifiedClientStub {
 }
 
 impl Process for ReplicaNotifiedClientStub {
-    fn on_local_message(&mut self, msg: Message, ctx: Context) -> Result<(), String> {
+    fn on_local_message(&mut self, msg: Message, ctx: Context) {
         let kind = msg.get_data::<ClientRequestKind>().unwrap();
         let req = ClientRequest {
             id: self.req_id,
@@ -331,17 +329,15 @@ impl Process for ReplicaNotifiedClientStub {
                 ctx.send_with_ack(msg, to2, 5.0).await.unwrap();
             }
         });
-        Ok(())
     }
 
-    fn on_timer(&mut self, _name: String, _ctx: Context) -> Result<(), String> {
+    fn on_timer(&mut self, _name: String, _ctx: Context) {
         unreachable!()
     }
 
-    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) -> Result<(), String> {
+    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) {
         assert!(from == self.server1 || from == self.server2);
         ctx.send_local(msg);
-        Ok(())
     }
 }
 
