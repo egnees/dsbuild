@@ -73,7 +73,7 @@ pub async fn request_replica_events_from_range(
 ) -> bool {
     ctx.send_with_ack(ReceiveEventsRequest { from, to }.into(), address, 5.0)
         .await
-        .map_or(false, |_| true)
+        .is_ok_and(|_| true)
 }
 
 pub async fn replicate_client_request(
@@ -92,5 +92,5 @@ pub async fn replicate_client_request(
         5.0,
     )
     .await
-    .map_or(false, |_| true)
+    .is_ok_and(|_| true)
 }
