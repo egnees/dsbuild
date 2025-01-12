@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["FsError","SendError"],"struct":["Address","Context","File","IOProcessWrapper","Message","ProcessGuard","ProcessWrapper","RealNode","Sim"],"trait":["Process"],"type":["FsResult","SendResult","Tag"]};
+window.SIDEBAR_ITEMS = {"derive":["Passable"],"enum":["FsError","SendError"],"struct":["Address","Context","File","IOProcessWrapper","Message","ProcessGuard","ProcessWrapper","RealNode","Sim"],"trait":["Process"],"type":["FsResult","SendResult","Tag"]};

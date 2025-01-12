@@ -73,7 +73,9 @@
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a></pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a></pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="doccomment">//! DSbuild is a high-level framework aimed to provide foundation for building
 //! distributed systems with support for simulation-based testing. The framework
@@ -148,4 +150,6 @@
     network::{SendError, SendResult},
     process::{Address, Process, ProcessGuard, ProcessWrapper},
 };
+
+<span class="kw">pub use </span>dsbuild_macros::Passable;
 </code></pre></div></section></main></body></html>
