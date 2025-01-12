@@ -1,0 +1,9 @@
+[package]
+name = "dsbuild_message"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dslab-async-mp = { git = "https://github.com/egnees/dslab", branch = "async-mp" }
+serde = "1.0.193"
+serde_json = "1.0.108"

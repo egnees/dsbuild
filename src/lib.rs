@@ -73,3 +73,5 @@ pub use common::{
     network::{SendError, SendResult},
     process::{Address, Process, ProcessGuard, ProcessWrapper},
 };
+
+pub use dsbuild_macros::Passable;

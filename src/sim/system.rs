@@ -9,6 +9,7 @@ use std::{
 use dslab_async_mp::system::System as DSLabSimulation;
 
 use super::{node::NodeManager, process::VirtualProcessWrapper};
+
 use crate::{
     common::process::{Process, ProcessWrapper},
     Message,
