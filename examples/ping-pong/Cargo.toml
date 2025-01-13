@@ -15,5 +15,9 @@ name = "pingpong"
 path = "src/lib.rs"
 
 [[bin]]
-name = "run-ping-pong-real"
-path = "real/run.rs"
+name = "run-pinger-real"
+path = "real/pinger.rs"
+
+[[bin]]
+name = "run-ponger-real"
+path = "real/ponger.rs"

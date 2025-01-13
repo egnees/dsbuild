@@ -200,7 +200,10 @@ impl Sim {
             VirtualProcessWrapper::new(process_ref.clone(), node_manager_ref);
 
         // Configure wrapper to the dslab.
-        let process_wrapper = ProcessWrapper { process_ref };
+        let process_wrapper = ProcessWrapper {
+            process_ref,
+            address: process_address,
+        };
         let boxed_wrapper = Box::new(virtual_proc_wrapper);
 
         // Add virtual process wrapper to the dslab.

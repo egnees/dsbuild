@@ -51,6 +51,8 @@ pub trait Process: Send + Sync {
 #[derive(Clone)]
 pub struct ProcessWrapper<P: Process + 'static> {
     pub(crate) process_ref: Arc<RwLock<P>>,
+    /// Address of the user-defined process.
+    pub address: Address,
 }
 
 ////////////////////////////////////////////////////////////////////////////////

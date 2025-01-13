@@ -99,9 +99,6 @@ impl Node {
         name: String,
     ) -> IOProcessWrapper<P> {
         let process_ref = Arc::new(RwLock::new(process));
-        let process_wrapper = ProcessWrapper {
-            process_ref: process_ref.clone(),
-        };
 
         let (local_proc_sender, local_user_receiver) = mpsc::channel(self.max_buffer_size);
         let (local_user_sender, local_proc_receiver) = mpsc::channel(self.max_buffer_size);
@@ -110,6 +107,11 @@ impl Node {
             host: self.host.clone(),
             port: self.port,
             process_name: name.clone(),
+        };
+
+        let process_wrapper = ProcessWrapper {
+            process_ref: process_ref.clone(),
+            address: address.clone(),
         };
 
         let (to_proc_sender, from_proc_receiver) = mpsc::channel(self.max_buffer_size);

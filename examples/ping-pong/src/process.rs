@@ -1,4 +1,6 @@
-use dsbuild::{Address, Context, Message, Passable, Process};
+use dsbuild::{
+    Address, Context, Message, Passable, Process,
+};
 use dsbuild_message::Tipped;
 use serde::{Deserialize, Serialize};
 
@@ -21,28 +23,17 @@ pub struct PingPongProcess {
     pub pongs_received: usize,
 }
 
-impl PingPongProcess {
-    // Send ping message to the receiver.
-    fn send_ping(&self, receiver: Address, ctx: Context) {
-        let message = Message::new(Ping::TIP, &Ping {}).unwrap();
-        ctx.send(message, receiver);
-    }
-
-    // Send pong message to the receiver.
-    fn send_pong(&self, receiver: Address, ctx: Context) {
-        let message = Message::new(Pong::TIP, &Pong {}).unwrap();
-        ctx.send(message, receiver);
-    }
-}
-
 impl Process for PingPongProcess {
     // Method will be called on receiving
     // local message from user.
-    fn on_local_message(&mut self, msg: Message, ctx: Context) {
+    fn on_local_message(
+        &mut self,
+        msg: Message,
+        ctx: Context,
+    ) {
         assert_eq!(msg.get_tip(), LocalPingRequest::TIP);
-        let request = msg.get_data::<LocalPingRequest>().unwrap();
-        let receiver = request.receiver;
-        self.send_ping(receiver, ctx);
+        let request = LocalPingRequest::from(msg);
+        ctx.send(Ping {}.into(), request.receiver);
     }
 
     // Method will be called on timer firing,
@@ -53,12 +44,17 @@ impl Process for PingPongProcess {
 
     // Method will be called on received
     // netwrok message from other process.
-    fn on_message(&mut self, msg: Message, from: Address, ctx: Context) {
+    fn on_message(
+        &mut self,
+        msg: Message,
+        from: Address,
+        ctx: Context,
+    ) {
         ctx.send_local(msg.clone());
         match msg.get_tip().as_str() {
             Ping::TIP => {
                 self.pings_received += 1;
-                self.send_pong(from, ctx);
+                ctx.send(Pong {}.into(), from);
             }
             Pong::TIP => {
                 self.pongs_received += 1;
