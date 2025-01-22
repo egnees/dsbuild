@@ -5,7 +5,7 @@ use pingpong::process::{
 };
 
 #[test]
-fn test() {
+fn basic() {
     // Instantiate simulation from random seed.
     let mut sim = Sim::new(123);
 

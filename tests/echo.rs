@@ -107,8 +107,8 @@ fn message_returns_real() {
         assert_eq!(msg, "ping");
 
         // stop client and server
-        client_io.stop_process().await;
-        server_io.stop_process().await;
+        client_io.stop().await;
+        server_io.stop().await;
     });
 
     // run server in background

@@ -22,7 +22,7 @@ impl<P: Process + 'static> IOProcessWrapper<P> {
     ///
     /// This method returns when process receives stop request.
     /// After this, it is not guaranteed the process will be stopped immediately.
-    pub async fn stop_process(&mut self) {
+    pub async fn stop(&mut self) {
         self.system_sender
             .take()
             .unwrap()
