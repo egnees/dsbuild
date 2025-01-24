@@ -1,5 +1,5 @@
 pub mod message;
-pub mod tipped;
+pub mod typped;
 
 pub use message::Message;
-pub use tipped::Tipped;
+pub use typped::Typped;

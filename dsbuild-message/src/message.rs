@@ -57,7 +57,7 @@ impl Message {
 
 use dslab_async_mp::network::message::Message as DSLabMessage;
 
-use crate::Tipped;
+use crate::Typped;
 
 impl From<Message> for DSLabMessage {
     fn from(message: Message) -> Self {
@@ -92,8 +92,8 @@ impl From<&str> for Message {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-impl<T: Tipped> From<T> for Message {
+impl<T: Typped> From<T> for Message {
     fn from(value: T) -> Self {
-        Self::new(T::TIP, &value).unwrap()
+        Self::new(T::TYPE, &value).unwrap()
     }
 }
