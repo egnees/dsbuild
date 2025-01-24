@@ -98,8 +98,8 @@
 
 <span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>VoteRequest {
     <span class="kw">fn </span>from(msg: Message) -&gt; <span class="self">Self </span>{
-        <span class="macro">assert_eq!</span>(msg.get_tip(), VOTE_REQUEST);
-        msg.get_data::&lt;VoteRequest&gt;().unwrap()
+        <span class="macro">assert_eq!</span>(msg.tip(), VOTE_REQUEST);
+        msg.data::&lt;VoteRequest&gt;().unwrap()
     }
 }
 
@@ -134,8 +134,8 @@
 
 <span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>VoteResponse {
     <span class="kw">fn </span>from(msg: Message) -&gt; <span class="self">Self </span>{
-        <span class="macro">assert_eq!</span>(msg.get_tip(), VOTE_RESPONSE);
-        msg.get_data::&lt;VoteResponse&gt;().unwrap()
+        <span class="macro">assert_eq!</span>(msg.tip(), VOTE_RESPONSE);
+        msg.data::&lt;VoteResponse&gt;().unwrap()
     }
 }
 

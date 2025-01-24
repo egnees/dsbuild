@@ -205,8 +205,8 @@
 
 <span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>Command {
     <span class="kw">fn </span>from(message: Message) -&gt; <span class="self">Self </span>{
-        <span class="macro">assert_eq!</span>(message.get_tip(), COMMAND);
-        message.get_data::&lt;Command&gt;().unwrap()
+        <span class="macro">assert_eq!</span>(message.tip(), COMMAND);
+        message.data::&lt;Command&gt;().unwrap()
     }
 }
 

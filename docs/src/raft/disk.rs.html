@@ -563,19 +563,19 @@
     {
         <span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, ctx: Context) {
             ctx.clone().spawn(<span class="kw">async move </span>{
-                <span class="kw">if </span>msg.get_tip() == READ {
+                <span class="kw">if </span>msg.tip() == READ {
                     <span class="kw">let </span>read_value = read_last_value::&lt;T&gt;(FILE_PATH, ctx).<span class="kw">await</span>.unwrap();
-                    <span class="kw">let </span>true_value = msg.get_data::&lt;T&gt;().unwrap();
+                    <span class="kw">let </span>true_value = msg.data::&lt;T&gt;().unwrap();
                     <span class="macro">assert_eq!</span>(true_value, read_value);
-                } <span class="kw">else if </span>msg.get_tip() == READ_ALL {
+                } <span class="kw">else if </span>msg.tip() == READ_ALL {
                     <span class="kw">let </span>read_values = read_all_values::&lt;T&gt;(FILE_PATH, ctx).<span class="kw">await</span>;
-                    <span class="kw">let </span>true_values = msg.get_data::&lt;Vec&lt;T&gt;&gt;().unwrap();
+                    <span class="kw">let </span>true_values = msg.data::&lt;Vec&lt;T&gt;&gt;().unwrap();
                     <span class="macro">assert_eq!</span>(true_values, read_values);
-                } <span class="kw">else if </span>msg.get_tip() == REWRITE {
-                    <span class="kw">let </span>new_value = msg.get_data::&lt;Vec&lt;T&gt;&gt;().unwrap();
+                } <span class="kw">else if </span>msg.tip() == REWRITE {
+                    <span class="kw">let </span>new_value = msg.data::&lt;Vec&lt;T&gt;&gt;().unwrap();
                     rewrite_file(FILE_PATH, new_value, ctx).<span class="kw">await</span>;
                 } <span class="kw">else </span>{
-                    <span class="kw">let </span>value = msg.get_data::&lt;T&gt;().unwrap();
+                    <span class="kw">let </span>value = msg.data::&lt;T&gt;().unwrap();
                     append_value(FILE_PATH, value, ctx).<span class="kw">await</span>;
                 }
             });

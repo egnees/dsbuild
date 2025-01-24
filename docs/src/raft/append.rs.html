@@ -122,8 +122,8 @@
 
 <span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>AppendEntriesRequest {
     <span class="kw">fn </span>from(msg: Message) -&gt; <span class="self">Self </span>{
-        <span class="macro">assert_eq!</span>(msg.get_tip(), APPEND_ENTRIES_REQUEST);
-        msg.get_data::&lt;AppendEntriesRequest&gt;().unwrap()
+        <span class="macro">assert_eq!</span>(msg.tip(), APPEND_ENTRIES_REQUEST);
+        msg.data::&lt;AppendEntriesRequest&gt;().unwrap()
     }
 }
 
@@ -162,8 +162,8 @@
 
 <span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>AppendEntriesResponse {
     <span class="kw">fn </span>from(msg: Message) -&gt; <span class="self">Self </span>{
-        <span class="macro">assert_eq!</span>(msg.get_tip(), APPEND_ENTRIES_RESPONSE);
-        msg.get_data::&lt;AppendEntriesResponse&gt;().unwrap()
+        <span class="macro">assert_eq!</span>(msg.tip(), APPEND_ENTRIES_RESPONSE);
+        msg.data::&lt;AppendEntriesResponse&gt;().unwrap()
     }
 }
 

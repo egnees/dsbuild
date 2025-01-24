@@ -182,7 +182,7 @@
 
 <span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>Info {
     <span class="kw">fn </span>from(value: Message) -&gt; <span class="self">Self </span>{
-        value.get_data::&lt;Info&gt;().unwrap()
+        value.data::&lt;Info&gt;().unwrap()
     }
 }
 <span class="doccomment">/// Start client io-activity.
@@ -206,7 +206,7 @@
                 }
             },
             <span class="prelude-val">Some</span>(msg) = receiver.recv() =&gt; {
-                <span class="macro">println!</span>(<span class="string">"{}"</span>, msg.get_data::&lt;Info&gt;().unwrap());
+                <span class="macro">println!</span>(<span class="string">"{}"</span>, msg.data::&lt;Info&gt;().unwrap());
             },
             <span class="kw">else </span>=&gt; <span class="kw">break
         </span>}

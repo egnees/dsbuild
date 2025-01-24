@@ -133,18 +133,18 @@
     }
 
     <span class="doccomment">/// Get message's tip.
-    </span><span class="kw">pub fn </span>get_tip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>String {
+    </span><span class="kw">pub fn </span>tip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>String {
         <span class="kw-2">&amp;</span><span class="self">self</span>.tip
     }
 
     <span class="doccomment">/// Get message's raw data.
-    </span><span class="kw">pub fn </span>get_raw_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    </span><span class="kw">pub fn </span>raw_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.data
     }
 
     <span class="doccomment">/// Returns deserialized message's data of template type,
     /// which must implement [`Deserialize`] trait.
-    </span><span class="kw">pub fn </span>get_data&lt;<span class="lifetime">'a</span>, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T, String&gt;
+    </span><span class="kw">pub fn </span>data&lt;<span class="lifetime">'a</span>, T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T, String&gt;
     <span class="kw">where
         </span>T: Deserialize&lt;<span class="lifetime">'a</span>&gt;,
     {
@@ -161,9 +161,9 @@
 <span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>DSLabMessage {
     <span class="kw">fn </span>from(message: Message) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>payload = String::new();
-        message.get_raw_data().read_to_string(<span class="kw-2">&amp;mut </span>payload).unwrap();
+        message.raw_data().read_to_string(<span class="kw-2">&amp;mut </span>payload).unwrap();
         DSLabMessage::new(
-            message.get_tip(),
+            message.tip(),
             <span class="kw-2">&amp;</span>String::from_utf8_lossy(message.data.as_slice()).to_string(),
         )
     }

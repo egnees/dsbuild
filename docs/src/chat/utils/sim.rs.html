@@ -184,7 +184,7 @@
         .read_local_messages(proc, node)
         .unwrap()
         .into_iter()
-        .map(|msg| msg.get_data::&lt;ServerMessage&gt;().unwrap())
+        .map(|msg| msg.data::&lt;ServerMessage&gt;().unwrap())
         .filter(|msg| <span class="kw">match </span>msg {
             ServerMessage::RequestResponse(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
             ServerMessage::ChatEvent(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
@@ -204,7 +204,7 @@
         .read_local_messages(proc, node)
         .unwrap()
         .into_iter()
-        .map(|msg| msg.get_data::&lt;Info&gt;().unwrap())
+        .map(|msg| msg.data::&lt;Info&gt;().unwrap())
         .filter(|msg| <span class="kw">match </span>msg {
             Info::InnerInfo(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
             Info::ChatEvent(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,

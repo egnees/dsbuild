@@ -156,7 +156,7 @@
 </span><span class="kw">pub async fn </span>get_replica_total_seq_num(ctx: Context, tag: u64, address: Address) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
     ctx.send_recv_with_tag(TotalSeqNumRequest { tag }.into(), tag, address, <span class="number">5.0</span>)
         .<span class="kw">await
-        </span>.map(|msg| msg.get_data::&lt;TotalSeqNumMsg&gt;().unwrap().total_seq_num)
+        </span>.map(|msg| msg.data::&lt;TotalSeqNumMsg&gt;().unwrap().total_seq_num)
         .ok()
 }
 

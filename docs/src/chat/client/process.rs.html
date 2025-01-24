@@ -217,7 +217,7 @@
 
 <span class="kw">impl </span>Process <span class="kw">for </span>ClientProcess {
     <span class="kw">fn </span>on_local_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: Message, ctx: Context) {
-        <span class="kw">let </span>request_kind = msg.get_data::&lt;ClientRequestKind&gt;().unwrap();
+        <span class="kw">let </span>request_kind = msg.data::&lt;ClientRequestKind&gt;().unwrap();
         <span class="kw">let </span>request = <span class="self">self</span>.request_builder.build_with_kind(request_kind);
         <span class="kw">let </span>update_result = <span class="self">self</span>.state_machine.apply_client_request(request);
         <span class="self">self</span>.handle_state_update(update_result, ctx);
@@ -237,7 +237,7 @@
                 <span class="kw">return</span>;
             }
         }
-        <span class="kw">let </span>server_msg = msg.get_data::&lt;ServerMessage&gt;().unwrap();
+        <span class="kw">let </span>server_msg = msg.data::&lt;ServerMessage&gt;().unwrap();
         <span class="kw">let </span>update_result = <span class="self">self</span>.state_machine.apply_server_msg(server_msg);
         <span class="self">self</span>.handle_state_update(update_result, ctx);
     }
