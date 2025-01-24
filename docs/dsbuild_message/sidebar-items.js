@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["message","tipped"]};
+window.SIDEBAR_ITEMS = {"mod":["message","typped"]};
