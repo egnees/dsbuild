@@ -95,7 +95,7 @@ impl ClientProcess {
 
 impl Process for ClientProcess {
     fn on_local_message(&mut self, msg: Message, ctx: Context) {
-        let request_kind = msg.get_data::<ClientRequestKind>().unwrap();
+        let request_kind = msg.data::<ClientRequestKind>().unwrap();
         let request = self.request_builder.build_with_kind(request_kind);
         let update_result = self.state_machine.apply_client_request(request);
         self.handle_state_update(update_result, ctx);
@@ -115,7 +115,7 @@ impl Process for ClientProcess {
                 return;
             }
         }
-        let server_msg = msg.get_data::<ServerMessage>().unwrap();
+        let server_msg = msg.data::<ServerMessage>().unwrap();
         let update_result = self.state_machine.apply_server_msg(server_msg);
         self.handle_state_update(update_result, ctx);
     }

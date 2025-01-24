@@ -35,8 +35,8 @@ pub const APPEND_ENTRIES_REQUEST: &str = "append_entries_request";
 
 impl From<Message> for AppendEntriesRequest {
     fn from(msg: Message) -> Self {
-        assert_eq!(msg.get_tip(), APPEND_ENTRIES_REQUEST);
-        msg.get_data::<AppendEntriesRequest>().unwrap()
+        assert_eq!(msg.tip(), APPEND_ENTRIES_REQUEST);
+        msg.data::<AppendEntriesRequest>().unwrap()
     }
 }
 
@@ -75,8 +75,8 @@ pub const APPEND_ENTRIES_RESPONSE: &str = "append_entries_response";
 
 impl From<Message> for AppendEntriesResponse {
     fn from(msg: Message) -> Self {
-        assert_eq!(msg.get_tip(), APPEND_ENTRIES_RESPONSE);
-        msg.get_data::<AppendEntriesResponse>().unwrap()
+        assert_eq!(msg.tip(), APPEND_ENTRIES_RESPONSE);
+        msg.data::<AppendEntriesResponse>().unwrap()
     }
 }
 

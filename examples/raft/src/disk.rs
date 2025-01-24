@@ -170,19 +170,19 @@ mod tests {
     {
         fn on_local_message(&mut self, msg: Message, ctx: Context) {
             ctx.clone().spawn(async move {
-                if msg.get_tip() == READ {
+                if msg.tip() == READ {
                     let read_value = read_last_value::<T>(FILE_PATH, ctx).await.unwrap();
-                    let true_value = msg.get_data::<T>().unwrap();
+                    let true_value = msg.data::<T>().unwrap();
                     assert_eq!(true_value, read_value);
-                } else if msg.get_tip() == READ_ALL {
+                } else if msg.tip() == READ_ALL {
                     let read_values = read_all_values::<T>(FILE_PATH, ctx).await;
-                    let true_values = msg.get_data::<Vec<T>>().unwrap();
+                    let true_values = msg.data::<Vec<T>>().unwrap();
                     assert_eq!(true_values, read_values);
-                } else if msg.get_tip() == REWRITE {
-                    let new_value = msg.get_data::<Vec<T>>().unwrap();
+                } else if msg.tip() == REWRITE {
+                    let new_value = msg.data::<Vec<T>>().unwrap();
                     rewrite_file(FILE_PATH, new_value, ctx).await;
                 } else {
-                    let value = msg.get_data::<T>().unwrap();
+                    let value = msg.data::<T>().unwrap();
                     append_value(FILE_PATH, value, ctx).await;
                 }
             });

@@ -13,7 +13,7 @@ pub fn read_history(sys: &mut Sim, node: &str, proc: &str) -> Vec<ChatEvent> {
         .read_local_messages(proc, node)
         .unwrap()
         .into_iter()
-        .map(|msg| msg.get_data::<ServerMessage>().unwrap())
+        .map(|msg| msg.data::<ServerMessage>().unwrap())
         .filter(|msg| match msg {
             ServerMessage::RequestResponse(_, _) => false,
             ServerMessage::ChatEvent(_, _) => true,
@@ -33,7 +33,7 @@ pub fn read_history_from_info(sys: &mut Sim, node: &str, proc: &str) -> Vec<Chat
         .read_local_messages(proc, node)
         .unwrap()
         .into_iter()
-        .map(|msg| msg.get_data::<Info>().unwrap())
+        .map(|msg| msg.data::<Info>().unwrap())
         .filter(|msg| match msg {
             Info::InnerInfo(_) => false,
             Info::ChatEvent(_) => true,

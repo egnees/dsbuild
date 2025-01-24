@@ -60,7 +60,7 @@ impl From<ReceiveEventsRequest> for Message {
 pub async fn get_replica_total_seq_num(ctx: Context, tag: u64, address: Address) -> Option<u64> {
     ctx.send_recv_with_tag(TotalSeqNumRequest { tag }.into(), tag, address, 5.0)
         .await
-        .map(|msg| msg.get_data::<TotalSeqNumMsg>().unwrap().total_seq_num)
+        .map(|msg| msg.data::<TotalSeqNumMsg>().unwrap().total_seq_num)
         .ok()
 }
 

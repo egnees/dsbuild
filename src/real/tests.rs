@@ -20,7 +20,7 @@ struct LocalMessage {
 
 impl Process for LocalProcess {
     fn on_local_message(&mut self, msg: Message, ctx: Context) {
-        let other = msg.get_data::<LocalMessage>().unwrap().other.clone();
+        let other = msg.data::<LocalMessage>().unwrap().other.clone();
         ctx.send(msg, other);
     }
 
@@ -73,7 +73,7 @@ fn local_messages_works() {
 
         let msg = wrapper1.receiver.recv().await.unwrap();
         assert_eq!(
-            msg.get_data::<LocalMessage>().unwrap().info,
+            msg.data::<LocalMessage>().unwrap().info,
             "message from the second process"
         );
     });
@@ -97,7 +97,7 @@ fn local_messages_works() {
 
         let msg = wrapper2.receiver.recv().await.unwrap();
         assert_eq!(
-            msg.get_data::<LocalMessage>().unwrap().info,
+            msg.data::<LocalMessage>().unwrap().info,
             "message from the first process"
         );
     });
@@ -175,7 +175,7 @@ struct SendRecvProcess {
 
 impl Process for SendRecvProcess {
     fn on_local_message(&mut self, msg: Message, ctx: Context) {
-        let tag = msg.get_data::<Tag>().unwrap();
+        let tag = msg.data::<Tag>().unwrap();
         let to = self.pair.clone();
         ctx.clone().spawn(async move {
             let got_msg = ctx
@@ -192,7 +192,7 @@ impl Process for SendRecvProcess {
     }
 
     fn on_message(&mut self, msg: Message, from: Address, ctx: Context) {
-        let tag = msg.get_data::<Tag>().unwrap();
+        let tag = msg.data::<Tag>().unwrap();
         ctx.clone().spawn(async move {
             ctx.send_with_tag(msg, tag, from, 5.0).await.unwrap();
             ctx.stop();

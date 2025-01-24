@@ -34,18 +34,18 @@ impl Message {
     }
 
     /// Get message's tip.
-    pub fn get_tip(&self) -> &String {
+    pub fn tip(&self) -> &String {
         &self.tip
     }
 
     /// Get message's raw data.
-    pub fn get_raw_data(&self) -> &[u8] {
+    pub fn raw_data(&self) -> &[u8] {
         &self.data
     }
 
     /// Returns deserialized message's data of template type,
     /// which must implement [`Deserialize`] trait.
-    pub fn get_data<'a, T>(&'a self) -> Result<T, String>
+    pub fn data<'a, T>(&'a self) -> Result<T, String>
     where
         T: Deserialize<'a>,
     {
@@ -62,9 +62,9 @@ use crate::Typped;
 impl From<Message> for DSLabMessage {
     fn from(message: Message) -> Self {
         let mut payload = String::new();
-        message.get_raw_data().read_to_string(&mut payload).unwrap();
+        message.raw_data().read_to_string(&mut payload).unwrap();
         DSLabMessage::new(
-            message.get_tip(),
+            message.tip(),
             &String::from_utf8_lossy(message.data.as_slice()).to_string(),
         )
     }

@@ -36,7 +36,7 @@ fn capital_letter_chat_name() {
         .read_local_messages(&client_addr.process_name, "Client")
         .unwrap();
     for m in msg {
-        let info = m.get_data::<Info>().unwrap();
+        let info = m.data::<Info>().unwrap();
         match info {
             Info::InnerInfo(_) => {}
             Info::ChatEvent(_) => {

@@ -145,7 +145,7 @@ impl RaftProcess {
 
 impl Process for RaftProcess {
     fn on_local_message(&mut self, msg: Message, ctx: Context) {
-        match msg.get_tip().as_str() {
+        match msg.tip().as_str() {
             READ_VALUE_REQUEST => self.on_read_value_request(msg.into(), ctx),
             COMMAND => self.on_command_request(msg.into(), ctx),
             INITIALIZE_REQUEST => self.on_initialize_request(ctx),
@@ -163,7 +163,7 @@ impl Process for RaftProcess {
     }
 
     fn on_message(&mut self, msg: Message, _from: Address, ctx: Context) {
-        match msg.get_tip().as_str() {
+        match msg.tip().as_str() {
             APPEND_ENTRIES_REQUEST => self.on_append_entries_request(msg.into(), ctx),
             APPEND_ENTRIES_RESPONSE => self.on_append_entries_response(msg.into(), ctx),
             VOTE_REQUEST => self.on_vote_request(msg.into(), ctx),

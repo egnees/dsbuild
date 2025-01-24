@@ -75,7 +75,7 @@ impl From<Info> for Message {
 
 impl From<Message> for Info {
     fn from(value: Message) -> Self {
-        value.get_data::<Info>().unwrap()
+        value.data::<Info>().unwrap()
     }
 }
 /// Start client io-activity.
@@ -99,7 +99,7 @@ pub async fn start_io(wrapper: IOProcessWrapper<ClientProcess>) {
                 }
             },
             Some(msg) = receiver.recv() => {
-                println!("{}", msg.get_data::<Info>().unwrap());
+                println!("{}", msg.data::<Info>().unwrap());
             },
             else => break
         }

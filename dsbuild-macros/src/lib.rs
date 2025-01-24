@@ -14,7 +14,7 @@ pub fn derive_passable(input: TokenStream) -> TokenStream {
 
         impl From<dsbuild_message::Message> for #name {
             fn from(message: dsbuild_message::Message) -> Self {
-                message.get_data().unwrap()
+                message.data().unwrap()
             }
         }
     };

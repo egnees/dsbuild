@@ -835,7 +835,7 @@ impl From<StateInfo> for Message {
 
 impl From<Message> for StateInfo {
     fn from(message: Message) -> Self {
-        assert_eq!(message.get_tip(), STATE_INFO);
-        message.get_data::<StateInfo>().unwrap()
+        assert_eq!(message.tip(), STATE_INFO);
+        message.data::<StateInfo>().unwrap()
     }
 }

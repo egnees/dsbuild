@@ -25,8 +25,8 @@ pub const VOTE_REQUEST: &str = "vote_request";
 
 impl From<Message> for VoteRequest {
     fn from(msg: Message) -> Self {
-        assert_eq!(msg.get_tip(), VOTE_REQUEST);
-        msg.get_data::<VoteRequest>().unwrap()
+        assert_eq!(msg.tip(), VOTE_REQUEST);
+        msg.data::<VoteRequest>().unwrap()
     }
 }
 
@@ -61,8 +61,8 @@ pub const VOTE_RESPONSE: &str = "vote_response";
 
 impl From<Message> for VoteResponse {
     fn from(msg: Message) -> Self {
-        assert_eq!(msg.get_tip(), VOTE_RESPONSE);
-        msg.get_data::<VoteResponse>().unwrap()
+        assert_eq!(msg.tip(), VOTE_RESPONSE);
+        msg.data::<VoteResponse>().unwrap()
     }
 }
 

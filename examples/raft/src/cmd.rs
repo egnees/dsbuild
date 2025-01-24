@@ -78,8 +78,8 @@ pub const COMMAND: &str = "command";
 
 impl From<Message> for Command {
     fn from(message: Message) -> Self {
-        assert_eq!(message.get_tip(), COMMAND);
-        message.get_data::<Command>().unwrap()
+        assert_eq!(message.tip(), COMMAND);
+        message.data::<Command>().unwrap()
     }
 }
 

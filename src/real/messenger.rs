@@ -97,8 +97,8 @@ impl GRpcMessenger {
             receiver_host: request.receiver_address.host.clone(),
             receiver_port: u32::from(request.receiver_address.port),
             receiver_process: request.receiver_address.process_name.clone(),
-            message_tip: request.message.get_tip().clone(),
-            message_data: request.message.get_raw_data().to_vec(),
+            message_tip: request.message.tip().clone(),
+            message_data: request.message.raw_data().to_vec(),
             tag: request.tag,
         });
 

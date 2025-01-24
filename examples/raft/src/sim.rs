@@ -40,7 +40,7 @@ impl ProcessInfo {
     }
 
     fn on_local_message(&mut self, message: Message) {
-        match message.get_tip().as_str() {
+        match message.tip().as_str() {
             STATE_INFO => {
                 self.last_state_info.replace(message.into());
             }

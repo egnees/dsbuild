@@ -57,7 +57,7 @@ pub async fn process_io(
     loop {
         let message = receiver.recv().await;
         if let Some(message) = message {
-            if message.get_tip() == LOCAL_RESPONSE {
+            if message.tip() == LOCAL_RESPONSE {
                 let local_response: LocalResponse = message.into();
                 shared_register.respond(local_response).await;
             }

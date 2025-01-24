@@ -110,10 +110,10 @@ impl ServerState {
     }
 
     pub async fn process_msg(&mut self, from: Address, ctx: Context, msg: Message) {
-        let tip = msg.get_tip().as_str();
+        let tip = msg.tip().as_str();
         match tip {
             "total_seq_num_request" => {
-                let tag = msg.get_data::<TotalSeqNumRequest>().unwrap().tag;
+                let tag = msg.data::<TotalSeqNumRequest>().unwrap().tag;
                 let total_seq = self.get_total_seq(ctx.clone()).await;
                 let _ = ctx
                     .send_with_tag(
@@ -128,7 +128,7 @@ impl ServerState {
                     .await;
             }
             "replicate_request" => {
-                let request = msg.get_data::<ReplicateRequest>().unwrap();
+                let request = msg.data::<ReplicateRequest>().unwrap();
                 let seq = self.get_total_seq(ctx.clone()).await;
                 if seq <= request.seq_num {
                     assert_eq!(seq, request.seq_num);
@@ -145,11 +145,11 @@ impl ServerState {
                 // do nothing
             }
             "receive_events_request" => {
-                let request = msg.get_data::<ReceiveEventsRequest>().unwrap();
+                let request = msg.data::<ReceiveEventsRequest>().unwrap();
                 transfer_requests(ctx.clone(), from, request.from, request.to).await;
             }
             "client_request" => {
-                let user_request = msg.get_data::<ClientRequest>().unwrap();
+                let user_request = msg.data::<ClientRequest>().unwrap();
                 if !self.check_replication(ctx.clone()).await {
                     return;
                 }

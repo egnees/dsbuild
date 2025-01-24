@@ -19,8 +19,8 @@ pub const READ_VALUE_REQUEST: &str = "read_value_request";
 
 impl From<Message> for ReadValueRequest {
     fn from(message: Message) -> Self {
-        assert_eq!(message.get_tip(), READ_VALUE_REQUEST);
-        message.get_data::<ReadValueRequest>().unwrap()
+        assert_eq!(message.tip(), READ_VALUE_REQUEST);
+        message.data::<ReadValueRequest>().unwrap()
     }
 }
 
@@ -59,8 +59,8 @@ pub const LOCAL_RESPONSE: &str = "local_response";
 
 impl From<Message> for LocalResponse {
     fn from(message: Message) -> Self {
-        assert_eq!(message.get_tip(), LOCAL_RESPONSE);
-        message.get_data::<LocalResponse>().unwrap()
+        assert_eq!(message.tip(), LOCAL_RESPONSE);
+        message.data::<LocalResponse>().unwrap()
     }
 }
 
@@ -80,8 +80,8 @@ pub const INITIALIZE_REQUEST: &str = "initialize_request";
 
 impl From<Message> for InitializeRequest {
     fn from(message: Message) -> Self {
-        assert_eq!(message.get_tip(), INITIALIZE_REQUEST);
-        message.get_data::<InitializeRequest>().unwrap()
+        assert_eq!(message.tip(), INITIALIZE_REQUEST);
+        message.data::<InitializeRequest>().unwrap()
     }
 }
 
@@ -103,8 +103,8 @@ pub const INITIALIZE_RESPONSE: &str = "initialize_response";
 
 impl From<Message> for InitializeResponse {
     fn from(message: Message) -> Self {
-        assert_eq!(message.get_tip(), INITIALIZE_RESPONSE);
-        message.get_data::<InitializeResponse>().unwrap()
+        assert_eq!(message.tip(), INITIALIZE_RESPONSE);
+        message.data::<InitializeResponse>().unwrap()
     }
 }
 

@@ -20,9 +20,9 @@ struct AppendRequest {
 
 impl Process for StorageProc {
     fn on_local_message(&mut self, msg: Message, ctx: Context) {
-        if msg.get_tip() == "read" {
+        if msg.tip() == "read" {
             ctx.clone().spawn(async move {
-                let read_request = msg.get_data::<ReadRequest>().unwrap();
+                let read_request = msg.data::<ReadRequest>().unwrap();
                 let mut offset = 0;
                 let mut buf = vec![0u8; 128];
                 let buf_slice = buf.as_mut_slice();
@@ -41,7 +41,7 @@ impl Process for StorageProc {
             });
         } else {
             ctx.clone().spawn(async move {
-                let append_request = msg.get_data::<AppendRequest>().unwrap();
+                let append_request = msg.data::<AppendRequest>().unwrap();
                 if !ctx.file_exists(&append_request.file).await.unwrap() {
                     ctx.create_file(&append_request.file).await.unwrap();
                 }
@@ -107,9 +107,9 @@ fn storage_works() {
 
     let messages = sys.read_local_messages("storage_process", "node").unwrap();
     assert_eq!(messages.len(), 2);
-    assert_eq!(messages[0].get_tip(), "append_result");
-    assert_eq!(messages[1].get_tip(), "read_result");
-    assert_eq!(messages[1].get_data::<String>().unwrap(), "append1\n");
+    assert_eq!(messages[0].tip(), "append_result");
+    assert_eq!(messages[1].tip(), "read_result");
+    assert_eq!(messages[1].data::<String>().unwrap(), "append1\n");
 }
 
 #[test]
@@ -163,8 +163,8 @@ fn storage_stress() {
 
     let messages = sys.read_local_messages("storage_process", "node").unwrap();
     for message in messages {
-        if message.get_tip() == "read_result" {
-            assert_eq!(message.get_data::<String>().unwrap().len(), 1055 * 100);
+        if message.tip() == "read_result" {
+            assert_eq!(message.data::<String>().unwrap().len(), 1055 * 100);
         }
     }
 }

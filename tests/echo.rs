@@ -70,7 +70,7 @@ fn message_returns_virtual() {
     // get returned message from server
     let msgs = sys.read_local_messages("p", "echo_client").unwrap();
     assert_eq!(msgs.len(), 1);
-    assert_eq!(msgs[0].get_data::<String>().unwrap(), "ping");
+    assert_eq!(msgs[0].data::<String>().unwrap(), "ping");
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn message_returns_real() {
             .recv()
             .await
             .unwrap()
-            .get_data::<String>()
+            .data::<String>()
             .unwrap();
         println!("INFO received message from server: {}", msg);
         assert_eq!(msg, "ping");
@@ -151,7 +151,7 @@ fn server_fault_virtual() {
     sys.step_until_no_events();
     let msgs = sys.read_local_messages("p", "echo_client").unwrap();
     assert_eq!(msgs.len(), 1);
-    assert_eq!(msgs[0].get_data::<String>().unwrap(), "first ping");
+    assert_eq!(msgs[0].data::<String>().unwrap(), "first ping");
 
     // crash server
     sys.crash_node("echo_server");

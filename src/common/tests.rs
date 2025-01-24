@@ -8,17 +8,17 @@ pub fn test_message_basic() {
 
     let message = Message::new("message_type", &message_data).expect("Can not create message");
 
-    assert_eq!(message.get_tip(), "message_type");
+    assert_eq!(message.tip(), "message_type");
 
     let deserialized_data = message
-        .get_data::<String>()
+        .data::<String>()
         .expect("Can not extract data from message");
     assert_eq!(deserialized_data, message_data);
 
     let message_1 = Message::new("message_type_1", &format!("format_str_{}", 1))
         .expect("Can not create new message");
     assert_eq!(
-        message_1.get_data::<String>().expect("Can not fetch data"),
+        message_1.data::<String>().expect("Can not fetch data"),
         "format_str_1"
     );
 }
@@ -31,7 +31,7 @@ pub fn test_data_outlives_message() {
 
     {
         let message = Message::new("type", &message_data).expect("Can not create message");
-        deserialized_data = message.get_data::<String>().expect("Can not extract data");
+        deserialized_data = message.data::<String>().expect("Can not extract data");
     }
 
     assert_eq!(deserialized_data, message_data);
@@ -65,9 +65,9 @@ pub fn test_serialize_works() {
 
     let message = Message::new("tip", &data).expect("Can not create message");
 
-    assert_eq!(message.get_tip(), "tip");
+    assert_eq!(message.tip(), "tip");
 
-    let fetched_data = message.get_data::<DataType>().expect("Can not fetch data");
+    let fetched_data = message.data::<DataType>().expect("Can not fetch data");
 
     assert_eq!(fetched_data, data);
 }

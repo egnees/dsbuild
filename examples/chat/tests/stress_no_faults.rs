@@ -99,14 +99,14 @@ fn stress_no_faults_2_users() {
         .step_until_local_message("client1", "client1_node")
         .unwrap()
         .into_iter()
-        .map(|m| m.get_data::<Info>().unwrap())
+        .map(|m| m.data::<Info>().unwrap())
         .collect();
 
     let client2_events: Vec<_> = sys
         .step_until_local_message("client2", "client2_node")
         .unwrap()
         .into_iter()
-        .map(|m| m.get_data::<Info>().unwrap())
+        .map(|m| m.data::<Info>().unwrap())
         .collect();
 
     // Check messages arrived in the same order.

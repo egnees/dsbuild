@@ -46,7 +46,7 @@ impl ClientStub {
 
 impl Process for ClientStub {
     fn on_local_message(&mut self, msg: Message, ctx: Context) {
-        let kind = msg.get_data::<ClientRequestKind>().unwrap();
+        let kind = msg.data::<ClientRequestKind>().unwrap();
         let req = ClientRequest {
             id: self.req_id,
             client: self.login.clone(),
@@ -96,7 +96,7 @@ fn state_works() {
 
     let messages = sys.read_local_messages("client", "client").unwrap();
     assert_eq!(messages.len(), 1);
-    let response = messages[0].get_data::<ServerMessage>().unwrap();
+    let response = messages[0].data::<ServerMessage>().unwrap();
     assert_eq!(response, ServerMessage::RequestResponse(0, Ok(())));
 
     sys.send_local_message(
@@ -267,7 +267,7 @@ fn state_multiple_users() {
             .read_local_messages(client, client)
             .unwrap()
             .into_iter()
-            .map(|msg| msg.get_data::<ServerMessage>().unwrap())
+            .map(|msg| msg.data::<ServerMessage>().unwrap())
             .filter(|msg| match msg {
                 ServerMessage::RequestResponse(_, res) => {
                     assert_eq!(*res, Ok(()));
@@ -310,7 +310,7 @@ impl ReplicaNotifiedClientStub {
 
 impl Process for ReplicaNotifiedClientStub {
     fn on_local_message(&mut self, msg: Message, ctx: Context) {
-        let kind = msg.get_data::<ClientRequestKind>().unwrap();
+        let kind = msg.data::<ClientRequestKind>().unwrap();
         let req = ClientRequest {
             id: self.req_id,
             client: self.name.clone(),
