@@ -8,7 +8,7 @@ pub fn derive_passable(input: TokenStream) -> TokenStream {
 
     let name = input.ident;
     let result = quote! {
-        impl dsbuild_message::Typped for #name {
+        impl dsbuild_message::Typed for #name {
             const TYPE: &str = stringify!(#name);
         }
 
